@@ -1,0 +1,7 @@
+
+@interface LOSimpleJSONObjectStore : LOObjectStore
+{
+
+}
+
+@end
