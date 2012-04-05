@@ -1,0 +1,7 @@
+
+@interface LOJSKeyedArchiver : NSCoder
+{
+
+}
+
+@end

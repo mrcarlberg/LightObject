@@ -10,6 +10,9 @@
 @implementation LOFetchSpecification : CPObject
 {
     CPString        entityName  @accessors;
+    CPString        operator  @accessors;
+    CPPredicate     qualifier  @accessors;
+    id              userInfo  @accessors;
 }
 
 + (LOFetchSpecification) fetchSpecificationForEnityName:(CPString) anEntityName {

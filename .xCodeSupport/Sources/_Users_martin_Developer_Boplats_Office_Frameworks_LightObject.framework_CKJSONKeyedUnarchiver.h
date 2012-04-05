@@ -1,0 +1,7 @@
+
+@interface CKJSONKeyedUnarchiver : NSCoder
+{
+
+}
+
+@end

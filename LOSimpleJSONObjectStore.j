@@ -185,12 +185,28 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
-    var request = [CPURLRequest requestWithURL:@"http://boplats-dev-srv01.pin.se/api/martin|/" + [fetchSpecification entityName]];
+    var entityName = [fetchSpecification entityName];
+    var url = @"http://boplats-dev-srv01.pin.se/api/martin|/" + entityName;
+    if ([fetchSpecification operator]) {
+        url = url + @"/" + [fetchSpecification operator];
+    }
+    if ([fetchSpecification qualifier]) {
+        var qualiferString = [[fetchSpecification qualifier] predicateFormat];
+        var qualiferItems = [qualiferString componentsSeparatedByString:@"=="];
+        var qualiferAttribute = [[qualiferItems objectAtIndex:0] stringByTrimmingWhitespace];
+        var searchString = [[qualiferItems lastObject] stringByTrimmingWhitespace];
+        var searchStringLength = [searchString length];
+        if (searchStringLength >= 2) {
+            searchString = [searchString substringWithRange:CPMakeRange(1, searchStringLength - 2)]
+        }
+        url = url + @"/" + qualiferAttribute + @"=" + searchString;
+    }
+    var request = [CPURLRequest requestWithURL:url];
     [request setHTTPMethod:@"GET"];
     receivedData = nil;
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector}];
-    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName]);
+    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + entityName + @", url = " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
@@ -239,6 +255,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) _objectsFromJSON:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary) receivedObjects {
+    if (![jSONObjects isKindOfClass:CPArray])
+        return jSONObjects;
     var objectContext = connectionDictionary.objectContext;
     var fetchSpecification = connectionDictionary.fetchSpecification;
     var entityName = fetchSpecification.entityName;
@@ -496,7 +514,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (relationshipKeys) {
         return relationshipKeys;
     } else {
-        return [self _createRelationshipKeysFromRow:nil forObject:theObject];
+        return [];
     }
 }
 
