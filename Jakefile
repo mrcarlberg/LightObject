@@ -40,7 +40,11 @@ var SYS = require("system"),
     it is built in $CAPP_BUILD if that is defined, otherwise
     in a "Build" directory within the project directory.
 */
-var buildDir = ENV["BUILD_PATH"] || ENV["CAPP_BUILD"] || "Build";
+var buildDir = FILE.absolute(
+    ENV["BUILD_PATH"] ||
+    ENV["CAPP_BUILD"] ||
+    FILE.join(FILE.dirname(module.path), "Build")
+);
 
 
  //===========================================================
