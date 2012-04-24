@@ -14,7 +14,7 @@
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 
 var LOObjectContext_newObjectForType = 1 << 0,
-    LOObjectContext_objectsReceived_withFetchSpecification = 1 << 1;
+    LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification = 1 << 1;
 
 @implementation LOModifyRecord : CPObject {
     id              object @accessors;          // The object that is changed
@@ -79,8 +79,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
     } else {
         CPLog.error(@"[LOObjectContext setDelegate]: Delegate must implement selector newObjectForType:");
     }
-    if ([delegate respondsToSelector:@selector(objectsReceived:withFetchSpecification:)])
-        implementedDelegateMethods |= LOObjectContext_objectsReceived_withFetchSpecification;
+    if ([delegate respondsToSelector:@selector(objectsReceived:forObjectContext:withFetchSpecification:)])
+        implementedDelegateMethods |= LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification;
 }
 
 - (id) newObjectForType:(CPString) type {
@@ -96,8 +96,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
-    if (implementedDelegateMethods & LOObjectContext_objectsReceived_withFetchSpecification) {
-        [delegate objectsReceived:objectList withFetchSpecification:fetchSpecification];
+    if (implementedDelegateMethods & LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification) {
+        [delegate objectsReceived:objectList forObjectContext:self withFetchSpecification:fetchSpecification];
     }
     var defaultCenter = [CPNotificationCenter defaultCenter];
     [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:@"objects"]];
@@ -108,6 +108,20 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:[theChanges valueForKey:CPKeyValueChangeNewKey] forKey:theKeyPath];
     if (autoCommit) [self saveChanges];
+}
+
+- (void) unregisterObject:(id) theObject {
+    var globalId = [objectStore globalIdForObject:theObject];
+    [objects removeObjectForKey:globalId];
+    var attributeKeys = [objectStore attributeKeysForObject:theObject];
+    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+    var attributeSize = [attributeKeys count];
+    for (var i = 0; i < attributeSize; i++) {
+        var attributeKey = [attributeKeys objectAtIndex:i];
+        if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a relationship
+            [theObject removeObserver:self forKeyPath:attributeKey];
+        }
+    }
 }
 
 - (void) registerObject:(id) theObject {
@@ -135,6 +149,9 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return [objects objectForKey:globalId] != nil;
 }
 
+/*
+ *  @return object to context
+ */
 - (id) objectForGlobalId:(CPString) globalId {
     return [objects objectForKey:globalId];
 }
@@ -145,11 +162,17 @@ var LOObjectContext_newObjectForType = 1 << 0,
     [self registerObject:theObject];
 }
 
+/*
+ *  Add object to context
+ */
 - (void) insertObject:(id) theObject {
     [self _insertObject: theObject];
     if (autoCommit) [self saveChanges];
 }
 
+/*
+ *  Add objects to context
+ */
 - (void) insertObjects:(CPArray) theObjects {
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
@@ -160,16 +183,23 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) _deleteObject:(id) theObject {
-    [objects removeObjectForKey:[objectStore globalIdForObject:theObject]];
+    [self unregisterObject:theObject];
     // Just need to create the dict to mark it for delete
     var deleteDict = [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:theObject];
 }
 
+
+/*
+ *  Remove object from context
+ */
 - (void) deleteObject:(id) theObject {
     [self _deleteObject: theObject];
     if (autoCommit) [self saveChanges];
 }
 
+/*
+ *  Remove objects from context
+ */
 - (void) deleteObjects:(CPArray) theObjects {
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
