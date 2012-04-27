@@ -15,6 +15,8 @@ LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelect
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
 LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
 
+var ConfigBaseUrl = nil;
+
 @implementation LOFaultArray : CPMutableArray {
     LOObjectContext objectContext @accessors;
     id              masterObject @accessors;
@@ -142,10 +144,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
-    CPLog.trace(@"addObserver: Begin");
-    debugger;
+    CPLog.trace([self className] + @" " + _cmd + @" Begin");
     [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
-    CPLog.trace(@"addObserver: End");
+    CPLog.trace([self className] + @" " + _cmd + @" End");
 }
 
 - (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
@@ -157,10 +158,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (void) requestFault {
+    if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
     var objectStore = [objectContext objectStore];
     var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
     var fs = [LOFetchSpecification fetchSpecificationForEnityName:entityName];
-    var request = [CPURLRequest requestWithURL:@"http://boplats-dev-srv01.pin.se/api/martin|/" + entityName + @"/" + [objectStore typeOfObject:masterObject] + @"_fk=" + [objectStore globalIdForObject:masterObject]];
+    var request = [CPURLRequest requestWithURL:baseURL + @"/martin|/" + entityName + @"/" + [objectStore typeOfObject:masterObject] + @"_fk=" + [objectStore globalIdForObject:masterObject]];
     [request setHTTPMethod:@"GET"];
     receivedData = nil;
     var connection = [CPURLConnection connectionWithRequest:request delegate:objectStore];
@@ -171,13 +173,31 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 @end
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
+    CPString        baseURL;
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
+}
+
++ (void)initialize {
+    if (self !== [LOSimpleJSONObjectStore class]) return;
+    var mainBundle = [CPBundle mainBundle];
+    var bundleURL = [mainBundle bundleURL];
+    var rootURL = [[[bundleURL absoluteString] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+    var configURL = rootURL + @"/Config/Config";
+//    CPLog.trace(_cmd + @" configURL = " + configURL);
+    var answer = [CPURLConnection sendSynchronousRequest:[CPURLRequest requestWithURL:[CPURL URLWithString:configURL]] returningResponse:nil];
+//    CPLog.trace(_cmd + @" answer = " + [answer rawString]);
+    if (answer) {
+        ConfigBaseUrl = [answer rawString];
+    }
 }
 
 - (id)init {
     self = [super init];
     if (self) {
+        if (ConfigBaseUrl) {
+            baseURL = ConfigBaseUrl;
+        }
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
     }
@@ -185,8 +205,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+    if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
     var entityName = [fetchSpecification entityName];
-    var url = @"http://boplats-dev-srv01.pin.se/api/martin|/" + entityName;
+    var url = baseURL + @"/martin|/" + entityName;
     if ([fetchSpecification operator]) {
         url = url + @"/" + [fetchSpecification operator];
     }
@@ -394,11 +415,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 - (void) saveChangesWithObjectContext:(LOObjectContext) objectContext {
     var modifyDict = [self _jsonDictionaryForModifiedObjectsWithObjectContext:objectContext];
     if ([modifyDict count] > 0) {       // Only save if thera are changes
+        if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
         [modifyDict setObject:@"martin|" forKey:@"sessionKey"];
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var jsonText = [CPString JSONFromObject:json];
         CPLog.trace(@"POST Data: " + jsonText);
-        var request = [CPURLRequest requestWithURL:@"http://boplats-dev-srv01.pin.se/api/modify"];
+        var request = [CPURLRequest requestWithURL:baseURL + @"/modify"];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
         receivedData = nil;
