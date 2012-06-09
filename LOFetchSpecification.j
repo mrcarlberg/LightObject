@@ -15,7 +15,7 @@
     id              userInfo  @accessors;
 }
 
-+ (LOFetchSpecification) fetchSpecificationForEnityName:(CPString) anEntityName {
++ (LOFetchSpecification) fetchSpecificationForEntityName:(CPString) anEntityName {
     return [[LOFetchSpecification alloc] initWithEntityName:anEntityName];
 }
 
