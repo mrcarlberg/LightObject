@@ -157,6 +157,10 @@ var ConfigBaseUrl = nil;
     [array sortUsingFunction:aFunction context:aContext];
 }
 
+- (void)sortUsingDescriptors:(CPArray)descriptors {
+    [array sortUsingDescriptors:descriptors];
+}
+
 - (void) requestFault {
     if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
     var objectStore = [objectContext objectStore];
@@ -249,7 +253,7 @@ var ConfigBaseUrl = nil;
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
     if (receivedData && [receivedData length] > 0) {
-        CPLog.trace(@"tracing: LOF objectsReceived: " + receivedData);
+//        CPLog.trace(@"tracing: LOF objectsReceived: " + receivedData);
         var jSON = [receivedData objectFromJSON];
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
         [connections removeObject:connectionDictionary];
@@ -308,9 +312,17 @@ var ConfigBaseUrl = nil;
                     var value = row[column];
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
 //                    CPLog.trace(@"tracing: " + column + @" value class: " + [value className]);
-                    if (Object.prototype.toString.call( value ) === '[object Object]') {
+                    if ([column hasSuffix:@"_fk"]) {    // Handle to one relationship
+                        column = [column substringToIndex:[column length] - 3]; // Remove "_fk" at end
+                        var toOne = [objectContext objectForGlobalId:value];
+                        if (toOne) {
+                            value = toOne;
+                        } else {
+                            value = [[LOFaultObject alloc] init];
+                        }
+                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
-                    } else if ([value isKindOfClass:CPArray]) {
+                    } else if ([value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         var relations = value;
                         value = [CPArray array];
                         var relationsSize = [relations count];
@@ -354,6 +366,9 @@ var ConfigBaseUrl = nil;
             var columnSize = [columns count];
             for (var j = 0; j < columnSize; j++) {
                 var columnKey = [columns objectAtIndex:j];
+                if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+                    columnKey = [columnKey substringToIndex:[columnKey length] - 3];
+                }
                 var newValue = [obj valueForKey:columnKey];
                 var oldValue = [oldObject valueForKey:columnKey];
                 if (newValue !== oldValue) {

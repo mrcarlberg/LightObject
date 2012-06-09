@@ -38,20 +38,45 @@ var LOObjectContext_newObjectForType = 1 << 0,
 
 @end
 
+@implementation LOToOneProxyObject : CPObject {
+    LOObjectContext objectContext;
+}
+
++ (LOToOneProxyObject) toOneProxyObjectWithContext:(LOObjectContext) anObjectContext {
+    return [[LOToOneProxyObject alloc] initWithContext:anObjectContext];
+}
+
+- (id)initWithContext:(LOObjectContext) anObjectContext {
+    self = [super init];
+    if (self) {
+        objectContext = anObjectContext;
+    }
+    return self;
+}
+
+- (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
+    CPLog.trace(_cmd + @" observeValueForToOneRelationshipWithKeyPath:" + theKeyPath +  @" object:" + theObject + @" change:" + theChanges);
+    [objectContext observeValueForToOneRelationshipWithKeyPath: theKeyPath ofObject:theObject change:theChanges context:theContext];
+}
+
+@end
+
 @implementation LOObjectContext : CPObject {
-    CPString        receivedData;
-    CPDictionary    objects;                    // List of all objects in context with globalId as key
-    CPArray         modifiedObjects @accessors; // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
-    CPArray         connections;                // Array of dictionary with connection: CPURLConnection and arrayController: CPArrayController
-    @outlet id      delegate;
+    LOToOneProxyObject  toOneProxyObject;
+    CPString            receivedData;
+    CPDictionary        objects;                    // List of all objects in context with globalId as key
+    CPArray             modifiedObjects @accessors; // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
+    CPArray             connections;                // Array of dictionary with connection: CPURLConnection and arrayController: CPArrayController
+    @outlet id          delegate;
     @outlet LOObjectStore objectStore @accessors;
-    CPInteger       implementedDelegateMethods;
-    BOOL            autoCommit @accessors;
+    CPInteger           implementedDelegateMethods;
+    BOOL                autoCommit @accessors;
 }
 
 - (id)init {
     self = [super init];
     if (self) {
+        toOneProxyObject = [LOToOneProxyObject toOneProxyObjectWithContext:self];
         objects = [CPDictionary dictionary];
         modifiedObjects = [CPArray array];
         connections = [CPArray array];
@@ -110,6 +135,12 @@ var LOObjectContext_newObjectForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
+- (void)observeValueForToOneRelationshipWithKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
+    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+    [updateDict setObject:[objectStore globalIdForObject:[theChanges valueForKey:CPKeyValueChangeNewKey]] forKey:theKeyPath + @"_fk"];
+    if (autoCommit) [self saveChanges];
+}
+
 - (void) unregisterObject:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     [objects removeObjectForKey:globalId];
@@ -133,7 +164,9 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var attributeSize = [attributeKeys count];
     for (var i = 0; i < attributeSize; i++) {
         var attributeKey = [attributeKeys objectAtIndex:i];
-        if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a relationship
+        if ([attributeKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+            [theObject addObserver:toOneProxyObject forKeyPath:[attributeKey substringToIndex:[attributeKey length] - 3] options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
+        } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
             [theObject addObserver:self forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
         }
     }
