@@ -162,10 +162,11 @@ var ConfigBaseUrl = nil;
 }
 
 - (void) requestFault {
+    var baseURL = [[objectContext objectStore] baseURL];
     if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
     var objectStore = [objectContext objectStore];
     var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
-    var fs = [LOFetchSpecification fetchSpecificationForEnityName:entityName];
+    var fs = [LOFetchSpecification fetchSpecificationForEntityName:entityName];
     var request = [CPURLRequest requestWithURL:baseURL + @"/martin|/" + entityName + @"/" + [objectStore typeOfObject:masterObject] + @"_fk=" + [objectStore globalIdForObject:masterObject]];
     [request setHTTPMethod:@"GET"];
     receivedData = nil;
@@ -177,7 +178,7 @@ var ConfigBaseUrl = nil;
 @end
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
-    CPString        baseURL;
+    CPString        baseURL @accessors;
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
 }
