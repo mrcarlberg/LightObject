@@ -315,11 +315,13 @@ var ConfigBaseUrl = nil;
 //                    CPLog.trace(@"tracing: " + column + @" value class: " + [value className]);
                     if ([column hasSuffix:@"_fk"]) {    // Handle to one relationship
                         column = [column substringToIndex:[column length] - 3]; // Remove "_fk" at end
-                        var toOne = [objectContext objectForGlobalId:value];
-                        if (toOne) {
-                            value = toOne;
-                        } else {
-                            value = [[LOFaultObject alloc] init];
+                        if (value) {
+                            var toOne = [objectContext objectForGlobalId:value];
+                            if (toOne) {
+                                value = toOne;
+                            } else {
+                                value = [[LOFaultObject alloc] init];
+                            }
                         }
                     } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
