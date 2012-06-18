@@ -20,6 +20,7 @@
 }
 
 - (void)insert:(id)sender {
+    console.log([self className] + " " + _cmd);
     if (![self canInsert])
         return;
     
@@ -34,16 +35,34 @@
     var bindToObject = [info objectForKey:CPObservedObjectKey];
     var selectedOwnerObjects = [bindToObject selectedObjects];
     var selectedOwnerObjectsSize = [selectedOwnerObjects count];
+    var registeredOwnerObjects = [CPMutableArray array];
     for (var i = 0; i < selectedOwnerObjectsSize; i++) {
         var selectedOwnerObject = [selectedOwnerObjects objectAtIndex:i];
         if ([objectContext isObjectRegistered:selectedOwnerObject]) {
+            [registeredOwnerObjects addObject:selectedOwnerObject];
             [objectContext _add:newObject toRelationshipWithKey:lastbindingKeyPath forObject:selectedOwnerObject];
         }
     }
     [objectContext insertObject:newObject]; // Do this last so if autoCommit is on it will trigger saveChanges
+
+    var insertEvent = [LOInsertEvent insertEventWithObject:newObject arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+    [objectContext registerEvent:insertEvent forObject:newObject];
+}
+
+- (id) unInsertObject:(id)object ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
+    console.log([self className] + " " + _cmd);
+    [self removeObjects:[object]];
+    if (ownerObjects && ownerRelationshipKey) {
+        var size = [ownerObjects count];
+        for (var i = 0; i < size; i++) {
+            var ownerObject = [ownerObjects objectAtIndex:i];
+            [objectContext _unAdd:object toRelationshipWithKey:ownerRelationshipKey forObject:ownerObject];
+        }
+    }
 }
 
 - (void)remove:(id)sender {
+    console.log([self className] + " " + _cmd);
     var selectedObjects = [self selectedObjects];
     [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
@@ -66,6 +85,9 @@
         }
     }
     [objectContext deleteObjects: selectedObjects]; // Do this last so if autoCommit is on it will trigger saveChanges
+
+    var deleteEvent = [LODeleteEvent deleteEventWithObject:theObject];
+    [self registerEvent:deleteEvent forObject:theObject];
 }
 /*
 - (CPArray) arrangeObjects: (CPArray) objects {

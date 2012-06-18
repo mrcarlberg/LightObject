@@ -93,6 +93,19 @@ var frameworkTask = framework (productName, function(frameworkTask)
         frameworkTask.setCompilerFlags("-O");
 });
 
+task("test", function()
+{
+    var tests = new FileList('Tests/*Test.j');
+    var cmd = ["ojtest"].concat(tests.items());
+    var cmdString = cmd.map(OS.enquote).join(" ");
+    var cmdString = "env OBJJ_INCLUDE_PATHS='.:../Frameworks/Debug:../Frameworks' " + cmdString;
+
+    //print("will run `" + cmdString + "`");
+    var code = OS.system(cmdString);
+    if (code !== 0)
+        OS.exit(code);
+});
+
 task ("debug", function()
 {
     ENV["CONFIGURATION"] = "Debug";

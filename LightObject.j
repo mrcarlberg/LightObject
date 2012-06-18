@@ -27,3 +27,5 @@
 @import "LOArrayController.j"
 @import "LOObjectStore.j"
 @import "LOSimpleJSONObjectStore.j"
+@import "LOFaultArray.j"
+@import "LOLocalDictionaryObjectStore.j"
