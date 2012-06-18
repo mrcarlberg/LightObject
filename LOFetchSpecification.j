@@ -15,7 +15,7 @@
     id              userInfo  @accessors;
 }
 
-+ (LOFetchSpecification) fetchSpecificationForEntityName:(CPString) anEntityName {
++ (LOFetchSpecification) fetchSpecificationForEntityNamed:(CPString) anEntityName {
     return [[LOFetchSpecification alloc] initWithEntityName:anEntityName];
 }
 
@@ -23,6 +23,19 @@
     self = [super init];
     if (self) {
         entityName = anEntityName;
+    }
+    return self;
+}
+
++ (LOFetchSpecification) fetchSpecificationForEntityNamed:(CPString) anEntityName qualifier:(CPPredicate) aQualifier {
+    return [[LOFetchSpecification alloc] initWithEntityName:anEntityName qualifier:aQualifier];
+}
+
+- (id)initWithEntityName:(CPString) anEntityName qualifier:(CPPredicate) aQualifier {
+    self = [super init];
+    if (self) {
+        entityName = anEntityName;
+        qualifier = aQualifier;
     }
     return self;
 }

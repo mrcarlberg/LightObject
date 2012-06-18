@@ -19,11 +19,11 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     if (self) {
         var objects = [
                        [CPMutableDictionary dictionaryWithJSObject:
-                        {@"entity": @"person", @"key": 1, @"name": @"Maria", @"age": 9, @"shoeSize": 32, @"dad_fk" : 4, @"mam_fk": 5, @"school_fk" : 1}],
+                        {@"entity": @"person", @"key": 1, @"name": @"Maria", @"age": 9, @"shoeSize": 32, @"dad_fk" : 4, @"mom_fk": 5, @"school_fk" : 1}],
                        [CPMutableDictionary dictionaryWithJSObject:
-                        {@"entity": @"person", @"key": 2, @"name": @"Olle", @"age": 3, @"shoeSize": 27, @"dad_fk" : 4, @"mam_fk": 5, @"school_fk" : 1}],
+                        {@"entity": @"person", @"key": 2, @"name": @"Olle", @"age": 3, @"shoeSize": 27, @"dad_fk" : 4, @"mom_fk": 5, @"school_fk" : 1}],
                        [CPMutableDictionary dictionaryWithJSObject:
-                        {@"entity": @"person", @"key": 3, @"name": @"Kalle", @"age": 6, @"shoeSize": 31, @"dad_fk" : 4, @"mam_fk": 5, @"school_fk" : 1}],
+                        {@"entity": @"person", @"key": 3, @"name": @"Kalle", @"age": 6, @"shoeSize": 31, @"dad_fk" : 4, @"mom_fk": 5, @"school_fk" : 1}],
                        [CPMutableDictionary dictionaryWithJSObject:
                         {@"entity": @"person", @"key": 4, @"name": @"Bertil", @"age": 36, @"shoeSize": 47}],
                        [CPMutableDictionary dictionaryWithJSObject:
@@ -49,7 +49,15 @@ objj_msgSend_decorate(objj_backtrace_decorator);
  * Returns a unique id for the object
  */
 - (CPString) globalIdForObject:(id) theObject {
-    return [theObject entity] + [theObject key];
+    return [theObject objectForKey:@"entity"] + [theObject objectForKey:@"key"];
+}
+
+- (CPArray)relationshipKeysForObject:(id)theObject {
+    var entity = [theObject objectForKey:@"entity"];
+    if (entity === @"school") {
+        return [@"persons"];
+    }
+    return [];
 }
 
 @end
@@ -57,6 +65,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
 @implementation LightObjectTest : OJTestCase {
     LOObjectContext     objectContext;
     LOObjectStore       objectStore;
+    CPArray             persons;
 }
 
 - (void)setUp()
@@ -64,6 +73,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     objectContext = [[LOObjectContext alloc] initWithDelegate:self];
     objectStore = [[TestObjectStore alloc] init];
     [objectContext setObjectStore:objectStore];
+    [objectContext setAutoCommit:NO];
 }
 
 // Delegate method for LOObjectContext
@@ -71,17 +81,65 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     return [CPMutableDictionary dictionaryWithObject:type forKey:@"entity"];
 }
 
+// Delegate method for LOObjectContext
+- (void) objectsReceived:(CPArray)objects forObjectContext:(LOObjectContext)anObjectContext withFetchSpecification:fetchSpecification {
+    if (fetchSpecification.entityName === @"person") {
+        persons = objects;
+    }
+}    
+    
 - (void)testBasicInitialSetup()
 {
     [self assertNotNull:objectContext];
     [self assertNotNull:objectStore];
 }
-/*
-- (void)testTableViewHasNoBindingInitially
+
+- (void)testBasicFetch
 {
-    [self assertNull:[tableView infoForBinding:@"content"] message:@"tableView shouldn't have a binding"];
+    var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:@"person"];
+    [objectContext requestObjectsWithFetchSpecification:fetchSpecification];
+    [self assert:5 equals:[persons count]];
 }
 
+- (void)testQualiferFetch
+{
+    var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:@"person" qualifier:[CPPredicate predicateWithFormat:@"age>%@", 8]];
+    [objectContext requestObjectsWithFetchSpecification:fetchSpecification];
+    [self assert:3 equals:[persons count]];
+}
+
+- (void)testModifyAttribute
+{
+    var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:@"person" qualifier:[CPPredicate predicateWithFormat:@"name=%@", @"Kalle"]];
+    [objectContext requestObjectsWithFetchSpecification:fetchSpecification];
+    [self assert:1 equals:[persons count]];
+    var kalle = [persons objectAtIndex:0];
+    [self assert:6 equals:[kalle objectForKey:@"age"]];
+    [kalle setObject:7 forKey:@"age"];
+    [kalle setObject:@"Kalle Jr" forKey:@"name"];
+    [self assert:7 equals:[kalle objectForKey:@"age"]];
+    [self assert:@"Kalle Jr" equals:[kalle objectForKey:@"name"]];
+    //    print(_cmd + " modifiedObjects = " + [[objectContext modifiedObjects] description]);
+    [self assert:1 equals:[[objectContext modifiedObjects] count]];
+    [objectContext revert];
+    [self assert:6 equals:[kalle objectForKey:@"age"]];
+    [self assert:@"Kalle" equals:[kalle objectForKey:@"name"]];
+    //    print(_cmd + " modifiedObjects = " + [[[objectContext modifiedObjects] valueForKey:@"updateDict"] description]);
+    [self assert:0 equals:[[[objectContext modifiedObjects] valueForKey:@"updateDict"] count]];
+}
+
+- (void)testInsertObject
+{
+    var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:@"person" qualifier:[CPPredicate predicateWithFormat:@"name=%@", @"Kalle"]];
+    [objectContext requestObjectsWithFetchSpecification:fetchSpecification];
+    [self assert:1 equals:[persons count]];
+    [objectContext insertObject:[CPMutableDictionary dictionaryWithJSObject:
+                                 {@"entity": @"person", @"key": 99, @"name": @"Martin", @"age": 47, @"shoeSize": 43}]];
+    [self assert:1 equals:[[objectContext modifiedObjects] count]];
+//    [objectContext revert];
+//    [self assert:0 equals:[[objectContext modifiedObjects] count]];
+}
+/*
 - (void)testBindsTableViewContentToArrayController
 {
     [listView setObjects:peopleController];

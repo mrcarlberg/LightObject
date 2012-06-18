@@ -38,6 +38,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return self;
 }
 
+- (BOOL) isEmpty {
+    return !insertDict && !updateDict && !deleteDict;
+}
+
+- (CPString)description {
+    return [CPString stringWithFormat:@"<LOModifyRecord insertDict: %@ updateDict: %@ deleteDict: %@>", insertDict, updateDict, deleteDict];
+}
+
 @end
 
 
@@ -128,6 +136,13 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+    var size = [objectList count];
+    for (var i = 0; i < size; i++) {
+        var object = [objectList objectAtIndex:i];
+        if (![self isObjectRegistered:object]) {
+            [self registerObject:object];
+        }
+    }
     if (implementedDelegateMethods & LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification) {
         [delegate objectsReceived:objectList forObjectContext:self withFetchSpecification:fetchSpecification];
     }
@@ -140,11 +155,11 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var newValue = [theChanges valueForKey:CPKeyValueChangeNewKey];
     var oldValue = [theChanges valueForKey:CPKeyValueChangeOldKey];
     if (newValue === oldValue) return;
-    CPLog.trace(@"tracing: LOF observeValueForKeyPath:" + theKeyPath +  @" object:" + theObject + @" change:" + theChanges);
     var updateEvent = [LOUpdateEvent updateEventWithObject:theObject updateDict:[[self subDictionaryForKey:@"updateDict" forObject:theObject] copy] key:theKeyPath old:oldValue new:newValue];
     [self registerEvent:updateEvent forObject:theObject];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:[theChanges valueForKey:CPKeyValueChangeNewKey] forKey:theKeyPath];
+    console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
     if (autoCommit) [self saveChanges];
 }
 
@@ -434,10 +449,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
 - (void) setSubDictionary:(CPDictionary)subDict forKey:(CPString) key forObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (!objDict) {
+        if (!subDict) return;       // Bail out if we should set it to nil and we don't have any
         objDict = [LOModifyRecord modifyRecordWithObject:theObject];
         [modifiedObjects addObject:objDict];
     }
     [objDict setValue:subDict forKey:key];
+    if ([objDict isEmpty]) {
+        [modifiedObjects removeObject:objDict];
+    }
 }
 
 - (CPDictionary) subDictionaryForKey:(CPString) key forObject:(id) theObject {

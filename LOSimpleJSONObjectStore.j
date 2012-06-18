@@ -77,10 +77,12 @@ var ConfigBaseUrl = nil;
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
+    console.log(_cmd);
     //    alert(@"tracing: didReceiveResponse");
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveData:(CPString)data {
+    console.log(_cmd);
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
     if (receivedData) {
@@ -91,6 +93,7 @@ var ConfigBaseUrl = nil;
 }
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
+    console.log(_cmd);
     //    debugger;
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
@@ -222,8 +225,6 @@ var ConfigBaseUrl = nil;
                     [oldObject setValue:newValue forKey:columnKey];
                 }
             }
-        } else {                                        // If it is new just register it.
-            [objectContext registerObject:obj];
         }
     }
 }

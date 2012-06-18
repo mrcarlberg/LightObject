@@ -28,7 +28,7 @@
     var objects = [];
 
     if (fixtureObjects) {
-        var predicate = [fetchSpecification qualifer];
+        var predicate = [fetchSpecification qualifier];
 
         if (predicate) {
             objects = [fixtureObjects filteredArrayUsingPredicate:predicate];
@@ -53,7 +53,9 @@
  * The objectContext will observe all these attributes for changes and record them.
  */
 - (CPArray) attributeKeysForObject:(id) theObject {
-    return [[theObject allKeys] deleteObject:@"entity"];
+    var array = [theObject allKeys];
+    [array removeObject:@"entity"];
+    return array;
 }
 
 /*!

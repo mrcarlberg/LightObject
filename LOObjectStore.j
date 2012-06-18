@@ -38,6 +38,14 @@
 }
 
 /*!
+ * Must return an array with keys for all to many relationship attributes for this object
+ * The objectContext will observe all these attributes for changes and record them.
+ */
+- (CPArray) relationshipKeysForObject:(id) theObject {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
  * Returns the type of the object
  */
 - (CPString) typeOfObject:(id) theObject {
