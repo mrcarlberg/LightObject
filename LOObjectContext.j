@@ -136,11 +136,13 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
-    var size = [objectList count];
-    for (var i = 0; i < size; i++) {
-        var object = [objectList objectAtIndex:i];
-        if (![self isObjectRegistered:object]) {
-            [self registerObject:object];
+    if ([objectList respondsToSelector:@selector(count)]) {
+        var size = [objectList count];
+        for (var i = 0; i < size; i++) {
+            var object = [objectList objectAtIndex:i];
+            if (![self isObjectRegistered:object]) {
+                [self registerObject:object];
+            }
         }
     }
     if (implementedDelegateMethods & LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification) {
