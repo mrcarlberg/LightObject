@@ -1,7 +1,0 @@
-
-@interface LightObject : NSObject
-{
-
-}
-
-@end

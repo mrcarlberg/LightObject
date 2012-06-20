@@ -1,7 +1,0 @@
-
-@interface LOFetchSpecification : NSObject
-{
-
-}
-
-@end

@@ -1,7 +1,0 @@
-
-@interface LOJSKeyedArchiver : NSCoder
-{
-
-}
-
-@end

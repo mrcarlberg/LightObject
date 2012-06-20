@@ -1,7 +1,0 @@
-
-@interface LOObjectStore : NSObject
-{
-
-}
-
-@end
