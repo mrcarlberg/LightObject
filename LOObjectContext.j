@@ -437,6 +437,17 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return NO;
 }
 
+- (BOOL) hasChanges {
+    var size = [modifiedObjects count];
+    for (var i = 0; i < size; i++) {
+        var modifiedObject = [modifiedObjects objectAtIndex:i];
+        if (![modifiedObject isEmpty]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 - (void) saveChanges {
     [objectStore saveChangesWithObjectContext:self];
 }
