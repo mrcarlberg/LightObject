@@ -21,6 +21,13 @@
 }
 
 /*!
+ * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
+ */
+- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
  * This method should save all changes to the backend.
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  * Must call [objectContext saveChangesDidComplete] when done

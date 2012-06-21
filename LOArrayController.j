@@ -20,7 +20,6 @@
 }
 
 - (void)insert:(id)sender {
-    console.log([self className] + " " + _cmd);
     if (![self canInsert])
         return;
     
@@ -34,8 +33,8 @@
     var lastbindingKeyPath = [keyPathComponents objectAtIndex:[keyPathComponents count] - 1];
     var bindToObject = [info objectForKey:CPObservedObjectKey];
     var selectedOwnerObjects = [bindToObject selectedObjects];
-    var selectedOwnerObjectsSize = [selectedOwnerObjects count];
     var registeredOwnerObjects = [CPMutableArray array];
+    var selectedOwnerObjectsSize = [selectedOwnerObjects count];
     for (var i = 0; i < selectedOwnerObjectsSize; i++) {
         var selectedOwnerObject = [selectedOwnerObjects objectAtIndex:i];
         if ([objectContext isObjectRegistered:selectedOwnerObject]) {
@@ -43,14 +42,14 @@
             [objectContext _add:newObject toRelationshipWithKey:lastbindingKeyPath forObject:selectedOwnerObject];
         }
     }
-    [objectContext insertObject:newObject]; // Do this last so if autoCommit is on it will trigger saveChanges
 
     var insertEvent = [LOInsertEvent insertEventWithObject:newObject arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
-    [objectContext registerEvent:insertEvent forObject:newObject];
+    [objectContext registerEvent:insertEvent];
+    [objectContext _insertObject:newObject];
+    if ([objectContext autoCommit]) [objectContext saveChanges];
 }
 
 - (id) unInsertObject:(id)object ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
-    console.log([self className] + " " + _cmd);
     [self removeObjects:[object]];
     if (ownerObjects && ownerRelationshipKey) {
         var size = [ownerObjects count];
@@ -62,11 +61,11 @@
 }
 
 - (void)remove:(id)sender {
-    console.log([self className] + " " + _cmd);
     var selectedObjects = [self selectedObjects];
     [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
+    var registeredOwnerObjects = [CPMutableArray array];
     var selectedObjectsSize = [selectedObjects count];
     for (var i = 0; i < selectedObjectsSize; i ++) {
         var deletedObject = [selectedObjects objectAtIndex:i];
@@ -80,15 +79,36 @@
         for (var j = 0; j < selectedOwnerObjectsSize; j++) {
             var selectedOwnerObject = [selectedOwnerObjects objectAtIndex:j];
             if ([objectContext isObjectRegistered:selectedOwnerObject]) {
+                [registeredOwnerObjects addObject:selectedOwnerObject];
                 [objectContext _delete:deletedObject withRelationshipWithKey:lastbindingKeyPath forObject:selectedOwnerObject];
             }
         }
     }
-    [objectContext deleteObjects: selectedObjects]; // Do this last so if autoCommit is on it will trigger saveChanges
 
-    var deleteEvent = [LODeleteEvent deleteEventWithObject:theObject];
-    [self registerEvent:deleteEvent forObject:theObject];
+    var indexSet = [[bindToObject selectionIndexes] copy];
+    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:indexSet arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+    [objectContext registerEvent:deleteEvent];
+    [objectContext _deleteObjects: selectedObjects];
+    if ([objectContext autoCommit]) [objectContext saveChanges];
 }
+
+- (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)index ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
+    var objectSize = [objects count];
+    var index = [indexSet firstIndex];
+    for (var i = 0; i < objectSize; i++) {
+        var object = [objects objectAtIndex:i];
+        [self insertObject:object atArrangedObjectIndex:index];
+        if (ownerObjects && ownerRelationshipKey) {
+            var size = [ownerObjects count];
+            for (var j = 0; j < size; j++) {
+                var ownerObject = [ownerObjects objectAtIndex:j];
+                [objectContext _unAdd:object toRelationshipWithKey:ownerRelationshipKey forObject:ownerObject];
+            }
+        }
+        index = [indexSet indexGreaterThanIndex:index];
+    }
+}
+
 /*
 - (CPArray) arrangeObjects: (CPArray) objects {
     var testArray = [[_CPKVCArray alloc] init];
