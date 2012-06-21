@@ -172,7 +172,8 @@ var ConfigBaseUrl = nil;
                             if (toOne) {
                                 value = toOne;
                             } else {
-                                value = [[LOFaultObject alloc] init];
+                                console.log([self className] + " " + _cmd + " Can't find object for toOne relationship " + column + " (" + value + ") on object " + obj);
+                                value = nil//[[LOFaultObject alloc] init];
                             }
                         }
                     } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care whats in it.
