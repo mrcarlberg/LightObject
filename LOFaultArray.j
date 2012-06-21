@@ -93,8 +93,8 @@ CPArray         array;
     //    CPLog.trace(@"tracing: (" + [masterObject loObjectType] + @", " + masterObject._UID + @", " + relationshipKey + @") LOFaultArray.count:" + [array count]);
     //    debugger;
     if (!faultFired) {
-        [self requestFault];
         faultFired = YES;
+        [self requestFault];
     }
     return [array count];
 }
@@ -102,8 +102,8 @@ CPArray         array;
 - (id) objectAtIndex:(int) anIndex {
     //    CPLog.trace(@"tracing: (" + [masterObject loObjectType] + @", " + masterObject._UID + @", " + relationshipKey + @") LOFaultArray.objectAtIndex:" + anIndex);
     if (!faultFired) {
-        [self requestFault];
         faultFired = YES;
+        [self requestFault];
     }
     return [array objectAtIndex:anIndex];
 }
@@ -130,9 +130,7 @@ CPArray         array;
 }
 
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
-    CPLog.trace([self className] + @" " + _cmd + @" Begin");
     [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
-    CPLog.trace([self className] + @" " + _cmd + @" End");
 }
 
 - (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
@@ -147,18 +145,16 @@ CPArray         array;
     [array sortUsingDescriptors:descriptors];
 }
 
+/*!
+ *  This is hard coded: The master object has an attribute (relationshipKey) that is used as the
+ *  entity name (the last character is removed, "attribute:persons -> entity:person)
+ *  The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
+ */
 - (void) requestFault {
-    var baseURL = [[objectContext objectStore] baseURL];
-    if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
-    var objectStore = [objectContext objectStore];
     var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
-    var fs = [LOFetchSpecification fetchSpecificationForEntityName:entityName];
-    var request = [CPURLRequest requestWithURL:baseURL + @"/martin|/" + entityName + @"/" + [objectStore typeOfObject:masterObject] + @"_fk=" + [objectStore globalIdForObject:masterObject]];
-    [request setHTTPMethod:@"GET"];
-    receivedData = nil;
-    var connection = [CPURLConnection connectionWithRequest:request delegate:objectStore];
-    [objectStore.connections addObject:{connection: connection, fetchSpecification: fs, objectContext: objectContext, receiveSelector: LOFaultArrayRequestedFaultReceivedForConnectionSelector, faultArray:self}];
-    CPLog.trace(@"tracing: requestFault: " + [masterObject loObjectType] + @", " + relationshipKey);
+    var qualifier = [CPPredicate predicateWithFormat:[objectContext typeOfObject:masterObject] + @"_fk=%@", [objectContext globalIdForObject:masterObject]];
+    var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+    [objectContext requestFaultArray:self withFetchSpecification:fs];
 }
 
 @end

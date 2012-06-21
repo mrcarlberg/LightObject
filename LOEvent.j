@@ -10,12 +10,21 @@
 
 @implementation LOEvent : CPObject {
     id              object;
+    CPArray         objects;
 }
 
 - (id)initWithObject:(id) anObject {
     self = [super init];
     if (self) {
         object = anObject;
+    }
+    return self;
+}
+
+- (id)initWithObjects:(CPArray)someObjects {
+    self = [super init];
+    if (self) {
+        objects = someObjects;
     }
     return self;
 }
@@ -58,21 +67,30 @@
 
 
 @implementation LODeleteEvent : LOEvent {
+    CPIndexSet              indexes;
+    LOArrayController       arrayController;
+    CPArray                 ownerObjects;
+    CPString                ownerRelationshipKey;
 }
 
-+ (LODeleteEvent) insertEventWithObject:(id) anObject {
-    return [[LOInsertEvent alloc] initWithObject:anObject];
++ (LODeleteEvent) deleteEventWithObjects:(CPArray)someObjects atArrangedObjectIndexes:(CPIndexSet)someIndexes arrayController:(LOArrayController) anArrayController ownerObjects:(CPArray)someOwnerObjects ownerRelationshipKey:(CPString)anOwnerRelationshipKey {
+    return [[LODeleteEvent alloc] initWithObjects:someObjects atArrangedObjectIndexes:someIndexes arrayController:anArrayController ownerObjects:someOwnerObjects ownerRelationshipKey:anOwnerRelationshipKey];
 }
 
-- (id)initWithObject:(id) anObject {
-    self = [super initWithObject:anObject];
+- (id)initWithObjects:(CPArray)someObjects atArrangedObjectIndexes:(CPIndexSet)someIndexes arrayController:(LOArrayController)anArrayController ownerObjects:(CPArray)someOwnerObjects ownerRelationshipKey:(CPString)anOwnerRelationshipKey {
+    self = [super initWithObjects:someObjects];
     if (self) {
+        indexes = someIndexes;
+        arrayController = anArrayController;
+        ownerObjects = someOwnerObjects;
+        ownerRelationshipKey = anOwnerRelationshipKey;
     }
     return self;
 }
 
 - (void) undoForContext:(LOObjectContext)objectContext {
-    [objectContext unDeleteObject:object];
+    [arrayController unDeleteObjects:objects atArrangedObjectIndexes:indexes ownerObjects:ownerObjects ownerRelationshipKey:ownerRelationshipKey];
+    [objectContext unDeleteObjects:objects];
 //    [objectContext setSubDictionary: null forKey:@"deleteDict" forObject:object];
 }
 

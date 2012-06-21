@@ -50,7 +50,15 @@ var ConfigBaseUrl = nil;
     return self;
 }
 
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext faultArray:nil];
+}
+
+- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext faultArray:faultArray];
+}
+
+- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext faultArray:(LOFaultArray)faultArray {
     if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
     var entityName = [fetchSpecification entityName];
     var url = baseURL + @"/martin|/" + entityName;
@@ -72,17 +80,15 @@ var ConfigBaseUrl = nil;
     [request setHTTPMethod:@"GET"];
     receivedData = nil;
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector}];
-    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + entityName + @", url = " + url);
+    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray}];
+    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + entityName + @", url: " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
-    console.log(_cmd);
     //    alert(@"tracing: didReceiveResponse");
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveData:(CPString)data {
-    console.log(_cmd);
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
     if (receivedData) {
@@ -93,7 +99,6 @@ var ConfigBaseUrl = nil;
 }
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
-    console.log(_cmd);
     //    debugger;
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
@@ -170,7 +175,7 @@ var ConfigBaseUrl = nil;
                                 value = [[LOFaultObject alloc] init];
                             }
                         }
-                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault
+                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care whats in it.
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
                     } else if ([value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         var relations = value;
@@ -229,30 +234,18 @@ var ConfigBaseUrl = nil;
     }
 }
 
-- (void) faultReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
-    var objectContext = connectionDictionary.objectContext;
-    var faultArray = connectionDictionary.faultArray;
-    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
-    var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
-    var receivedObjectList = [receivedObjects allValues];
-    [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
-    var masterObject = [faultArray masterObject];
-    var relationshipKey = [faultArray relationshipKey];
-    var array = [masterObject valueForKey:relationshipKey];
-    [masterObject willChangeValueForKey:relationshipKey];
-//    [array removeAllObjects];
-//    [masterObject setValue:newArray forKey:relationshipKey];
-    [array addObjectsFromArray:newArray];
-    [masterObject didChangeValueForKey:relationshipKey];
-}
-
 - (void) objectsReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
     var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
     var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
     var receivedObjectList = [receivedObjects allValues];
     [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
-    [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
+    var faultArray = connectionDictionary.faultArray;
+    if (faultArray) {
+        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
+    } else {
+        [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
+    }
 }
 
 - (void) updateStatusReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {

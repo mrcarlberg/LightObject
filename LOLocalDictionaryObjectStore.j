@@ -20,23 +20,37 @@
     return self;
 }
 
-/*!
- * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
- */
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification {
+//    print(_cmd + " entity:" + [fetchSpecification entityName] + " oper: " + [fetchSpecification operator] + " qualifier:" + [fetchSpecification qualifier]);
     var fixtureObjects = [objectFixture objectForKey:[fetchSpecification entityName]];
     var objects = [];
-
+    
     if (fixtureObjects) {
         var predicate = [fetchSpecification qualifier];
-
+        
         if (predicate) {
             objects = [fixtureObjects filteredArrayUsingPredicate:predicate];
         } else {
             objects = [fixtureObjects copy];
         }
     }
+    return objects;
+}
+
+/*!
+ * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
+ */
+- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+    var objects = [self requestObjectsWithFetchSpecification:fetchSpecification];
     [objectContext objectsReceived:objects withFetchSpecification:fetchSpecification];
+}
+
+/*!
+ * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
+ */
+- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+    var objects = [self requestObjectsWithFetchSpecification:fetchSpecification];
+    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification faultArray:faultArray];
 }
 
 /*!
