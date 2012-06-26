@@ -98,8 +98,7 @@
 
     var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:selectedObjectsIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:deleteEvent];
-    [objectContext _deleteObjects: selectedObjects];
-    if ([objectContext autoCommit]) [objectContext saveChanges];
+    [objectContext deleteObjects: selectedObjects]; // this will commit if auto commit is enabled
 }
 
 - (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)index ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
