@@ -19,6 +19,16 @@
     return self;
 }
 
+// TODO: We should advertise a 'real' binding for objectContext, not piggyback on managedObjectContext.
+- (void)setManagedObjectContext:(id)aContext {
+    objectContext = aContext;
+}
+
+// TODO: We should advertise a 'real' binding for objectContext, not piggyback on managedObjectContext.
+- (id)managedObjectContext {
+    return objectContext;
+}
+
 - (void)insert:(id)sender {
     if (![self canInsert])
         return;
