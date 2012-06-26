@@ -71,6 +71,7 @@
 }
 
 - (void)remove:(id)sender {
+    var selectedObjectsIndexes = [[self selectionIndexes] copy];
     var selectedObjects = [self selectedObjects];
     [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
@@ -95,8 +96,7 @@
         }
     }
 
-    var indexSet = [[bindToObject selectionIndexes] copy];
-    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:indexSet arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:selectedObjectsIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:deleteEvent];
     [objectContext _deleteObjects: selectedObjects];
     if ([objectContext autoCommit]) [objectContext saveChanges];
