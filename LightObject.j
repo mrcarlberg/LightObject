@@ -29,3 +29,4 @@
 @import "LOSimpleJSONObjectStore.j"
 @import "LOFaultArray.j"
 @import "LOLocalDictionaryObjectStore.j"
+@import "LOError.j"
