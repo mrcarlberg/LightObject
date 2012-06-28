@@ -139,6 +139,7 @@ var ConfigBaseUrl = nil;
     var fetchSpecification = connectionDictionary.fetchSpecification;
     var entityName = fetchSpecification.entityName;
 //    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
+    var possibleToOneFaultObjects =[NSMutableArray array];
     var newArray = [CPArray array];
     var size = [jSONObjects count];
     for (i = 0; i < size; i++) {
@@ -172,8 +173,9 @@ var ConfigBaseUrl = nil;
                             if (toOne) {
                                 value = toOne;
                             } else {
-                                console.log([self className] + " " + _cmd + " Can't find object for toOne relationship " + column + " (" + value + ") on object " + obj);
-                                value = nil//[[LOFaultObject alloc] init];
+                                // Add it to a list and try again after we have registered all objects.
+                                [possibleToOneFaultObjects addObject:{@"object":obj , @"relationshipKey":column , @"globalId":value}];
+                                value = nil;//[[LOFaultObject alloc] init];
                             }
                         }
                     } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care whats in it.
@@ -205,6 +207,17 @@ var ConfigBaseUrl = nil;
             if (type === entityName) {
                 [newArray addObject:obj];
             }
+        }
+    }
+    // Try again to find to one relationship objects. They might been registered now
+    var size = [possibleToOneFaultObjects];
+    for (var i = 0; i < size; i++) {
+        var possibleToOneFaultObject = [possibleToOneFaultObjects objectAtIndex:i];
+        var toOne = [objectContext objectForGlobalId:possibleToOneFaultObject.globalId];
+        if (toOne) {
+            [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.column];
+        } else {
+            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship " + column + " (" + value + ") on object " + obj);
         }
     }
     return newArray;
