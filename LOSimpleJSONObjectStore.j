@@ -210,14 +210,15 @@ var ConfigBaseUrl = nil;
         }
     }
     // Try again to find to one relationship objects. They might been registered now
-    var size = [possibleToOneFaultObjects];
+    var size = [possibleToOneFaultObjects count];
     for (var i = 0; i < size; i++) {
         var possibleToOneFaultObject = [possibleToOneFaultObjects objectAtIndex:i];
-        var toOne = [objectContext objectForGlobalId:possibleToOneFaultObject.globalId];
+        //var toOne = [objectContext objectForGlobalId:possibleToOneFaultObject.globalId];
+        var toOne = [receivedObjects objectForKey:possibleToOneFaultObject.globalId];
         if (toOne) {
-            [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.column];
+            [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
         } else {
-            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship " + column + " (" + value + ") on object " + obj);
+            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + column + "' (" + toOne + ") on object " + obj);
         }
     }
     return newArray;
