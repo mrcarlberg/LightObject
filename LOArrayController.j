@@ -19,6 +19,16 @@
     return self;
 }
 
+// TODO: We should advertise a 'real' binding for objectContext, not piggyback on managedObjectContext.
+- (void)setManagedObjectContext:(id)aContext {
+    objectContext = aContext;
+}
+
+// TODO: We should advertise a 'real' binding for objectContext, not piggyback on managedObjectContext.
+- (id)managedObjectContext {
+    return objectContext;
+}
+
 - (void)insert:(id)sender {
     if (![self canInsert])
         return;
@@ -61,6 +71,7 @@
 }
 
 - (void)remove:(id)sender {
+    var selectedObjectsIndexes = [[self selectionIndexes] copy];
     var selectedObjects = [self selectedObjects];
     [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
@@ -85,11 +96,9 @@
         }
     }
 
-    var indexSet = [[bindToObject selectionIndexes] copy];
-    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:indexSet arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:selectedObjectsIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:deleteEvent];
-    [objectContext _deleteObjects: selectedObjects];
-    if ([objectContext autoCommit]) [objectContext saveChanges];
+    [objectContext deleteObjects: selectedObjects]; // this will commit if auto commit is enabled
 }
 
 - (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)index ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {

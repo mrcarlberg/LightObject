@@ -11,6 +11,7 @@
 @import "LOObjectStore.j"
 @import "LOSimpleJSONObjectStore.j"
 @import "LOEvent.j"
+@import "LOError.j"
 
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 
@@ -168,11 +169,22 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var newValue = [theChanges valueForKey:CPKeyValueChangeNewKey];
     var oldValue = [theChanges valueForKey:CPKeyValueChangeOldKey];
     if (newValue === oldValue) return;
+
     var updateEvent = [LOUpdateEvent updateEventWithObject:theObject updateDict:[[self subDictionaryForKey:@"updateDict" forObject:theObject] copy] key:theKeyPath old:oldValue new:newValue];
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:[theChanges valueForKey:CPKeyValueChangeNewKey] forKey:theKeyPath];
+
     console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+
+	// Simple validation handling
+	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
+	if ((delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)])) {
+		if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
+			[delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
+		}
+	}
+	
     if (autoCommit) [self saveChanges];
 }
 

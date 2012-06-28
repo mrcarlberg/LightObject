@@ -148,8 +148,12 @@
 }
 
 - (void) undoForContext:(LOObjectContext)objectContext {
-    [super undo];
-    [object setValue:oldForeignValue forKey:foreignKey];
+    [super undoForContext:objectContext];
+    // The to-one relationship is recorded in the context under the 'real' foreign key (the
+    // attribute ending in '_fk'). This is done in LOUpdateEvent already, so this class
+    // is currently unnecessary. We'll leave it here though, in the event that we're to
+    // implement bidirectional relationships.
+    //[object setValue:oldForeignValue forKey:foreignKey];
 }
 
 @end
