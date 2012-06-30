@@ -5,8 +5,8 @@
 
 @import <Foundation/CPObject.j>
 
-var LOValidationErrorKeyString = @"LOValidationErrorKeyString";
-var LOObjectValidationDomainString = @"LOObjectValidationDomainString";
+LOValidationErrorKeyString = @"LOValidationErrorKeyString";
+LOObjectValidationDomainString = @"LOObjectValidationDomainString";
 
 @implementation LOError : CPObject {
     int code @accessors;
