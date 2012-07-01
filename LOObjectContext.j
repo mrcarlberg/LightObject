@@ -200,7 +200,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-    [updateDict setObject:newGlobalId forKey:theKeyPath];
+    [updateDict setObject:newGlobalId forKey:foreignKey];
     if (autoCommit) [self saveChanges];
 }
 
