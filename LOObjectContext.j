@@ -283,6 +283,46 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return [objectStore typeOfObject:theObject];
 }
 
+- (void) _insertObjectWithAttributes:(id) theObject {
+    // Just need to create the dict to mark it for insert
+    [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
+
+    // Add attributes with values
+    var attributeKeys = [objectStore attributeKeysForObject:theObject];
+    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+    var attributeSize = [attributeKeys count];
+    for (var i = 0; i < attributeSize; i++) {
+        var attributeKey = [attributeKeys objectAtIndex:i];
+        if ([attributeKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+            var value = [theObject valueForKey:[attributeKey substringToIndex:[attributeKey length] - 3]];
+            if (value) {
+                var globalId = [self globalIdForObject:value];
+                if (globalId) {
+                    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+                    [updateDict setObject:globalId forKey:attributeKey];
+                }
+            }
+        } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
+            var value = [theObject valueForKey:attributeKey];
+            if (value) {
+                var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+                [updateDict setObject:value forKey:attributeKey];
+            }
+        }
+    }
+    [self registerObject:theObject];
+}
+
+/*
+ *  Add object to context and add all non nil attributes as updated attributes
+ */
+- (void) insertObjectWithAttributes:(id) theObject {
+    [self _insertObjectWithAttributes: theObject];
+    var insertEvent = [LOInsertEvent insertEventWithObject:theObject arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
+    [self registerEvent:insertEvent];
+    if (autoCommit) [self saveChanges];
+}
+
 - (void) _insertObject:(id) theObject {
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
@@ -325,6 +365,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     } else {
         [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:theObject];
     }
+    [self setSubDictionary:nil forKey:@"updateDict" forObject:theObject];
     [self unregisterObject:theObject];
 }
 
