@@ -3,7 +3,7 @@
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because
 // all exceptions are traced, even when handled.
-objj_msgSend_decorate(objj_backtrace_decorator);
+//objj_msgSend_decorate(objj_backtrace_decorator);
 
 
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
@@ -48,7 +48,6 @@ objj_msgSend_decorate(objj_backtrace_decorator);
         var relationshipKeys = [self relationshipKeysForObject:object];
         for (var j=0; j<relationshipKeys.length; j++) {
             var relationshipKey = relationshipKeys[j];
-            //print("+++ " + _cmd + " creating fault for relationship '" + relationshipKey + "' of object " + object);
             var fault = [[LOFaultArray alloc] initWithObjectContext:aContext masterObject:object relationshipKey:relationshipKey];
             [object setObject:fault forKey:relationshipKey];
         }
@@ -76,46 +75,19 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     LOObjectStore       objectStore;
     CPArray             persons;
     CPArray             schools;
-    //CPArray             person_school_mappings;
 }
 
 - (void)setUp()
 {
     persons = nil;
     schools = nil;
-    //person_school_mappings = nil;
 
     objectStore = [[TestObjectStore alloc] init];
 
     objectContext = [[LOObjectContext alloc] initWithDelegate:self];
     [objectContext setObjectStore:objectStore];
     [objectContext setAutoCommit:NO];
-}
 
-// Delegate method for LOObjectContext
-- (id) newObjectForType:(CPString) aType {
-    //print("+++ " + _cmd + " new object of type '" + aType + "'");
-    return [CPMutableDictionary dictionaryWithObject:aType forKey:@"entity"];
-}
-
-// Delegate method for LOObjectContext
-- (void) objectsReceived:(CPArray)theObjects forObjectContext:(LOObjectContext)anObjectContext withFetchSpecification:aFetchSpecification {
-    //print("+++ " + _cmd + " entityName=" + aFetchSpecification.entityName);
-    if (aFetchSpecification.entityName === @"person") {
-        persons = theObjects;
-    } else if (aFetchSpecification.entityName === @"school") {
-        schools = theObjects;
-    //} else if (aFetchSpecification.entityName === @"persons_school") {
-    //    person_school_mappings = theObjects;
-    }
-}    
-
-- (void)requestAllObjectsForEntity:(CPString)anEntity {
-    var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:anEntity];
-    [objectContext requestObjectsWithFetchSpecification:fs];
-}
-
-- (void)testFaultingManyToManyWorks {
     [objectStore addFixtureObject:{@"entity": @"person", @"key": 1, @"name": @"Hector"}];
     [objectStore addFixtureObject:{@"entity": @"school", @"key": 100, @"name": @"School 1"}];
     [objectStore addFixtureObject:{@"entity": @"persons_school", @"key": 1000, @"person_fk": 1, @"school_fk": 100}];
@@ -125,11 +97,65 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self requestAllObjectsForEntity:@"school"];
     [objectStore addFakeArrayFaultsForObjects:persons inObjectContext:objectContext];
     [objectStore addFakeArrayFaultsForObjects:schools inObjectContext:objectContext];
+}
+
+// Delegate method for LOObjectContext
+- (id) newObjectForType:(CPString) aType {
+    return [CPMutableDictionary dictionaryWithObject:aType forKey:@"entity"];
+}
+
+// Delegate method for LOObjectContext
+- (void) objectsReceived:(CPArray)theObjects forObjectContext:(LOObjectContext)anObjectContext withFetchSpecification:aFetchSpecification {
+    if (aFetchSpecification.entityName === @"person") {
+        persons = theObjects;
+    } else if (aFetchSpecification.entityName === @"school") {
+        schools = theObjects;
+    }
+}    
+
+- (void)requestAllObjectsForEntity:(CPString)anEntity {
+    var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:anEntity];
+    [objectContext requestObjectsWithFetchSpecification:fs];
+}
+
+- (void)testFaultingManyToManyWorks {
     [self assert:1 equals:[persons count] message:@"persons"];
     [self assert:1 equals:[schools count] message:@"schools"];
     // trigger faults
-    [self assert:1 equals:[[persons[0] objectForKey:@"persons_schools"] count] message:@"person's schools"];
-    [self assert:1 equals:[[schools[0] objectForKey:@"persons_schools"] count] message:@"school's persons"];
+    var person = persons[0];
+    var school = schools[0];
+    [self assert:1 equals:[[person objectForKey:@"persons_schools"] count] message:@"person's schools"];
+    [self assert:1 equals:[[school objectForKey:@"persons_schools"] count] message:@"school's persons"];
+    var mapping1 = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+    var mapping2 = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+    [self assert:mapping1 equals:mapping2];
+    [self assert:@"persons_school" equals:[mapping1 objectForKey:@"entity"]];
+}
+
+- (void)testDeleteUpdatesRelationships {
+    var person = persons[0];
+    var school = schools[0];
+    var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+
+    [objectContext delete:mapping between:person and:school forRelationshipKey:@"persons_schools"];
+
+    [self assert:[] equals:[person objectForKey:@"persons_schools"] message:@"person's schools"];
+    [self assert:[] equals:[school objectForKey:@"persons_schools"] message:@"school's persons"];
+}
+
+- (void)testDeleteCreatesModifyRecord {
+    var person = persons[0];
+    var school = schools[0];
+    var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+
+    [objectContext delete:mapping between:person and:school forRelationshipKey:@"persons_schools"];
+
+    var record = [[objectContext modifiedObjects] objectAtIndex:0];
+    [self assert:mapping equals:[record object]];
+    [self assert:1 equals:[[record deleteDict] count] message:@"delete count"];
+    [self assert:0 equals:[[record insertDict] count] message:@"insert count"];
+    [self assert:0 equals:[[record updateDict] count] message:@"update count"];
+    [self assert:1 equals:[[objectContext modifiedObjects] count]];
 }
 
 - (void)XtestInsertDeleteObject

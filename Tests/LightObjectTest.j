@@ -3,7 +3,7 @@
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because
 // all exceptions are traced, even when handled.
-objj_msgSend_decorate(objj_backtrace_decorator);
+//objj_msgSend_decorate(objj_backtrace_decorator);
 
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
 }

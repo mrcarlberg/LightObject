@@ -90,43 +90,43 @@ CPArray         array;
 }
 
 - (int)count {
-    //    CPLog.trace(@"tracing: (" + [masterObject loObjectType] + @", " + masterObject._UID + @", " + relationshipKey + @") LOFaultArray.count:" + [array count]);
-    //    debugger;
-    if (!faultFired) {
-        faultFired = YES;
-        [self requestFault];
-    }
+    [self _requestFaultIfNecessary];
     return [array count];
 }
 
 - (id) objectAtIndex:(int) anIndex {
-    //    CPLog.trace(@"tracing: (" + [masterObject loObjectType] + @", " + masterObject._UID + @", " + relationshipKey + @") LOFaultArray.objectAtIndex:" + anIndex);
-    if (!faultFired) {
-        faultFired = YES;
-        [self requestFault];
-    }
+    [self _requestFaultIfNecessary];
     return [array objectAtIndex:anIndex];
 }
 
 - (void)addObject:(id)anObject {
-    //    CPLog.trace(@"tracing: LOFaultArray.addObject:");
+    [self _requestFaultIfNecessary];
     [array addObject:anObject];
 }
 
 - (void)insertObject:(id)anObject atIndex:(int)anIndex {
+    [self _requestFaultIfNecessary];
     [array insertObject:anObject atIndex:anIndex];
 }
 
 - (void)replaceObjectAtIndex:(int)anIndex withObject:(id)anObject {
+    [self _requestFaultIfNecessary];
     [array replaceObjectAtIndex:anIndex withObject:anObject];
 }
 
 - (void)removeLastObject {
+    [self _requestFaultIfNecessary];
     [array removeLastObject];
 }
 
 - (void)removeObjectAtIndex:(int)anIndex {
+    [self _requestFaultIfNecessary];
     [array removeObjectAtIndex:anIndex];
+}
+
+- (void)removeObject:(id)anObject {
+    [self _requestFaultIfNecessary];
+    [array removeObject:anObject];
 }
 
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
@@ -138,11 +138,20 @@ CPArray         array;
 }
 
 - (void)sortUsingFunction:(Function)aFunction context:(id)aContext {
+    [self _requestFaultIfNecessary];
     [array sortUsingFunction:aFunction context:aContext];
 }
 
 - (void)sortUsingDescriptors:(CPArray)descriptors {
+    [self _requestFaultIfNecessary];
     [array sortUsingDescriptors:descriptors];
+}
+
+- (void)_requestFaultIfNecessary {
+    if (!faultFired) {
+        faultFired = YES;
+        [self requestFault];
+    }
 }
 
 /*!

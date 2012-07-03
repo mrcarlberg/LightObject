@@ -78,7 +78,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     CPString            receivedData;
     CPDictionary        objects;                        // List of all objects in context with globalId as key
     CPArray             modifiedObjects @accessors;     // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
-    CPArray             undoEvents                      // Array of arrays with LOUpdateEvents. Each transaction has its own array.
+    CPArray             undoEvents;                     // Array of arrays with LOUpdateEvents. Each transaction has its own array.
     CPArray             connections;                    // Array of dictionary with connection: CPURLConnection and arrayController: CPArrayController
     @outlet id          delegate;
     @outlet LOObjectStore objectStore @accessors;
@@ -475,6 +475,11 @@ var LOObjectContext_newObjectForType = 1 << 0,
 - (void) delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     [self _delete:deletedObject withRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
+}
+
+- (void) delete:(id)aMapping between:(id)firstObject and:(id)secondObject forRelationshipKey:(CPString)aRelationshipKey {
+    [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
+    [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
 }
 
 - (BOOL) isObjectStored:(id)theObject {
