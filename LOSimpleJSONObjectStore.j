@@ -78,7 +78,6 @@ var ConfigBaseUrl = nil;
     }
     var request = [CPURLRequest requestWithURL:url];
     [request setHTTPMethod:@"GET"];
-    receivedData = nil;
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray}];
     CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + entityName + @", url: " + url);

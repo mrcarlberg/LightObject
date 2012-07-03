@@ -78,7 +78,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     CPString            receivedData;
     CPDictionary        objects;                        // List of all objects in context with globalId as key
     CPArray             modifiedObjects @accessors;     // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
-    CPArray             undoEvents                      // Array of arrays with LOUpdateEvents. Each transaction has its own array.
+    CPArray             undoEvents;                     // Array of arrays with LOUpdateEvents. Each transaction has its own array.
     CPArray             connections;                    // Array of dictionary with connection: CPURLConnection and arrayController: CPArrayController
     @outlet id          delegate;
     @outlet LOObjectStore objectStore @accessors;
@@ -178,13 +178,13 @@ var LOObjectContext_newObjectForType = 1 << 0,
     console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
-	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
-	if ((delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)])) {
+	if (delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)] && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
+    	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
 		if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
 			[delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
 		}
 	}
-	
+
     if (autoCommit) [self saveChanges];
 }
 
@@ -283,6 +283,46 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return [objectStore typeOfObject:theObject];
 }
 
+- (void) _insertObjectWithAttributes:(id) theObject {
+    // Just need to create the dict to mark it for insert
+    [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
+
+    // Add attributes with values
+    var attributeKeys = [objectStore attributeKeysForObject:theObject];
+    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+    var attributeSize = [attributeKeys count];
+    for (var i = 0; i < attributeSize; i++) {
+        var attributeKey = [attributeKeys objectAtIndex:i];
+        if ([attributeKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+            var value = [theObject valueForKey:[attributeKey substringToIndex:[attributeKey length] - 3]];
+            if (value) {
+                var globalId = [self globalIdForObject:value];
+                if (globalId) {
+                    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+                    [updateDict setObject:globalId forKey:attributeKey];
+                }
+            }
+        } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
+            var value = [theObject valueForKey:attributeKey];
+            if (value) {
+                var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+                [updateDict setObject:value forKey:attributeKey];
+            }
+        }
+    }
+    [self registerObject:theObject];
+}
+
+/*
+ *  Add object to context and add all non nil attributes as updated attributes
+ */
+- (void) insertObjectWithAttributes:(id) theObject {
+    [self _insertObjectWithAttributes: theObject];
+    var insertEvent = [LOInsertEvent insertEventWithObject:theObject arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
+    [self registerEvent:insertEvent];
+    if (autoCommit) [self saveChanges];
+}
+
 - (void) _insertObject:(id) theObject {
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
@@ -325,6 +365,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     } else {
         [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:theObject];
     }
+    [self setSubDictionary:nil forKey:@"updateDict" forObject:theObject];
     [self unregisterObject:theObject];
 }
 
@@ -434,6 +475,11 @@ var LOObjectContext_newObjectForType = 1 << 0,
 - (void) delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     [self _delete:deletedObject withRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
+}
+
+- (void) delete:(id)aMapping between:(id)firstObject and:(id)secondObject forRelationshipKey:(CPString)aRelationshipKey {
+    [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
+    [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
 }
 
 - (BOOL) isObjectStored:(id)theObject {
