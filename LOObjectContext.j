@@ -178,13 +178,13 @@ var LOObjectContext_newObjectForType = 1 << 0,
     console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
-	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
-	if ((delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)])) {
+	if (delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)] && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
+    	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
 		if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
 			[delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
 		}
 	}
-	
+
     if (autoCommit) [self saveChanges];
 }
 
