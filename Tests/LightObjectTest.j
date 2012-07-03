@@ -5,12 +5,6 @@
 // all exceptions are traced, even when handled.
 objj_msgSend_decorate(objj_backtrace_decorator);
 
-// perform a layout, given any min width constraints
-// sorting (sort descriptors)
-// optional toolbar with custom actions.
-
-// test column order matches spec.
-
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
 }
 
@@ -53,7 +47,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
 }
 
 - (CPArray)relationshipKeysForObject:(id)theObject {
-    var entity = [theObject objectForKey:@"entity"];
+    var entity = [self typeOfObject:theObject];
     if (entity === @"school") {
         return [@"persons"];
     }
