@@ -35,6 +35,8 @@
     
     var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
     [self addObject:newObject];
+    [self setSelectedObjects:[newObject]];
+
     // Ok, now we need to tell the object context that we have this new object and it is a new relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
     var info = [self infoForBinding:@"contentArray"];
