@@ -54,6 +54,8 @@ var LOJSKeyedArchiverClassKey = @"_type";
             encodedDictionary[key] = [self _encodeObject:[objectToEncode objectForKey:key]];
         }
         encodedJS = encodedDictionary;
+    } else if ([objectToEncode isKindOfClass:[CPNull class]]) { // Override CPNull's default encoding because we want native JS Objects
+        encodedJS = nil;
     } else {
         var archiver = [[[self class] alloc] initForWritingWithMutableData:encodedJS];
         
