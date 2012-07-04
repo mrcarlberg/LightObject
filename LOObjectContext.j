@@ -200,7 +200,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-    [updateDict setObject:newGlobalId forKey:foreignKey];
+    [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
     if (autoCommit) [self saveChanges];
 }
 
@@ -269,9 +269,11 @@ var LOObjectContext_newObjectForType = 1 << 0,
  *  @return global id for the Object. If it is not in the context nil is returned
  */
 - (CPString) globalIdForObject:(id) theObject {
-    var globalId = [objectStore globalIdForObject:theObject];
-    if ([objects objectForKey:globalId]) {
-        return globalId;
+    if (theObject) {
+        var globalId = [objectStore globalIdForObject:theObject];
+        if ([objects objectForKey:globalId]) {
+            return globalId;
+        }
     }
     return nil;
 }
