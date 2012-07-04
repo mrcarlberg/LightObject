@@ -101,7 +101,7 @@
     [objectContext deleteObjects: selectedObjects]; // this will commit if auto commit is enabled
 }
 
-- (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)index ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
+- (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)indexSet ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
     var objectSize = [objects count];
     var index = [indexSet firstIndex];
     for (var i = 0; i < objectSize; i++) {
