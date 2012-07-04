@@ -508,6 +508,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return false;
 }
 
+/*!
+ * Start a new transaction. All changes will be stored separate from previus changes.
+ * Transaction must be ended by a saveChanges or revert call.
+ */
+- (void) startTransaction {
+    [undoEvents addObject:[]];
+}
+
 - (void) saveChanges {
 	var shouldSave = YES;
 	
@@ -524,6 +532,12 @@ var LOObjectContext_newObjectForType = 1 << 0,
     }
 	
     [objectStore saveChangesWithObjectContext:self];
+
+    // Remove transaction
+    var count = [undoEvents count];
+    if (count) {
+        [undoEvents removeObjectAtIndex:count - 1];
+    }
 }
 
 /*!
