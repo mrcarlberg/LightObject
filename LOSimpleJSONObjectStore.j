@@ -230,6 +230,7 @@ var ConfigBaseUrl = nil;
         var obj = [theObjects objectAtIndex:i];
         if ([objectContext isObjectRegistered:obj]) {   // If we already got the object transfer all attributes to the old object
             CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
+            [objectContext setDoNotObserveValues:YES];
             var oldObject = [objectContext objectForGlobalId:[self globalIdForObject:obj]];
             var columns = [self _attributeKeysForObject:obj];
             var columnSize = [columns count];
@@ -244,6 +245,7 @@ var ConfigBaseUrl = nil;
                     [oldObject setValue:newValue forKey:columnKey];
                 }
             }
+            [objectContext setDoNotObserveValues:NO];
         }
     }
 }
