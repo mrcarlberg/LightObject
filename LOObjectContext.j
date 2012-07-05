@@ -482,6 +482,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
 - (void) delete:(id)aMapping between:(id)firstObject and:(id)secondObject forRelationshipKey:(CPString)aRelationshipKey {
     [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
     [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
+    [self deleteObject:aMapping];
 }
 
 - (BOOL) isObjectStored:(id)theObject {

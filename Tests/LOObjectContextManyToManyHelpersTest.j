@@ -152,10 +152,10 @@
 
     var record = [[objectContext modifiedObjects] objectAtIndex:0];
     [self assert:mapping equals:[record object]];
-    [self assert:1 equals:[[record deleteDict] count] message:@"delete count"];
-    [self assert:0 equals:[[record insertDict] count] message:@"insert count"];
-    [self assert:0 equals:[[record updateDict] count] message:@"update count"];
     [self assert:1 equals:[[objectContext modifiedObjects] count]];
+    [self assertNotNull:[record deleteDict] message:@"deletion marker"];
+    [self assertNull:[record updateDict] message:@"update dict"];
+    [self assertNull:[record insertDict] message:@"insert dict"];
 }
 
 - (void)XtestInsertDeleteObject
