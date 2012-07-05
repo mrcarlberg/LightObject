@@ -141,7 +141,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
-    if ([objectList respondsToSelector:@selector(count)]) {
+    if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:objectList];
     }
     if (implementedDelegateMethods & LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification) {

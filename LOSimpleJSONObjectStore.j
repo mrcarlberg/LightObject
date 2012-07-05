@@ -132,7 +132,7 @@ var ConfigBaseUrl = nil;
  Creates objects from JSON. If there is a relationship it is up to this method to create a LOFaultArray, LOFaultObject or the actual object.
  */
 - (CPArray) _objectsFromJSON:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary) receivedObjects {
-    if (![jSONObjects isKindOfClass:CPArray])
+    if (!jSONObjects.isa || ![jSONObjects isKindOfClass:CPArray])
         return jSONObjects;
     var objectContext = connectionDictionary.objectContext;
     var fetchSpecification = connectionDictionary.fetchSpecification;
