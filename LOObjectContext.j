@@ -482,7 +482,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
 - (void) delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
     [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
-    [self deleteObject:aMapping];
+
+    var deleteEvent = [LOManyToManyRelationshipDeleteEvent deleteEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:0 rightObject:secondObject key:aRelationshipKey index:0];
+    [self registerEvent:deleteEvent];
+
+    [self unregisterObject:aMapping];
+    var deleteDict = [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:aMapping];
+
+    if (autoCommit) [self saveChanges];
 }
 
 - (BOOL) isObjectStored:(id)theObject {

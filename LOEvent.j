@@ -157,3 +157,44 @@
 }
 
 @end
+
+
+@implementation LOManyToManyRelationshipDeleteEvent : LOEvent {
+    id        mapping;
+    id        leftObject;
+    id        rightObject;
+    CPString  leftRelationshipKey;
+    CPString  rightRelationshipKey;
+    int       leftIndex;
+    int       rightIndex;
+}
+
++ (LOManyToManyRelationshipDeleteEvent) deleteEventWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    return [[LOManyToManyRelationshipDeleteEvent alloc] initWithMapping:aMapping leftObject:aLeftObject key:aLeftKey index:aLeftIndex rightObject:aRightObject key:aRightKey index:aRightIndex];
+}
+
+- (id)initWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    self = [super init];
+    if (self) {
+        mapping             = aMapping;
+
+        leftObject          = aLeftObject;
+        leftRelationshipKey = aLeftKey;
+        leftIndex           = aLeftIndex;
+
+        rightObject          = aRightObject;
+        rightRelationshipKey = aRightKey;
+        rightIndex           = aRightIndex;
+    }
+    return self;
+}
+
+- (void) undoForContext:(LOObjectContext)objectContext {
+    [objectContext unDeleteObject:mapping];
+    var array = [leftObject valueForKey:leftRelationshipKey];
+    [array addObject:mapping];
+    array = [rightObject valueForKey:rightRelationshipKey];
+    [array addObject:mapping];
+}
+
+@end

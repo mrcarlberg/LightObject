@@ -156,6 +156,24 @@
     [self assertNotNull:[record deleteDict] message:@"deletion marker"];
     [self assertNull:[record updateDict] message:@"update dict"];
     [self assertNull:[record insertDict] message:@"insert dict"];
+    [self assertFalse:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
+}
+
+- (void)testRevertDeletion {
+    var person = persons[0];
+    var school = schools[0];
+    var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+
+    [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
+    [objectContext revert];
+
+    [self assertTrue:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
+    [self assertFalse:[objectContext hasChanges] message:@"has changes"];
+
+    [self assertTrue:[[person objectForKey:@"persons_schools"] containsObject:mapping] message:@"person has mapping"];
+    [self assertTrue:[[school objectForKey:@"persons_schools"] containsObject:mapping] message:@"school has mapping"];
+
+    // todo: verify index
 }
 
 - (void)XtestInsertDeleteObject
