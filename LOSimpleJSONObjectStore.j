@@ -30,7 +30,7 @@ var ConfigBaseUrl = nil;
     var bundleURL = [mainBundle bundleURL];
     var rootURL = [[[bundleURL absoluteString] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
     var configURL = rootURL + @"/Config/Config";
-//    CPLog.trace(_cmd + @" configURL = " + configURL);
+    CPLog.trace(_cmd + @" configURL: " + configURL);
     var answer = [CPURLConnection sendSynchronousRequest:[CPURLRequest requestWithURL:[CPURL URLWithString:configURL]] returningResponse:nil];
 //    CPLog.trace(_cmd + @" answer = " + [answer rawString]);
     if (answer) {
