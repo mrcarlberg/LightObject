@@ -137,7 +137,7 @@
     var school = schools[0];
     var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
 
-    [objectContext delete:mapping between:person and:school forRelationshipKey:@"persons_schools"];
+    [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
 
     [self assert:[] equals:[person objectForKey:@"persons_schools"] message:@"person's schools"];
     [self assert:[] equals:[school objectForKey:@"persons_schools"] message:@"school's persons"];
@@ -148,7 +148,7 @@
     var school = schools[0];
     var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
 
-    [objectContext delete:mapping between:person and:school forRelationshipKey:@"persons_schools"];
+    [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
 
     var record = [[objectContext modifiedObjects] objectAtIndex:0];
     [self assert:mapping equals:[record object]];

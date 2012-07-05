@@ -479,7 +479,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-- (void) delete:(id)aMapping between:(id)firstObject and:(id)secondObject forRelationshipKey:(CPString)aRelationshipKey {
+- (void) delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
     [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
     [self deleteObject:aMapping];
