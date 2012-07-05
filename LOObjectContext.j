@@ -392,6 +392,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
  *  Remove objects from context
  */
 - (void) deleteObjects:(CPArray) theObjects {
+    //FIXME: create delete event as in -deleteObject:
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
         var obj = [theObjects objectAtIndex:i];
