@@ -56,7 +56,23 @@
 
     [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withAlreadyRegisteredObjects:registeredObjects];
     [self _updateObjectsInContext:objectContext withValuesOfFromFetchedObjects:[registeredObjects allValues]];
+    return [self arrayByReplacingNewObjects:objects withObjectsAlreadyRegisteredInContext:objectContext];
     return objects;
+}
+
+- (CPArray)arrayByReplacingNewObjects:(CPArray)newObjects withObjectsAlreadyRegisteredInContext:(LOObjectContext)anObjectContext {
+    var result = [CPMutableArray array];
+
+    var newObjectsCount = [newObjects count];
+    for (var i = 0; i < newObjectsCount; i++) {
+        var anObject = [newObjects objectAtIndex:i];
+        if ([anObjectContext isObjectRegistered:anObject]) {
+            anObject = [anObjectContext objectForGlobalId:[self globalIdForObject:anObject]];
+        }
+        [result addObject:anObject];
+    }
+
+    return result;
 }
 
 - (void)_updateObjectsInContext:(LOObjectContext)anObjectContext withValuesOfFromFetchedObjects:(CPArray)theNewObjects {
