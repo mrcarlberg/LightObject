@@ -53,12 +53,12 @@
         [objects addObject:newObject];
     }
 
-    [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withRegisteredObjects:registeredObjects];
+    [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withAlreadyRegisteredObjects:registeredObjects];
 
     return objects;
 }
 
-- (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)possibleToOneFaultObjects objectContext:(LOObjectContext)anObjectContext {
+- (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)thePossibleToOneFaults objectContext:(LOObjectContext)anObjectContext {
     var attributeKeys = [self attributeKeysForObject:newObject];
     //print(_cmd + " processing attribute keys of new object: " + [attributeKeys description]);
     for (var j=0; j<[attributeKeys count]; j++) {
@@ -73,7 +73,7 @@
                 } else {
                     // Add it to a list and try again after we have registered all objects.
                     // FIXME: should set newObject, right?
-                    [possibleToOneFaultObjects addObject:{@"object":theReceivedObject , @"relationshipKey":key , @"globalId":value}];
+                    [thePossibleToOneFaults addObject:{@"object":newObject , @"relationshipKey":key , @"globalId":value}];
                     value = nil;
                 }
             }
@@ -82,16 +82,16 @@
     }
 }
 
-- (void)_tryResolvePossibleToOneFaults:(CPArray)possibleToOneFaultObjects withRegisteredObjects:(CPDictionary)registeredObjects {
-    var size = [possibleToOneFaultObjects count];
+- (void)_tryResolvePossibleToOneFaults:(CPArray)theCandidates withAlreadyRegisteredObjects:(CPDictionary)theRegisteredObjects {
+    var size = [theCandidates count];
     for (var i = 0; i < size; i++) {
-        var possibleToOneFaultObject = [possibleToOneFaultObjects objectAtIndex:i];
-        var toOne = [registeredObjects objectForKey:possibleToOneFaultObject.globalId];
+        var aCandidate = [theCandidates objectAtIndex:i];
+        var toOne = [theRegisteredObjects objectForKey:aCandidate.globalId];
         if (toOne) {
-            [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
+            [aCandidate.object setValue:toOne forKey:aCandidate.relationshipKey];
         } else {
-            //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
-            //print([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+            //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + aCandidate.relationshipKey + "' (" + toOne + ") on object " + aCandidate.object);
+            //print([self className] + " " + _cmd + " Can't find object for toOne relationship '" + aCandidate.relationshipKey + "' (" + toOne + ") on object " + aCandidate.object);
         }
     }
 }
