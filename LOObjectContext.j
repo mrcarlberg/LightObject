@@ -175,7 +175,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:newValue ? newValue : [CPNull null] forKey:theKeyPath];
 
-    console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+    //console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
 	if (delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)] && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {

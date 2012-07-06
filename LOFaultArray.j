@@ -8,7 +8,7 @@ LOObjectContext objectContext @accessors;
 id              masterObject @accessors;
 CPString        relationshipKey @accessors;
 BOOL            faultFired;
-CPArray         array;
+CPArray         array @accessors;
 }
 /*
  + (id)alloc {

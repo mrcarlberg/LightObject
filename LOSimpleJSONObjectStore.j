@@ -217,7 +217,7 @@ var ConfigBaseUrl = nil;
         if (toOne) {
             [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
         } else {
-            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + column + "' (" + toOne + ") on object " + obj);
+            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
         }
     }
     return newArray;
