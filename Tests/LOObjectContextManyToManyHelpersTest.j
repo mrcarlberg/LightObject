@@ -240,15 +240,14 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 
     [self assertTrue:[[achilles persons_schools] containsObject:mappingAchillesSparta] message:@"Achilles has mapping"];
-    //[self assertTrue:[[penelope objectForKey:@"persons_schools"] containsObject:mappingPenelopeSparta] message:@"Penelope has mapping"];
-    //[self assertTrue:[[sparta objectForKey:@"persons_schools"] containsObject:mappingAchillesSparta] message:@"school has Achilles mapping"];
-    //[self assertTrue:[[sparta objectForKey:@"persons_schools"] containsObject:mappingPenelopeSparta] message:@"school has Penelope mapping"];
+    [self assertTrue:[[penelope persons_schools] containsObject:mappingPenelopeSparta] message:@"Penelope has mapping"];
+    [self assertTrue:[[sparta persons_schools] containsObject:mappingAchillesSparta] message:@"school has Achilles mapping"];
+    [self assertTrue:[[sparta persons_schools] containsObject:mappingPenelopeSparta] message:@"school has Penelope mapping"];
 
-    //[self assert:0 equals:[[achilles objectForKey:@"persons_schools"] indexOfObject:mappingAchillesSparta] message:@"achilles sparta"];
-    //[self assert:1 equals:[[penelope objectForKey:@"persons_schools"] indexOfObject:mappingPenelopeSparta] message:@"penelope sparta"];
-    //[self assert:0 equals:[[sparta objectForKey:@"persons_schools"] indexOfObject:mappingAchillesSparta] message:@"sparta achilles"];
-    //[self assert:1 equals:[[sparta objectForKey:@"persons_schools"] indexOfObject:mappingPenelopeSparta] message:@"sparta penelope"];
-    // todo: verify index
+    [self assert:0 equals:[[achilles persons_schools] indexOfObject:mappingAchillesSparta] message:@"achilles sparta"];
+    [self assert:1 equals:[[penelope persons_schools] indexOfObject:mappingPenelopeSparta] message:@"penelope sparta"];
+    [self assert:0 equals:[[sparta persons_schools] indexOfObject:mappingAchillesSparta] message:@"sparta achilles"];
+    [self assert:1 equals:[[sparta persons_schools] indexOfObject:mappingPenelopeSparta] message:@"sparta penelope"];
 }
 
 - (void)assert:(id)anObject notBound:(CPString)aBinding
