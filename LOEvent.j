@@ -192,9 +192,9 @@
 - (void) undoForContext:(LOObjectContext)objectContext {
     [objectContext unDeleteObject:mapping];
     var array = [leftObject valueForKey:leftRelationshipKey];
-    [array addObject:mapping];
+    [array insertObject:mapping atIndex:leftIndex];
     array = [rightObject valueForKey:rightRelationshipKey];
-    [array addObject:mapping];
+    [array insertObject:mapping atIndex:rightIndex];
 }
 
 @end

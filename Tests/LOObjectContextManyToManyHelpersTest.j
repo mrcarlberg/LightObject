@@ -250,6 +250,8 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self assert:1 equals:[[sparta persons_schools] indexOfObject:mappingPenelopeSparta] message:@"sparta penelope"];
 }
 
+//TODO: think over the index stuff here. I feel we might need a few more tests, to make sure -revert works as expected, especially if we have several consecutive deletions, a mix of deletions and insertions, etc.
+
 - (void)assert:(id)anObject notBound:(CPString)aBinding
 {
     //TODO: move to category

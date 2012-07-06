@@ -481,10 +481,16 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
-    [[firstObject valueForKey:aRelationshipKey] removeObject:aMapping];
-    [[secondObject valueForKey:aRelationshipKey] removeObject:aMapping];
+    //FIXME: raise on index==NSNotFound?
+    var array = [firstObject valueForKey:aRelationshipKey];
+    var leftIndex = [array indexOfObjectIdenticalTo:aMapping];
+    [array removeObjectAtIndex:leftIndex];
 
-    var deleteEvent = [LOManyToManyRelationshipDeleteEvent deleteEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:0 rightObject:secondObject key:aRelationshipKey index:0];
+    array = [secondObject valueForKey:aRelationshipKey];
+    var rightIndex = [array indexOfObjectIdenticalTo:aMapping];
+    [array removeObjectAtIndex:rightIndex];
+
+    var deleteEvent = [LOManyToManyRelationshipDeleteEvent deleteEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:leftIndex rightObject:secondObject key:aRelationshipKey index:rightIndex];
     [self registerEvent:deleteEvent];
 
     [self unregisterObject:aMapping];
