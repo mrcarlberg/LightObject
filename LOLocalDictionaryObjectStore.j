@@ -48,14 +48,43 @@
             }
         }
         if (!newObject) continue;
-
         [self _populateNewObject:newObject fromReceivedObject:object notePossibleToOneFaults:possibleToOneFaultObjects objectContext:objectContext];
-        [objects addObject:newObject];
+        if (objectType === [fetchSpecification entityName]) {
+            [objects addObject:newObject];
+        }
     }
 
     [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withAlreadyRegisteredObjects:registeredObjects];
-
+    [self _updateObjectsInContext:objectContext withValuesOfFromFetchedObjects:[registeredObjects allValues]];
     return objects;
+}
+
+- (void)_updateObjectsInContext:(LOObjectContext)anObjectContext withValuesOfFromFetchedObjects:(CPArray)theNewObjects {
+    var newObjectsCount = [theNewObjects count];
+    for (var i = 0; i < newObjectsCount; i++) {
+        var newObject = [theNewObjects objectAtIndex:i];
+        if (![anObjectContext isObjectRegistered:newObject]) continue;
+
+        // If we already got the object transfer all attributes to the old object
+        CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
+        [anObjectContext setDoNotObserveValues:YES];
+
+        var oldObject = [anObjectContext objectForGlobalId:[self globalIdForObject:newObject]];
+        var columns = [self attributeKeysForObject:newObject];
+        var columnsCount = [columns count];
+        for (var j = 0; j < columnsCount; j++) {
+            var columnKey = [columns objectAtIndex:j];
+            if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+                columnKey = [columnKey substringToIndex:[columnKey length] - 3];
+            }
+            var newValue = [newObject valueForKey:columnKey];
+            var oldValue = [oldObject valueForKey:columnKey];
+            if (newValue !== oldValue) {
+                [oldObject setValue:newValue forKey:columnKey];
+            }
+        }
+        [anObjectContext setDoNotObserveValues:NO];
+    }
 }
 
 - (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)thePossibleToOneFaults objectContext:(LOObjectContext)anObjectContext {

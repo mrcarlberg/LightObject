@@ -253,6 +253,22 @@ var ConfigBaseUrl = nil;
 - (void) objectsReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
     var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
+    // FIXME: Possible bug here?
+    /* _objectsFromJSON:withConnectionDictionary:connectionDictionary: always creates all-new instances.
+       All instances created will be found in the passed in dictionary receivedObjects; all instances
+       matching the entity of the fetch spec will be returned from the method (stored locally in newArray here).
+       However, all objects in receivedObjects is processed in _registerOrReplaceObject:withConnectionDictionary:.
+       This method makes sure that each object already registered in the context (an 'old object')
+       that matches an instance in receivedObjects (the 'new object')
+       is updated with the values of that matching object.
+       Again, 'old object' is updated with the values of 'new object'.
+       This of course includes the objects in newArray, i.e. the objects matching the fetch spec entity.
+       Now, newArray is sent unaltered to objectContext's objectsReceived:withFetchSpecification:.
+       I believe this means that any delegate of or listener to the object context will receive
+       a list of duplicates of objects already registered in the context.
+       We should update newArray so that new objects are substituted with their already registered counterpars,
+       should there be any.
+     */
     var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
     var receivedObjectList = [receivedObjects allValues];
     [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
