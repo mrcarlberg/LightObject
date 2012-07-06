@@ -7,13 +7,11 @@ objj_msgSend_decorate(objj_backtrace_decorator);
 
 
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
-    CPMutableDictionary fixtureEntityRelationshipKeys;
 }
 
 - (id)init {
     self = [super init];
     if (self) {
-        fixtureEntityRelationshipKeys = [CPMutableDictionary dictionary];
     }
     return self;
 }
@@ -29,19 +27,6 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [entityArray addObject:object];
 }
 
-- (void)setFixtureRelationshipKeys:(CPArray)theKeys forEntity:(CPString)anEntity {
-    [fixtureEntityRelationshipKeys setObject:theKeys forKey:anEntity];
-}
-
-- (void)addFixtureRelationshipKey:(CPString)aKey forEntity:(CPString)anEntity {
-    var keys = [fixtureEntityRelationshipKeys objectForKey:anEntity];
-    if (!keys) {
-        keys = [CPMutableArray array];
-        [fixtureEntityRelationshipKeys setObject:keys forKey:anEntity];
-    }
-    if (![keys containsObject:aKey]) [keys addObject:aKey];
-}
-
 - (void)addFakeArrayFaultsForObjects:(CPArray)theObjects inObjectContext:(LOObjectContext)aContext {
     for (var i=0; i<theObjects.length; i++) {
         var object = theObjects[i];
@@ -49,7 +34,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
         for (var j=0; j<relationshipKeys.length; j++) {
             var relationshipKey = relationshipKeys[j];
             var fault = [[LOFaultArray alloc] initWithObjectContext:aContext masterObject:object relationshipKey:relationshipKey];
-            [object setObject:fault forKey:relationshipKey];
+            [object setValue:fault forKey:relationshipKey];
         }
     }
 }
@@ -60,15 +45,68 @@ objj_msgSend_decorate(objj_backtrace_decorator);
  * so that we can control object IDs in the tests.
  */
 - (CPString)globalIdForObject:(id) theObject {
-    return [theObject objectForKey:@"key"];
+    return [theObject valueForKey:@"key"];
+}
+
+- (CPString) typeOfObject:(id) theObject {
+    if ([theObject isKindOfClass:[CPDictionary class]])
+        return [theObject valueForKey:@"entity"];
+    return [theObject loObjectType];
 }
 
 - (CPArray)relationshipKeysForObject:(id)theObject {
-    var entity = [self typeOfObject:theObject];
-    return [fixtureEntityRelationshipKeys objectForKey:entity] || [];
+    var theObjectClass = [theObject class];
+    if ([theObjectClass respondsToSelector:@"relationshipKeys"]) {
+        return [theObjectClass relationshipKeys];
+    }
+    return [];
+}
+
+- (CPArray) attributeKeysForObject:(id) theObject {
+    var theObjectClass = [theObject class];
+    if ([theObjectClass respondsToSelector:@"attributeKeys"]) {
+        return [theObjectClass attributeKeys];
+    }
+    return [];
 }
 
 @end
+
+
+@implementation BaseObject : CPObject {
+    id key @accessors;
+}
+@end
+
+
+@implementation Person : BaseObject {
+    CPString name @accessors;
+    CPArray persons_schools @accessors;
+}
++ (CPArray)attributeKeys { return [@"name"]; }
++ (CPArray)relationshipKeys { return ["persons_schools"]; }
+- (CPString)loObjectType { return "person"; }
+@end
+
+
+@implementation School : BaseObject {
+    CPString name @accessors;
+    CPArray persons_schools @accessors;
+}
++ (CPArray)attributeKeys { return [@"name"]; }
++ (CPArray)relationshipKeys { return ["persons_schools"]; }
+- (CPString)loObjectType { return "school"; }
+@end
+
+
+@implementation PersonSchoolMapping : BaseObject {
+    Person person @accessors;
+    School school @accessors;
+}
++ (CPArray)attributeKeys { return [@"person_fk", @"school_fk"]; }
+- (CPString)loObjectType { return "persons_school"; }
+@end
+
 
 @implementation LOObjectContextManyToManyHelpersTest : OJTestCase {
     LOObjectContext     objectContext;
@@ -101,8 +139,6 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [objectStore addFixtureObject:{@"entity": @"persons_school", @"key": 3000, @"person_fk": 3, @"school_fk": 300}];
     [objectStore addFixtureObject:{@"entity": @"persons_school", @"key": 3001, @"person_fk": 3, @"school_fk": 200}];
 
-    [objectStore addFixtureRelationshipKey:@"persons_schools" forEntity:@"person"];
-    [objectStore addFixtureRelationshipKey:@"persons_schools" forEntity:@"school"];
     [self requestAllObjectsForEntity:@"person"];
     [self requestAllObjectsForEntity:@"school"];
     [objectStore addFakeArrayFaultsForObjects:persons inObjectContext:objectContext];
@@ -111,10 +147,10 @@ objj_msgSend_decorate(objj_backtrace_decorator);
 
 // Delegate method for LOObjectContext
 - (id) newObjectForType:(CPString) aType {
-    var x = [[ShallowDescriptionDictionary alloc] init];
-    [x setObject:aType forKey:@"entity"];
-    return x;
-    //return [ShallowDescriptionDictionary dictionaryWithObject:aType forKey:@"entity"];
+    if (aType == "person") return [[Person alloc] init];
+    if (aType == "school") return [[School alloc] init];
+    if (aType == "persons_school") return [[PersonSchoolMapping alloc] init];
+    return nil;
 }
 
 // Delegate method for LOObjectContext
@@ -137,31 +173,32 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     // trigger faults
     var person = persons[0];
     var school = schools[0];
-    [self assert:1 equals:[[person objectForKey:@"persons_schools"] count] message:@"person's schools"];
-    [self assert:1 equals:[[school objectForKey:@"persons_schools"] count] message:@"school's persons"];
-    var mapping1 = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
-    var mapping2 = [[school objectForKey:@"persons_schools"] objectAtIndex:0];
+    [self assert:1 equals:[[person persons_schools] count] message:@"person's schools"];
+    [self assert:1 equals:[[school persons_schools] count] message:@"school's persons"];
+    var mapping1 = [[person persons_schools] objectAtIndex:0];
+    var mapping2 = [[school persons_schools] objectAtIndex:0];
     [self assert:mapping1 equals:mapping2];
-    [self assert:@"persons_school" equals:[mapping1 objectForKey:@"entity"]];
-    [self assert:person equals:[mapping1 valueForKey:@"person"]];
-    [self assert:school equals:[mapping1 valueForKey:@"school"]];
+    [self assert:@"PersonSchoolMapping" equals:[mapping1 className]];
+    //[self assert:@"persons_school" equals:[mapping1 objectForKey:@"entity"]];
+    [self assert:person equals:[mapping1 person]];
+    [self assert:school equals:[mapping1 school]];
 }
 
 - (void)testDeleteUpdatesRelationships {
     var person = persons[0];
     var school = schools[0];
-    var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+    var mapping = [[person persons_schools] objectAtIndex:0];
 
     [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
 
-    [self assert:[] equals:[person objectForKey:@"persons_schools"] message:@"person's schools"];
-    [self assert:[] equals:[school objectForKey:@"persons_schools"] message:@"school's persons"];
+    [self assert:[] equals:[person persons_schools] message:@"person's schools"];
+    [self assert:[] equals:[school persons_schools] message:@"school's persons"];
 }
 
 - (void)testDeleteCreatesModifyRecord {
     var person = persons[0];
     var school = schools[0];
-    var mapping = [[person objectForKey:@"persons_schools"] objectAtIndex:0];
+    var mapping = [[person persons_schools] objectAtIndex:0];
 
     [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
 
@@ -183,16 +220,16 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     var sparta = schools[1];
     var troy   = schools[2];
 
-    var mappingAchillesSparta = [[achilles objectForKey:@"persons_schools"] objectAtIndex:0];
-    var mappingPenelopeSparta = [[penelope objectForKey:@"persons_schools"] objectAtIndex:1];
+    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
+    var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
 
     // verify setup (move this someplace else)
     [self assertNotNull:mappingAchillesSparta];
     [self assertNotNull:mappingPenelopeSparta];
-    [self assert:achilles equals:[mappingAchillesSparta valueForKey:@"person"]];
-    [self assert:sparta equals:[mappingAchillesSparta valueForKey:@"school"]];
-    [self assert:penelope equals:[mappingPenelopeSparta valueForKey:@"person"]];
-    [self assert:sparta equals:[mappingPenelopeSparta valueForKey:@"school"]];
+    [self assert:achilles equals:[mappingAchillesSparta person]];
+    [self assert:sparta equals:[mappingAchillesSparta school]];
+    [self assert:penelope equals:[mappingPenelopeSparta person]];
+    [self assert:sparta equals:[mappingPenelopeSparta school]];
     
     [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
     [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
@@ -202,7 +239,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self assertTrue:[objectContext isObjectRegistered:mappingPenelopeSparta] message:@"Penelope mapping registered"];
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 
-    [self assertTrue:[[achilles objectForKey:@"persons_schools"] containsObject:mappingAchillesSparta] message:@"Achilles has mapping"];
+    [self assertTrue:[[achilles persons_schools] containsObject:mappingAchillesSparta] message:@"Achilles has mapping"];
     //[self assertTrue:[[penelope objectForKey:@"persons_schools"] containsObject:mappingPenelopeSparta] message:@"Penelope has mapping"];
     //[self assertTrue:[[sparta objectForKey:@"persons_schools"] containsObject:mappingAchillesSparta] message:@"school has Achilles mapping"];
     //[self assertTrue:[[sparta objectForKey:@"persons_schools"] containsObject:mappingPenelopeSparta] message:@"school has Penelope mapping"];
