@@ -5,6 +5,7 @@
 // all exceptions are traced, even when handled.
 objj_msgSend_decorate(objj_backtrace_decorator);
 
+//FIXME: make sure we issue KVO notifications before changing the many-to-many properties.
 
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
 }
