@@ -49,29 +49,40 @@
         }
         if (!newObject) continue;
 
-        var attributeKeys = [self attributeKeysForObject:newObject];
-        for (var j=0; j<[attributeKeys count]; j++) {
-            var key = [attributeKeys objectAtIndex:j];
-            var value = [object valueForKey:key];
-            if ([key hasSuffix:@"_fk"]) {    // Handle to one relationship
-                key = [key substringToIndex:[key length] - 3]; // Remove "_fk" at end
-                if (value) {
-                    var toOne = [objectContext objectForGlobalId:value];
-                    if (toOne) {
-                        value = toOne;
-                    } else {
-                        // Add it to a list and try again after we have registered all objects.
-                        [possibleToOneFaultObjects addObject:{@"object":object , @"relationshipKey":key , @"globalId":value}];
-                        value = nil;
-                    }
-                }
-            }
-            [newObject setValue:value forKey:key];
-        }
-
+        [self _populateNewObject:newObject fromReceivedObject:object notePossibleToOneFaults:possibleToOneFaultObjects objectContext:objectContext];
         [objects addObject:newObject];
     }
 
+    [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withRegisteredObjects:registeredObjects];
+
+    return objects;
+}
+
+- (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)possibleToOneFaultObjects objectContext:(LOObjectContext)anObjectContext {
+    var attributeKeys = [self attributeKeysForObject:newObject];
+    //print(_cmd + " processing attribute keys of new object: " + [attributeKeys description]);
+    for (var j=0; j<[attributeKeys count]; j++) {
+        var key = [attributeKeys objectAtIndex:j];
+        var value = [theReceivedObject valueForKey:key];
+        if ([key hasSuffix:@"_fk"]) {    // Handle to one relationship
+            key = [key substringToIndex:[key length] - 3]; // Remove "_fk" at end
+            if (value) {
+                var toOne = [anObjectContext objectForGlobalId:value];
+                if (toOne) {
+                    value = toOne;
+                } else {
+                    // Add it to a list and try again after we have registered all objects.
+                    // FIXME: should set newObject, right?
+                    [possibleToOneFaultObjects addObject:{@"object":theReceivedObject , @"relationshipKey":key , @"globalId":value}];
+                    value = nil;
+                }
+            }
+        }
+        [newObject setValue:value forKey:key];
+    }
+}
+
+- (void)_tryResolvePossibleToOneFaults:(CPArray)possibleToOneFaultObjects withRegisteredObjects:(CPDictionary)registeredObjects {
     var size = [possibleToOneFaultObjects count];
     for (var i = 0; i < size; i++) {
         var possibleToOneFaultObject = [possibleToOneFaultObjects objectAtIndex:i];
@@ -83,8 +94,6 @@
             //print([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
         }
     }
-
-    return objects;
 }
 
 /*!
