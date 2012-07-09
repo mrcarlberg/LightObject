@@ -511,6 +511,10 @@ var LOObjectContext_newObjectForType = 1 << 0,
     [array addObject:aMapping];
     var array = [secondObject valueForKey:aRelationshipKey];
     [array addObject:aMapping];
+
+    [self _insertObject:aMapping];
+    [aMapping setValue:firstObject forKey:[firstObject loObjectType]];
+    [aMapping setValue:secondObject forKey:[secondObject loObjectType]];
 }
 
 - (BOOL) isObjectStored:(id)theObject {

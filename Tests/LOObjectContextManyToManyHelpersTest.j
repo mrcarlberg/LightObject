@@ -191,6 +191,7 @@
     var achilles = persons[1];
     var school = schools[0];
     var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
 
     [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
 
@@ -199,6 +200,27 @@
 
     [self assert:3 equals:[[achilles persons_schools] count] message:@"Achilles' schools"];
     [self assert:2 equals:[[school persons_schools] count] message:@"school's persons"];
+}
+
+- (void)testInsertCreatesModifyRecord {
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    var record = [[objectContext modifiedObjects] objectAtIndex:0];
+    [self assert:mapping equals:[record object]];
+    [self assert:1 equals:[[objectContext modifiedObjects] count]];
+    [self assertNull:[record deleteDict] message:@"deletion marker"];
+    [self assertNotNull:[record insertDict] message:@"insertion marker"];
+
+    var updateDict = [record updateDict];
+    [self assertNotNull:updateDict message:@"update dict"];
+    [self assert:2 equals:[updateDict objectForKey:@"person_fk"]];
+    [self assert:100 equals:[updateDict objectForKey:@"school_fk"]];
+
+    [self assertTrue:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
 }
 
 - (void)testDeleteUpdatesRelationships {
