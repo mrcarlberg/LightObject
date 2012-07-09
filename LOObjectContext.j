@@ -248,11 +248,27 @@ var LOObjectContext_newObjectForType = 1 << 0,
     }
 }
 
+/*
+ *  Reregister the object with toGlobalId and removes it with fromGlobalId
+ */
 - (void) reregisterObject:(id) theObject fromGlobalId:(CPString) fromGlobalId toGlobalId:(CPString) toGlobalId {
+    //TODO: Check if the object is registered
     [objects setObject:theObject forKey:toGlobalId];
     [objects removeObjectForKey:fromGlobalId];
 }
 
+/*
+ *  @return YES if theObject is stored by the object store and is registered in the context
+ *  If you insert a new object to the object context this method will return NO until you send a saveChanges:
+ */
+- (BOOL) isObjectStored:(id) theObject {
+    var globalId = [objectStore globalIdForObject:theObject];
+    return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
+}
+
+/*
+ *  @return YES if theObject is registered in the context
+ */
 - (BOOL) isObjectRegistered:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] != nil;
