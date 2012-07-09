@@ -219,7 +219,7 @@
     var person = persons[0];
     var school = schools[0];
     var mapping = [[person persons_schools] objectAtIndex:0];
-    [[school persons_schools] count];
+    [[school persons_schools] count]; // trigger fault
 
     [person addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
     [school addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
@@ -235,7 +235,7 @@
 
 - (void)assertKVORemoval:(id)aKVONotification fromObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes old:(id)expectedOldValues {
     if (!aKVONotification)
-        [self fail:@"expected a KVO notification for key path '" + expectedKeyPath + "' of object " + expectedObject];
+        [self fail:@"expected a KVO removal for key path '" + expectedKeyPath + "' of object " + expectedObject];
 
     [self assert:expectedObject equals:[aKVONotification objectForKey:@"object"] message:@"object"];
     [self assert:expectedKeyPath equals:[aKVONotification objectForKey:@"keyPath"] message:@"key path"];
