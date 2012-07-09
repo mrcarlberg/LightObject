@@ -498,13 +498,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
 
 - (void) delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     //FIXME: raise on index==NSNotFound?
-    var array = [firstObject valueForKey:aRelationshipKey];
-    var leftIndex = [array indexOfObjectIdenticalTo:aMapping];
-    [array removeObjectAtIndex:leftIndex];
-
-    array = [secondObject valueForKey:aRelationshipKey];
-    var rightIndex = [array indexOfObjectIdenticalTo:aMapping];
-    [array removeObjectAtIndex:rightIndex];
+    var leftIndex = [self _findIndexOfObject:aMapping andRemoveItFromRelationshipWithKey:aRelationshipKey ofObject:firstObject];
+    var rightIndex = [self _findIndexOfObject:aMapping andRemoveItFromRelationshipWithKey:aRelationshipKey ofObject:secondObject];
 
     var deleteEvent = [LOManyToManyRelationshipDeleteEvent deleteEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:leftIndex rightObject:secondObject key:aRelationshipKey index:rightIndex];
     [self registerEvent:deleteEvent];
@@ -513,6 +508,17 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var deleteDict = [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:aMapping];
 
     if (autoCommit) [self saveChanges];
+}
+
+- (int) _findIndexOfObject:(id)anObject andRemoveItFromRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var index = [array indexOfObjectIdenticalTo:anObject];
+    var indexSet = [CPIndexSet indexSetWithIndex:index];
+    [theParent willChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array removeObjectAtIndex:index];
+    [theParent didChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    return index;
 }
 
 - (BOOL) isObjectStored:(id)theObject {
