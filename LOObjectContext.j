@@ -506,13 +506,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
-    var array = [firstObject valueForKey:aRelationshipKey];
-    var leftIndex = [array count];
-    [array addObject:aMapping];
-
-    array = [secondObject valueForKey:aRelationshipKey];
-    var rightIndex = [array count];
-    [array addObject:aMapping];
+    var leftIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:firstObject];
+    var rightIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:secondObject];
 
     [self _insertObject:aMapping];
     [aMapping setValue:firstObject forKey:[firstObject loObjectType]];
@@ -520,6 +515,17 @@ var LOObjectContext_newObjectForType = 1 << 0,
 
     var insertEvent = [LOManyToManyRelationshipInsertEvent insertEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:leftIndex  rightObject:secondObject key:aRelationshipKey index:rightIndex];
     [self registerEvent:insertEvent];
+}
+
+- (int) _findInsertionIndexForObject:(id)anObject andInsertItIntoRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var index = [array count];
+    var indexSet = [CPIndexSet indexSetWithIndex:index];
+    [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array insertObject:anObject atIndex:index];
+    [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    return index;
 }
 
 - (BOOL) isObjectStored:(id)theObject {

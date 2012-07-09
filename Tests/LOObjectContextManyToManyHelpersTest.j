@@ -228,6 +228,29 @@
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 }
 
+- (void)testInsertSendsKVONotifications {
+    var notifications = [];
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
+
+    // trigger faults
+    [[achilles persons_schools] count];
+    [[school persons_schools] count];
+
+    [achilles addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+    [school addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    [achilles removeObserver:self forKeyPath:@"persons_schools"];
+    [school removeObserver:self forKeyPath:@"persons_schools"];
+
+    [self assertKVOInsertion:notifications[0] inObject:achilles keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:2]];
+    [self assertKVOInsertion:notifications[1] inObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
+}
+
 - (void)testInsertCreatesModifyRecord {
     var achilles = persons[1];
     var school = schools[0];
