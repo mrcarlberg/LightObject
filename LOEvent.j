@@ -206,3 +206,53 @@
 }
 
 @end
+
+@implementation LOManyToManyRelationshipInsertEvent : LOEvent {
+    id        mapping;
+    id        leftObject;
+    id        rightObject;
+    CPString  leftRelationshipKey;
+    CPString  rightRelationshipKey;
+    int       leftIndex;
+    int       rightIndex;
+}
+
++ (LOManyToManyRelationshipInsertEvent) insertEventWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    return [[LOManyToManyRelationshipInsertEvent alloc] initWithMapping:aMapping leftObject:aLeftObject key:aLeftKey index:aLeftIndex rightObject:aRightObject key:aRightKey index:aRightIndex];
+}
+
+- (id)initWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    self = [super init];
+    if (self) {
+        mapping             = aMapping;
+
+        leftObject          = aLeftObject;
+        leftRelationshipKey = aLeftKey;
+        leftIndex           = aLeftIndex;
+
+        rightObject          = aRightObject;
+        rightRelationshipKey = aRightKey;
+        rightIndex           = aRightIndex;
+    }
+    return self;
+}
+
+- (void) undoForContext:(LOObjectContext)objectContext {
+    [objectContext unInsertObject:mapping];
+
+    var array = [leftObject valueForKey:leftRelationshipKey];
+    var idx = [array indexOfObjectIdenticalTo:mapping];
+    if (idx !== leftIndex) {
+        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded left index " + leftIndex + " not equal to real index " + idx];
+    }
+    [array removeObjectAtIndex:leftIndex];
+
+    array = [rightObject valueForKey:rightRelationshipKey];
+    idx = [array indexOfObjectIdenticalTo:mapping];
+    if (idx !== rightIndex) {
+        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded right index " + rightIndex + " not equal to real index " + idx];
+    }
+    [array removeObjectAtIndex:rightIndex];
+}
+
+@end

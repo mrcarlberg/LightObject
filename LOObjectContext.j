@@ -505,16 +505,21 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return index;
 }
 
-//FIXME: at indexes?
 - (void) insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     var array = [firstObject valueForKey:aRelationshipKey];
+    var leftIndex = [array count];
     [array addObject:aMapping];
-    var array = [secondObject valueForKey:aRelationshipKey];
+
+    array = [secondObject valueForKey:aRelationshipKey];
+    var rightIndex = [array count];
     [array addObject:aMapping];
 
     [self _insertObject:aMapping];
     [aMapping setValue:firstObject forKey:[firstObject loObjectType]];
     [aMapping setValue:secondObject forKey:[secondObject loObjectType]];
+
+    var insertEvent = [LOManyToManyRelationshipInsertEvent insertEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:leftIndex  rightObject:secondObject key:aRelationshipKey index:rightIndex];
+    [self registerEvent:insertEvent];
 }
 
 - (BOOL) isObjectStored:(id)theObject {
