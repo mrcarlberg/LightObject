@@ -3,7 +3,7 @@
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because
 // all exceptions are traced, even when handled.
-objj_msgSend_decorate(objj_backtrace_decorator);
+//objj_msgSend_decorate(objj_backtrace_decorator);
 
 //FIXME: make sure we issue KVO notifications before changing the many-to-many properties.
 
@@ -212,38 +212,66 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self assertFalse:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
 }
 
-- (void)testRevertDeletion {
+- (void)testRevertDeletionSetup {
     // achilles => sparta, troy
     // penelope => troy, sparta
     var achilles = persons[1];
     var penelope = persons[2];
+    [self assert:@"Achilles" equals:[achilles name]];
+    [self assert:@"Penelope" equals:[penelope name]];
 
     var sparta = schools[1];
     var troy   = schools[2];
+    [self assert:@"University of Sparta" equals:[sparta name]];
+    [self assert:@"Troy Public School" equals:[troy name]];
 
     var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
     var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
-
-    // verify setup (move this someplace else)
     [self assertNotNull:mappingAchillesSparta];
     [self assertNotNull:mappingPenelopeSparta];
     [self assert:achilles equals:[mappingAchillesSparta person]];
     [self assert:sparta equals:[mappingAchillesSparta school]];
     [self assert:penelope equals:[mappingPenelopeSparta person]];
     [self assert:sparta equals:[mappingPenelopeSparta school]];
+}
+
+// TODO: To make the setup more explicit for each test, split -setUp so that we can modify the fixture sligthly before each test.
+
+- (void)testRevertDeletionRestoresRelationship {
+    var achilles = persons[1];
+    var sparta = schools[1];
+    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
+
+    [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
+    [objectContext revert];
+
+    [self assertTrue:[[achilles persons_schools] containsObject:mappingAchillesSparta] message:@"Achilles has mapping"];
+    [self assertTrue:[[sparta persons_schools] containsObject:mappingAchillesSparta] message:@"school has Achilles mapping"];
+}
+
+- (void)testRevertDeletionRestoresObjectContext {
+    var achilles = persons[1];
+    var sparta = schools[1];
+    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
+
+    [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
+    [objectContext revert];
+
+    [self assertTrue:[objectContext isObjectRegistered:mappingAchillesSparta] message:@"Achilles mapping registered"];
+    [self assertFalse:[objectContext hasChanges] message:@"has changes"];
+}
+
+- (void)testRevertDeletionRemembersIndexes {
+    var achilles = persons[1];
+    var penelope = persons[2];
+    var sparta = schools[1];
+    var troy   = schools[2];
+    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
+    var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
 
     [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
     [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
     [objectContext revert];
-
-    [self assertTrue:[objectContext isObjectRegistered:mappingAchillesSparta] message:@"Achilles mapping registered"];
-    [self assertTrue:[objectContext isObjectRegistered:mappingPenelopeSparta] message:@"Penelope mapping registered"];
-    [self assertFalse:[objectContext hasChanges] message:@"has changes"];
-
-    [self assertTrue:[[achilles persons_schools] containsObject:mappingAchillesSparta] message:@"Achilles has mapping"];
-    [self assertTrue:[[penelope persons_schools] containsObject:mappingPenelopeSparta] message:@"Penelope has mapping"];
-    [self assertTrue:[[sparta persons_schools] containsObject:mappingAchillesSparta] message:@"school has Achilles mapping"];
-    [self assertTrue:[[sparta persons_schools] containsObject:mappingPenelopeSparta] message:@"school has Penelope mapping"];
 
     [self assert:0 equals:[[achilles persons_schools] indexOfObject:mappingAchillesSparta] message:@"achilles sparta"];
     [self assert:1 equals:[[penelope persons_schools] indexOfObject:mappingPenelopeSparta] message:@"penelope sparta"];
