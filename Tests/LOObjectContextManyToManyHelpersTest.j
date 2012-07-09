@@ -251,6 +251,29 @@
     [self assertKVOInsertion:notifications[1] inObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
 }
 
+//FIXME: assert KVO for mapping attributes as well!
+
+- (void)testRevertInsertionSendsKVONotifications {
+    var notifications = [];
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    [achilles addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+    [school   addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+
+    [objectContext revert];
+
+    [achilles removeObserver:self forKeyPath:@"persons_schools"];
+    [school   removeObserver:self forKeyPath:@"persons_schools"];
+
+    [self assertKVORemoval:notifications[0] fromObject:achilles keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:2] old:[mapping]];
+    [self assertKVORemoval:notifications[1] fromObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1] old:[mapping]];
+}
+
 - (void)testInsertCreatesModifyRecord {
     var achilles = persons[1];
     var school = schools[0];

@@ -240,19 +240,21 @@
 - (void) undoForContext:(LOObjectContext)objectContext {
     [objectContext unInsertObject:mapping];
 
-    var array = [leftObject valueForKey:leftRelationshipKey];
-    var idx = [array indexOfObjectIdenticalTo:mapping];
-    if (idx !== leftIndex) {
-        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded left index " + leftIndex + " not equal to real index " + idx];
-    }
-    [array removeObjectAtIndex:leftIndex];
+    [self _removeObject:mapping atIndex:leftIndex ofRelationshipWithKey:leftRelationshipKey ofObject:leftObject];
+    [self _removeObject:mapping atIndex:rightIndex ofRelationshipWithKey:rightRelationshipKey ofObject:rightObject];
+}
 
-    array = [rightObject valueForKey:rightRelationshipKey];
-    idx = [array indexOfObjectIdenticalTo:mapping];
-    if (idx !== rightIndex) {
-        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded right index " + rightIndex + " not equal to real index " + idx];
+- (void) _removeObject:(id)anObject atIndex:(int)anIndex ofRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var idx = [array indexOfObjectIdenticalTo:mapping];
+    if (idx !== anIndex) {
+        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded index " + anIndex + " not equal to real index " + idx];
     }
-    [array removeObjectAtIndex:rightIndex];
+    var indexSet = [CPIndexSet indexSetWithIndex:anIndex];
+    [theParent willChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array removeObjectAtIndex:anIndex];
+    [theParent didChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
 }
 
 @end
