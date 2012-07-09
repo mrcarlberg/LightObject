@@ -191,10 +191,18 @@
 
 - (void) undoForContext:(LOObjectContext)objectContext {
     [objectContext unDeleteObject:mapping];
-    var array = [leftObject valueForKey:leftRelationshipKey];
-    [array insertObject:mapping atIndex:leftIndex];
-    array = [rightObject valueForKey:rightRelationshipKey];
-    [array insertObject:mapping atIndex:rightIndex];
+
+    [self _insertObject:mapping atIndex:leftIndex ofRelationshipWithKey:leftRelationshipKey ofObject:leftObject];
+    [self _insertObject:mapping atIndex:rightIndex ofRelationshipWithKey:rightRelationshipKey ofObject:rightObject];
+}
+
+- (void) _insertObject:(id)anObject atIndex:(int)anIndex ofRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var indexSet = [CPIndexSet indexSetWithIndex:anIndex];
+    [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array insertObject:anObject atIndex:anIndex];
+    [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
 }
 
 @end

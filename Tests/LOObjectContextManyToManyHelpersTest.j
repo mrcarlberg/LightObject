@@ -307,6 +307,39 @@
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 }
 
+- (void)testRevertDeletionSendsKVONotifications {
+    var notifications = [];
+    var penelope = persons[2];
+    var sparta = schools[1];
+    var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
+    [[sparta persons_schools] count]; // trigger fault
+
+    [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
+
+    [penelope addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+    [sparta   addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+
+    [objectContext revert];
+
+    [penelope removeObserver:self forKeyPath:@"persons_schools"];
+    [sparta removeObserver:self forKeyPath:@"persons_schools"];
+
+    [self assertKVOInsertion:notifications[0] inObject:penelope keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
+    [self assertKVOInsertion:notifications[1] inObject:sparta keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
+}
+
+- (void)assertKVOInsertion:(id)aKVONotification inObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes {
+    if (!aKVONotification)
+        [self fail:@"expected a KVO insertion for key path '" + expectedKeyPath + "' of object " + expectedObject];
+
+    [self assert:expectedObject equals:[aKVONotification objectForKey:@"object"] message:@"object"];
+    [self assert:expectedKeyPath equals:[aKVONotification objectForKey:@"keyPath"] message:@"key path"];
+
+    var changes = [aKVONotification objectForKey:@"changes"];
+    [self assert:CPKeyValueChangeInsertion equals:[changes objectForKey:CPKeyValueChangeKindKey] message:@"change kind"];
+    [self assert:expectedIndexes equals:[changes objectForKey:CPKeyValueChangeIndexesKey] message:@"change indexes"];
+}
+
 - (void)testRevertDeletionRemembersIndexes {
     var achilles = persons[1];
     var penelope = persons[2];
