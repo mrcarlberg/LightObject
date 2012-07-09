@@ -8,7 +8,7 @@ CPLogRegister(CPLogPrint, "warn");
 // all exceptions are traced, even when handled.
 //objj_msgSend_decorate(objj_backtrace_decorator);
 
-//FIXME: make sure we issue KVO notifications before changing the many-to-many properties.
+//FIXME: assert KVO for mapping attributes as well!
 
 @implementation TestObjectStore : LOLocalDictionaryObjectStore {
 }
@@ -205,6 +205,50 @@ CPLogRegister(CPLogPrint, "warn");
     [self assert:2 equals:[[school persons_schools] count] message:@"school's persons"];
 }
 
+- (void)testInsertCreatesModifyRecord {
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    var record = [[objectContext modifiedObjects] objectAtIndex:0];
+    [self assert:mapping equals:[record object]];
+    [self assert:1 equals:[[objectContext modifiedObjects] count]];
+    [self assertNull:[record deleteDict] message:@"deletion marker"];
+    [self assertNotNull:[record insertDict] message:@"insertion marker"];
+
+    var updateDict = [record updateDict];
+    [self assertNotNull:updateDict message:@"update dict"];
+    [self assert:2 equals:[updateDict objectForKey:@"person_fk"]];
+    [self assert:100 equals:[updateDict objectForKey:@"school_fk"]];
+
+    [self assertTrue:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
+}
+
+- (void)testInsertSendsKVONotifications {
+    var notifications = [];
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
+
+    // trigger faults
+    [[achilles persons_schools] count];
+    [[school persons_schools] count];
+
+    [achilles addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+    [school addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    [achilles removeObserver:self forKeyPath:@"persons_schools"];
+    [school removeObserver:self forKeyPath:@"persons_schools"];
+
+    [self assertKVOInsertion:notifications[0] inObject:achilles keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:2]];
+    [self assertKVOInsertion:notifications[1] inObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
+}
+
 - (void)testRevertInsertionRestoresRelationship {
     var achilles = persons[1];
     var school = schools[0];
@@ -231,31 +275,6 @@ CPLogRegister(CPLogPrint, "warn");
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 }
 
-- (void)testInsertSendsKVONotifications {
-    var notifications = [];
-    var achilles = persons[1];
-    var school = schools[0];
-    var mapping = [[PersonSchoolMapping alloc] init];
-    [mapping setKey:198723]; // fake temp key
-
-    // trigger faults
-    [[achilles persons_schools] count];
-    [[school persons_schools] count];
-
-    [achilles addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
-    [school addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
-
-    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
-
-    [achilles removeObserver:self forKeyPath:@"persons_schools"];
-    [school removeObserver:self forKeyPath:@"persons_schools"];
-
-    [self assertKVOInsertion:notifications[0] inObject:achilles keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:2]];
-    [self assertKVOInsertion:notifications[1] inObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
-}
-
-//FIXME: assert KVO for mapping attributes as well!
-
 - (void)testRevertInsertionSendsKVONotifications {
     var notifications = [];
     var achilles = persons[1];
@@ -275,27 +294,6 @@ CPLogRegister(CPLogPrint, "warn");
 
     [self assertKVORemoval:notifications[0] fromObject:achilles keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:2] old:[mapping]];
     [self assertKVORemoval:notifications[1] fromObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1] old:[mapping]];
-}
-
-- (void)testInsertCreatesModifyRecord {
-    var achilles = persons[1];
-    var school = schools[0];
-    var mapping = [[PersonSchoolMapping alloc] init];
-
-    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
-
-    var record = [[objectContext modifiedObjects] objectAtIndex:0];
-    [self assert:mapping equals:[record object]];
-    [self assert:1 equals:[[objectContext modifiedObjects] count]];
-    [self assertNull:[record deleteDict] message:@"deletion marker"];
-    [self assertNotNull:[record insertDict] message:@"insertion marker"];
-
-    var updateDict = [record updateDict];
-    [self assertNotNull:updateDict message:@"update dict"];
-    [self assert:2 equals:[updateDict objectForKey:@"person_fk"]];
-    [self assert:100 equals:[updateDict objectForKey:@"school_fk"]];
-
-    [self assertTrue:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
 }
 
 - (void)testDeleteUpdatesRelationships {
@@ -342,19 +340,6 @@ CPLogRegister(CPLogPrint, "warn");
 
     [self assertKVORemoval:notifications[0] fromObject:person keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
     [self assertKVORemoval:notifications[1] fromObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
-}
-
-- (void)assertKVORemoval:(id)aKVONotification fromObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes old:(id)expectedOldValues {
-    if (!aKVONotification)
-        [self fail:@"expected a KVO removal for key path '" + expectedKeyPath + "' of object " + expectedObject];
-
-    [self assert:expectedObject equals:[aKVONotification objectForKey:@"object"] message:@"object"];
-    [self assert:expectedKeyPath equals:[aKVONotification objectForKey:@"keyPath"] message:@"key path"];
-
-    var changes = [aKVONotification objectForKey:@"changes"];
-    [self assert:CPKeyValueChangeRemoval equals:[changes objectForKey:CPKeyValueChangeKindKey] message:@"change kind"];
-    [self assert:expectedIndexes equals:[changes objectForKey:CPKeyValueChangeIndexesKey] message:@"change indexes"];
-    [self assert:expectedOldValues equals:[changes objectForKey:CPKeyValueChangeOldKey] message:@"change indexes"];
 }
 
 - (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
@@ -418,6 +403,24 @@ CPLogRegister(CPLogPrint, "warn");
     [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 }
 
+- (void)testRevertDeletionRemembersIndexes {
+    var achilles = persons[1];
+    var penelope = persons[2];
+    var sparta = schools[1];
+    var troy   = schools[2];
+    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
+    var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
+
+    [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
+    [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
+    [objectContext revert];
+
+    [self assert:0 equals:[[achilles persons_schools] indexOfObject:mappingAchillesSparta] message:@"achilles sparta"];
+    [self assert:1 equals:[[penelope persons_schools] indexOfObject:mappingPenelopeSparta] message:@"penelope sparta"];
+    [self assert:0 equals:[[sparta persons_schools] indexOfObject:mappingAchillesSparta] message:@"sparta achilles"];
+    [self assert:1 equals:[[sparta persons_schools] indexOfObject:mappingPenelopeSparta] message:@"sparta penelope"];
+}
+
 - (void)testRevertDeletionSendsKVONotifications {
     var notifications = [];
     var penelope = persons[2];
@@ -439,6 +442,8 @@ CPLogRegister(CPLogPrint, "warn");
     [self assertKVOInsertion:notifications[1] inObject:sparta keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:1]];
 }
 
+//TODO: think over the index stuff here. I feel we might need a few more tests, to make sure -revert works as expected, especially if we have several consecutive deletions, a mix of deletions and insertions, etc.
+
 - (void)assertKVOInsertion:(id)aKVONotification inObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes {
     if (!aKVONotification)
         [self fail:@"expected a KVO insertion for key path '" + expectedKeyPath + "' of object " + expectedObject];
@@ -451,25 +456,18 @@ CPLogRegister(CPLogPrint, "warn");
     [self assert:expectedIndexes equals:[changes objectForKey:CPKeyValueChangeIndexesKey] message:@"change indexes"];
 }
 
-- (void)testRevertDeletionRemembersIndexes {
-    var achilles = persons[1];
-    var penelope = persons[2];
-    var sparta = schools[1];
-    var troy   = schools[2];
-    var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
-    var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
+- (void)assertKVORemoval:(id)aKVONotification fromObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes old:(id)expectedOldValues {
+    if (!aKVONotification)
+        [self fail:@"expected a KVO removal for key path '" + expectedKeyPath + "' of object " + expectedObject];
 
-    [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
-    [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
-    [objectContext revert];
+    [self assert:expectedObject equals:[aKVONotification objectForKey:@"object"] message:@"object"];
+    [self assert:expectedKeyPath equals:[aKVONotification objectForKey:@"keyPath"] message:@"key path"];
 
-    [self assert:0 equals:[[achilles persons_schools] indexOfObject:mappingAchillesSparta] message:@"achilles sparta"];
-    [self assert:1 equals:[[penelope persons_schools] indexOfObject:mappingPenelopeSparta] message:@"penelope sparta"];
-    [self assert:0 equals:[[sparta persons_schools] indexOfObject:mappingAchillesSparta] message:@"sparta achilles"];
-    [self assert:1 equals:[[sparta persons_schools] indexOfObject:mappingPenelopeSparta] message:@"sparta penelope"];
+    var changes = [aKVONotification objectForKey:@"changes"];
+    [self assert:CPKeyValueChangeRemoval equals:[changes objectForKey:CPKeyValueChangeKindKey] message:@"change kind"];
+    [self assert:expectedIndexes equals:[changes objectForKey:CPKeyValueChangeIndexesKey] message:@"change indexes"];
+    [self assert:expectedOldValues equals:[changes objectForKey:CPKeyValueChangeOldKey] message:@"change indexes"];
 }
-
-//TODO: think over the index stuff here. I feel we might need a few more tests, to make sure -revert works as expected, especially if we have several consecutive deletions, a mix of deletions and insertions, etc.
 
 - (void)assert:(id)anObject notBound:(CPString)aBinding
 {
