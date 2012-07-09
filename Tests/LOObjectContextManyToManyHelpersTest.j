@@ -1,5 +1,8 @@
 @import "../LightObject.j"
 
+// The log levels are (in order): “fatal”, “error”, “warn”, “info”, “debug”, “trace”
+CPLogRegister(CPLogPrint, "warn");
+
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because
 // all exceptions are traced, even when handled.
