@@ -206,12 +206,26 @@
     var achilles = persons[1];
     var school = schools[0];
     var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
 
     [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
     [objectContext revert];
 
     [self assertFalse:[[achilles persons_schools] containsObject:mapping] message:@"Achilles shouldn't have mapping"];
     [self assertFalse:[[school persons_schools] containsObject:mapping] message:@"school shouldn't have Achilles mapping"];
+}
+
+- (void)testRevertInsertionRestoresObjectContext {
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+    [objectContext revert];
+
+    [self assertFalse:[objectContext isObjectRegistered:mapping] message:@"mapping shouldn't be registered"];
+    [self assertFalse:[objectContext hasChanges] message:@"has changes"];
 }
 
 - (void)testInsertCreatesModifyRecord {
