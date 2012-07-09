@@ -168,6 +168,13 @@ CPLogRegister(CPLogPrint, "warn");
     }
 }    
 
+// KVO receiver. Records received KVO callbacks so that we can check them in test cases.
+- (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
+    var x = [CPDictionary dictionaryWithJSObject:{@"keyPath": theKeyPath, @"object": theObject, @"changes": theChanges}];
+    [notifications addObject:x];
+}
+
+// Test helper
 - (void)requestAllObjectsForEntity:(CPString)anEntity {
     var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:anEntity];
     [objectContext requestObjectsWithFetchSpecification:fs];
@@ -340,11 +347,6 @@ CPLogRegister(CPLogPrint, "warn");
 
     [self assertKVORemoval:notifications[0] fromObject:person keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
     [self assertKVORemoval:notifications[1] fromObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
-}
-
-- (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
-    var x = [CPDictionary dictionaryWithJSObject:{@"keyPath": theKeyPath, @"object": theObject, @"changes": theChanges}];
-    [notifications addObject:x];
 }
 
 - (void)testRevertDeletionSetup {
