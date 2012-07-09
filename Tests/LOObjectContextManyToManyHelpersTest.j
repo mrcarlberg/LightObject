@@ -114,6 +114,8 @@
     LOObjectStore       objectStore;
     CPArray             persons;
     CPArray             schools;
+
+    CPArray             notifications;
 }
 
 - (void)setUp()
@@ -212,6 +214,43 @@
     [self assertFalse:[objectContext isObjectRegistered:mapping] message:@"mapping registered"];
 }
 
+- (void)testDeleteSendsKVONotifications {
+    var notifications = [];
+    var person = persons[0];
+    var school = schools[0];
+    var mapping = [[person persons_schools] objectAtIndex:0];
+    [[school persons_schools] count];
+
+    [person addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+    [school addObserver:self forKeyPath:@"persons_schools" options:(CPKeyValueObservingOptionNew|CPKeyValueObservingOptionOld) context:nil];
+
+    [objectContext delete:mapping withRelationshipWithKey:@"persons_schools" between:person and:school];
+
+    [person removeObserver:self forKeyPath:@"persons_schools"];
+    [school removeObserver:self forKeyPath:@"persons_schools"];
+
+    [self assertKVORemoval:notifications[0] fromObject:person keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
+    [self assertKVORemoval:notifications[1] fromObject:school keyPath:@"persons_schools" indexes:[CPIndexSet indexSetWithIndex:0] old:[mapping]];
+}
+
+- (void)assertKVORemoval:(id)aKVONotification fromObject:(id)expectedObject keyPath:(CPString)expectedKeyPath indexes:(CPIndexSet)expectedIndexes old:(id)expectedOldValues {
+    if (!aKVONotification)
+        [self fail:@"expected a KVO notification for key path '" + expectedKeyPath + "' of object " + expectedObject];
+
+    [self assert:expectedObject equals:[aKVONotification objectForKey:@"object"] message:@"object"];
+    [self assert:expectedKeyPath equals:[aKVONotification objectForKey:@"keyPath"] message:@"key path"];
+
+    var changes = [aKVONotification objectForKey:@"changes"];
+    [self assert:CPKeyValueChangeRemoval equals:[changes objectForKey:CPKeyValueChangeKindKey] message:@"change kind"];
+    [self assert:expectedIndexes equals:[changes objectForKey:CPKeyValueChangeIndexesKey] message:@"change indexes"];
+    [self assert:expectedOldValues equals:[changes objectForKey:CPKeyValueChangeOldKey] message:@"change indexes"];
+}
+
+- (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
+    var x = [CPDictionary dictionaryWithJSObject:{@"keyPath": theKeyPath, @"object": theObject, @"changes": theChanges}];
+    [notifications addObject:x];
+}
+
 - (void)testRevertDeletionSetup {
     // achilles => sparta, troy
     // penelope => troy, sparta
@@ -227,6 +266,13 @@
 
     var mappingAchillesSparta = [[achilles persons_schools] objectAtIndex:0];
     var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
+
+    [self assert:0 equals:[[achilles persons_schools] indexOfObjectIdenticalTo:mappingAchillesSparta] message:@"Achilles Sparta index"];
+    [self assert:0 equals:[[sparta persons_schools] indexOfObjectIdenticalTo:mappingAchillesSparta] message:@"Sparta Achilles index"];
+
+    [self assert:1 equals:[[penelope persons_schools] indexOfObjectIdenticalTo:mappingPenelopeSparta] message:@"Penelope Sparta index"];
+    [self assert:1 equals:[[sparta persons_schools] indexOfObjectIdenticalTo:mappingPenelopeSparta] message:@"Sparta Penelope index"];
+
     [self assertNotNull:mappingAchillesSparta];
     [self assertNotNull:mappingPenelopeSparta];
     [self assert:achilles equals:[mappingAchillesSparta person]];
