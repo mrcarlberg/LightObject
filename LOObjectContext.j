@@ -505,6 +505,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return index;
 }
 
+//FIXME: at indexes?
+- (void) insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
+    var array = [firstObject valueForKey:aRelationshipKey];
+    [array addObject:aMapping];
+    var array = [secondObject valueForKey:aRelationshipKey];
+    [array addObject:aMapping];
+}
+
 - (BOOL) isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }

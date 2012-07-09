@@ -187,6 +187,20 @@
     [self assert:school equals:[mapping1 school]];
 }
 
+- (void)testInsertUpdatesRelationships {
+    var achilles = persons[1];
+    var school = schools[0];
+    var mapping = [[PersonSchoolMapping alloc] init];
+
+    [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
+
+    [self assertTrue:[[achilles persons_schools] containsObject:mapping] message:@"Achilles should have mapping"];
+    [self assertTrue:[[school persons_schools] containsObject:mapping] message:@"School should have mapping"];
+
+    [self assert:3 equals:[[achilles persons_schools] count] message:@"Achilles' schools"];
+    [self assert:2 equals:[[school persons_schools] count] message:@"school's persons"];
+}
+
 - (void)testDeleteUpdatesRelationships {
     var person = persons[0];
     var school = schools[0];
