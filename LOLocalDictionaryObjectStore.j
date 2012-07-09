@@ -56,51 +56,8 @@
 
     [self _tryResolvePossibleToOneFaults:possibleToOneFaultObjects withAlreadyRegisteredObjects:registeredObjects];
     [self _updateObjectsInContext:objectContext withValuesOfFromFetchedObjects:[registeredObjects allValues]];
-    return [self arrayByReplacingNewObjects:objects withObjectsAlreadyRegisteredInContext:objectContext];
+    return [self _arrayByReplacingNewObjects:objects withObjectsAlreadyRegisteredInContext:objectContext];
     return objects;
-}
-
-- (CPArray)arrayByReplacingNewObjects:(CPArray)newObjects withObjectsAlreadyRegisteredInContext:(LOObjectContext)anObjectContext {
-    var result = [CPMutableArray array];
-
-    var newObjectsCount = [newObjects count];
-    for (var i = 0; i < newObjectsCount; i++) {
-        var anObject = [newObjects objectAtIndex:i];
-        if ([anObjectContext isObjectRegistered:anObject]) {
-            anObject = [anObjectContext objectForGlobalId:[self globalIdForObject:anObject]];
-        }
-        [result addObject:anObject];
-    }
-
-    return result;
-}
-
-- (void)_updateObjectsInContext:(LOObjectContext)anObjectContext withValuesOfFromFetchedObjects:(CPArray)theNewObjects {
-    var newObjectsCount = [theNewObjects count];
-    for (var i = 0; i < newObjectsCount; i++) {
-        var newObject = [theNewObjects objectAtIndex:i];
-        if (![anObjectContext isObjectRegistered:newObject]) continue;
-
-        // If we already got the object transfer all attributes to the old object
-        CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
-        [anObjectContext setDoNotObserveValues:YES];
-
-        var oldObject = [anObjectContext objectForGlobalId:[self globalIdForObject:newObject]];
-        var columns = [self attributeKeysForObject:newObject];
-        var columnsCount = [columns count];
-        for (var j = 0; j < columnsCount; j++) {
-            var columnKey = [columns objectAtIndex:j];
-            if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
-                columnKey = [columnKey substringToIndex:[columnKey length] - 3];
-            }
-            var newValue = [newObject valueForKey:columnKey];
-            var oldValue = [oldObject valueForKey:columnKey];
-            if (newValue !== oldValue) {
-                [oldObject setValue:newValue forKey:columnKey];
-            }
-        }
-        [anObjectContext setDoNotObserveValues:NO];
-    }
 }
 
 - (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)thePossibleToOneFaults objectContext:(LOObjectContext)anObjectContext {
@@ -139,6 +96,49 @@
             //print([self className] + " " + _cmd + " Can't find object for toOne relationship '" + aCandidate.relationshipKey + "' (" + toOne + ") on object " + aCandidate.object);
         }
     }
+}
+
+- (void)_updateObjectsInContext:(LOObjectContext)anObjectContext withValuesOfFromFetchedObjects:(CPArray)theNewObjects {
+    var newObjectsCount = [theNewObjects count];
+    for (var i = 0; i < newObjectsCount; i++) {
+        var newObject = [theNewObjects objectAtIndex:i];
+        if (![anObjectContext isObjectRegistered:newObject]) continue;
+
+        // If we already got the object transfer all attributes to the old object
+        CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
+        [anObjectContext setDoNotObserveValues:YES];
+
+        var oldObject = [anObjectContext objectForGlobalId:[self globalIdForObject:newObject]];
+        var columns = [self attributeKeysForObject:newObject];
+        var columnsCount = [columns count];
+        for (var j = 0; j < columnsCount; j++) {
+            var columnKey = [columns objectAtIndex:j];
+            if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+                columnKey = [columnKey substringToIndex:[columnKey length] - 3];
+            }
+            var newValue = [newObject valueForKey:columnKey];
+            var oldValue = [oldObject valueForKey:columnKey];
+            if (newValue !== oldValue) {
+                [oldObject setValue:newValue forKey:columnKey];
+            }
+        }
+        [anObjectContext setDoNotObserveValues:NO];
+    }
+}
+
+- (CPArray)_arrayByReplacingNewObjects:(CPArray)newObjects withObjectsAlreadyRegisteredInContext:(LOObjectContext)anObjectContext {
+    var result = [CPMutableArray array];
+
+    var newObjectsCount = [newObjects count];
+    for (var i = 0; i < newObjectsCount; i++) {
+        var anObject = [newObjects objectAtIndex:i];
+        if ([anObjectContext isObjectRegistered:anObject]) {
+            anObject = [anObjectContext objectForGlobalId:[self globalIdForObject:anObject]];
+        }
+        [result addObject:anObject];
+    }
+
+    return result;
 }
 
 /*!

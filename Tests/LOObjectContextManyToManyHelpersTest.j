@@ -217,7 +217,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     // penelope => troy, sparta
     var achilles = persons[1];
     var penelope = persons[2];
-    
+
     var sparta = schools[1];
     var troy   = schools[2];
 
@@ -231,7 +231,7 @@ objj_msgSend_decorate(objj_backtrace_decorator);
     [self assert:sparta equals:[mappingAchillesSparta school]];
     [self assert:penelope equals:[mappingPenelopeSparta person]];
     [self assert:sparta equals:[mappingPenelopeSparta school]];
-    
+
     [objectContext delete:mappingAchillesSparta withRelationshipWithKey:@"persons_schools" between:achilles and:sparta];
     [objectContext delete:mappingPenelopeSparta withRelationshipWithKey:@"persons_schools" between:penelope and:sparta];
     [objectContext revert];
