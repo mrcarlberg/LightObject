@@ -515,10 +515,14 @@ var LOObjectContext_newObjectForType = 1 << 0,
 {
     var array = [theParent valueForKey:aRelationshipKey];
     var index = [array indexOfObjectIdenticalTo:anObject];
-    var indexSet = [CPIndexSet indexSetWithIndex:index];
-    [theParent willChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
-    [array removeObjectAtIndex:index];
-    [theParent didChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    if (index !== CPNotFound) {
+        var indexSet = [CPIndexSet indexSetWithIndex:index];
+        [theParent willChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+        [array removeObjectAtIndex:index];
+        [theParent didChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    } else if ([array isKindOfClass:[CPArray class]] && [array faultPopulated]) {
+        [CPException raise:CPRangeException reason:"Can't find index of " + anObject];
+    }
     return index;
 }
 
