@@ -130,12 +130,18 @@ CPArray         array @accessors;
     [array removeObject:anObject];
 }
 
+- (id)_observerTargetForKeyPath:(CPString)aKeyPath {
+    if (@"faultFired" === aKeyPath || @"faultPopulated" === aKeyPath)
+        return self;
+    return array;
+}
+
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
-    [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
+    [[self _observerTargetForKeyPath:aKeyPath] addObserver:observer forKeyPath:aKeyPath options:options context:context];
 }
 
 - (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
-    [array removeObserver:observer forKeyPath:aKeyPath];
+    [[self _observerTargetForKeyPath:aKeyPath] removeObserver:observer forKeyPath:aKeyPath];
 }
 
 - (void)sortUsingFunction:(Function)aFunction context:(id)aContext {
