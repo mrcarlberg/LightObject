@@ -521,6 +521,29 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return index;
 }
 
+- (void) insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
+    var leftIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:firstObject];
+    var rightIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:secondObject];
+
+    [self _insertObject:aMapping];
+    [aMapping setValue:firstObject forKey:[firstObject loObjectType]];
+    [aMapping setValue:secondObject forKey:[secondObject loObjectType]];
+
+    var insertEvent = [LOManyToManyRelationshipInsertEvent insertEventWithMapping:aMapping leftObject:firstObject key:aRelationshipKey index:leftIndex  rightObject:secondObject key:aRelationshipKey index:rightIndex];
+    [self registerEvent:insertEvent];
+}
+
+- (int) _findInsertionIndexForObject:(id)anObject andInsertItIntoRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var index = [array count];
+    var indexSet = [CPIndexSet indexSetWithIndex:index];
+    [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array insertObject:anObject atIndex:index];
+    [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    return index;
+}
+
 - (BOOL) isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }

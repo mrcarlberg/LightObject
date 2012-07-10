@@ -206,3 +206,55 @@
 }
 
 @end
+
+@implementation LOManyToManyRelationshipInsertEvent : LOEvent {
+    id        mapping;
+    id        leftObject;
+    id        rightObject;
+    CPString  leftRelationshipKey;
+    CPString  rightRelationshipKey;
+    int       leftIndex;
+    int       rightIndex;
+}
+
++ (LOManyToManyRelationshipInsertEvent) insertEventWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    return [[LOManyToManyRelationshipInsertEvent alloc] initWithMapping:aMapping leftObject:aLeftObject key:aLeftKey index:aLeftIndex rightObject:aRightObject key:aRightKey index:aRightIndex];
+}
+
+- (id)initWithMapping:(id)aMapping leftObject:(id)aLeftObject key:(CPString)aLeftKey index:(int)aLeftIndex rightObject:(id)aRightObject key:(CPString)aRightKey index:(int)aRightIndex {
+    self = [super init];
+    if (self) {
+        mapping             = aMapping;
+
+        leftObject          = aLeftObject;
+        leftRelationshipKey = aLeftKey;
+        leftIndex           = aLeftIndex;
+
+        rightObject          = aRightObject;
+        rightRelationshipKey = aRightKey;
+        rightIndex           = aRightIndex;
+    }
+    return self;
+}
+
+- (void) undoForContext:(LOObjectContext)objectContext {
+    [objectContext unInsertObject:mapping];
+
+    [self _removeObject:mapping atIndex:leftIndex ofRelationshipWithKey:leftRelationshipKey ofObject:leftObject];
+    [self _removeObject:mapping atIndex:rightIndex ofRelationshipWithKey:rightRelationshipKey ofObject:rightObject];
+}
+
+- (void) _removeObject:(id)anObject atIndex:(int)anIndex ofRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+{
+    var array = [theParent valueForKey:aRelationshipKey];
+    var idx = [array indexOfObjectIdenticalTo:mapping];
+    if (idx !== anIndex) {
+        throw [CPException raise:CPInternalInconsistencyException reason:@"Recorded index " + anIndex + " not equal to real index " + idx];
+    }
+    var indexSet = [CPIndexSet indexSetWithIndex:anIndex];
+    [theParent willChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    [array removeObjectAtIndex:anIndex];
+    [theParent didChange:CPKeyValueChangeRemoval valuesAtIndexes:indexSet forKey:aRelationshipKey];
+}
+
+@end
