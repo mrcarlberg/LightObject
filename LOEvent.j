@@ -199,10 +199,14 @@
 - (void) _insertObject:(id)anObject atIndex:(int)anIndex ofRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
 {
     var array = [theParent valueForKey:aRelationshipKey];
-    var indexSet = [CPIndexSet indexSetWithIndex:anIndex];
-    [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
-    [array insertObject:anObject atIndex:anIndex];
-    [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    if (anIndex === CPNotFound && [array isKindOfClass:[LOFaultArray class]] && [array faultPopulated])
+        anIndex = [array count];    // The index is CPNotFound if the fault array was not populated when the delete was done. Now it is populated and we just add the object last.
+    if (anIndex !== CPNotFound) {
+        var indexSet = [CPIndexSet indexSetWithIndex:anIndex];
+        [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+        [array insertObject:anObject atIndex:anIndex];
+        [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+    }
 }
 
 @end
