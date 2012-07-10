@@ -130,18 +130,47 @@ CPArray         array @accessors;
     [array removeObject:anObject];
 }
 
-- (id)_observerTargetForKeyPath:(CPString)aKeyPath {
-    if (@"faultFired" === aKeyPath || @"faultPopulated" === aKeyPath)
-        return self;
-    return array;
+- (id)_handleObserverForKeyPath:(CPString)aKeyPath {
+    return (@"faultFired" === aKeyPath || @"faultPopulated" === aKeyPath)
 }
 
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
-    [[self _observerTargetForKeyPath:aKeyPath] addObserver:observer forKeyPath:aKeyPath options:options context:context];
+    if ([self _handleObserverForKeyPath:aKeyPath]) {
+        [super addObserver:observer forKeyPath:aKeyPath options:options context:context];
+    } else {
+        [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
+    }
 }
 
 - (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
-    [[self _observerTargetForKeyPath:aKeyPath] removeObserver:observer forKeyPath:aKeyPath];
+    if ([self _handleObserverForKeyPath:aKeyPath]) {
+        [super removeObserver:observer forKeyPath:aKeyPath];
+    } else {
+        [array removeObserver:observer forKeyPath:aKeyPath];
+    }
+}
+
+- (void)setValue:(id)aValue forKey:(CPString)aKey {
+    if (@"faultFired" === aKey) {
+        [self willChangeValueForKey:aKey];
+        faultFired = aValue;
+        [self didChangeValueForKey:aKey];
+    } else if (@"faultPopulated" === aKey) {
+        [self willChangeValueForKey:aKey];
+        faultPopulated = aValue;
+        [self didChangeValueForKey:aKey];
+    } else {
+        [super setValue:aValue forKey:aKey];
+    }
+}
+
+- (id)valueForKey:(CPString)aKey {
+    if (@"faultFired" === aKey) {
+        return faultFired;
+    } else if (@"faultPopulated" === aKey) {
+        return faultPopulated;
+    }
+    return [super valueForKey:aKey];
 }
 
 - (void)sortUsingFunction:(Function)aFunction context:(id)aContext {
