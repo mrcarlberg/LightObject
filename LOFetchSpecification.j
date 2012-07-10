@@ -40,4 +40,8 @@
     return self;
 }
 
+- (CPString)description {
+    return [CPString stringWithFormat:@"<%@ entityName: %@ operator: %@ qualifer: %@ userInfo: %@>", [self className], entityName, operator, qualifier, userInfo];
+}
+
 @end
