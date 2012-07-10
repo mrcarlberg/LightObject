@@ -11,19 +11,18 @@
 @import "LOObjectContext.j"
 @import "LOObjectStore.j"
 @import "LOFaultArray.j"
+@import "ConfigManager.j"
 
 LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector = @selector(objectsReceived:withConnectionDictionary:);
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
 LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
-
-var ConfigBaseUrl = nil;
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
     CPString        baseURL @accessors;
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
 }
-
+/*
 + (void)initialize {
     if (self !== [LOSimpleJSONObjectStore class]) return;
     var mainBundle = [CPBundle mainBundle];
@@ -36,13 +35,15 @@ var ConfigBaseUrl = nil;
     if (answer) {
         ConfigBaseUrl = [answer rawString];
     }
-}
+}*/
 
 - (id)init {
     self = [super init];
     if (self) {
-        if (ConfigBaseUrl) {
-            baseURL = ConfigBaseUrl;
+        var configBaseUrl = [[ConfigManager sharedInstance] configBaseUrl];
+        CPLog.trace(_cmd + " configBaseUrl: " + configBaseUrl);
+        if (configBaseUrl) {
+            baseURL = configBaseUrl;
         }
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
