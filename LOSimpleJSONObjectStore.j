@@ -335,7 +335,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
             var insertDict = [objDict insertDict];
-            if (insertDict) {
+            var deleteDict = [objDict deleteDict];
+            if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
                 tmpId = [CPString stringWithFormat:@"%d", i];
                 [insertedObjectToTempIdDict setObject:tmpId forKey:obj._UID];
                 [objDict setTmpId:tmpId];
@@ -348,8 +349,10 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         for (var i = 0; i < size; i++) {
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
+            var insertDict = [objDict insertDict];
+            var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
-            if (updateDict) {
+            if (updateDict && !(deleteDict && insertDict)) { // Don't do this if it is both inserted and deleted
                 var updateDictCopy = [CPMutableDictionary dictionary];
                 var updateDictKeys = [updateDict allKeys];
                 var updateDictKeysSize = [updateDictKeys count];
@@ -381,8 +384,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 }
                 [updateArray addObject:updateDictCopy];
             }
-            var deleteDict = [objDict valueForKey:@"deleteDict"];
-            if (deleteDict) {
+            if (deleteDict && !insertDict) {    // Don't do this if it is also inserted
                 var deleteDictCopy = [deleteDict mutableCopy];
                 [deleteDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
                 var uuid = [obj uuid];
