@@ -7,7 +7,8 @@
 LOObjectContext objectContext @accessors;
 id              masterObject @accessors;
 CPString        relationshipKey @accessors;
-BOOL            faultFired;
+BOOL            faultFired @accessors;
+BOOL            faultPopulated @accessors;
 CPArray         array @accessors;
 }
 /*
@@ -150,6 +151,7 @@ CPArray         array @accessors;
 - (void)_requestFaultIfNecessary {
     if (!faultFired) {
         faultFired = YES;
+        faultPopulated = NO;
         [self requestFault];
     }
 }

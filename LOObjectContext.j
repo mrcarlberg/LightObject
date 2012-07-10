@@ -162,6 +162,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     //    [masterObject setValue:newArray forKey:relationshipKey];
     [array addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];
+    [faultArray setValue:YES forKey:@"faultPopulated"];
 }
 
 - (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
