@@ -57,7 +57,7 @@
 
     var insertEvent = [LOInsertEvent insertEventWithObject:newObject arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:insertEvent];
-    [objectContext _insertObjectWithAttributes:newObject];
+    [objectContext _insertObject:newObject];
     if ([objectContext autoCommit]) [objectContext saveChanges];
 }
 
