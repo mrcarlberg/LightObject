@@ -302,7 +302,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return [objectStore typeOfObject:theObject];
 }
 
-- (void) _insertObjectWithAttributes:(id) theObject {
+- (void) _insertObject:(id) theObject {
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
 
@@ -334,22 +334,6 @@ var LOObjectContext_newObjectForType = 1 << 0,
 
 /*
  *  Add object to context and add all non nil attributes as updated attributes
- */
-- (void) insertObjectWithAttributes:(id) theObject {
-    [self _insertObjectWithAttributes: theObject];
-    var insertEvent = [LOInsertEvent insertEventWithObject:theObject arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
-    [self registerEvent:insertEvent];
-    if (autoCommit) [self saveChanges];
-}
-
-- (void) _insertObject:(id) theObject {
-    // Just need to create the dict to mark it for insert
-    [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
-    [self registerObject:theObject];
-}
-
-/*
- *  Add object to context
  */
 - (void) insertObject:(id) theObject {
     [self _insertObject: theObject];
