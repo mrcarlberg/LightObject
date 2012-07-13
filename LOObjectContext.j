@@ -583,14 +583,13 @@ var LOObjectContext_newObjectForType = 1 << 0,
 
 - (void) saveChanges {
 	var shouldSave = YES;
-	
 	var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
         var modifiedObject = [modifiedObjects objectAtIndex:i];
         if (![modifiedObject isEmpty]) {
 			if ((delegate && [delegate respondsToSelector:@selector(objectContext:shouldSaveChanges:withObject:)])) {
-				var objDict = [self modifyObjectDictionaryForObject:theObject];
-				shouldSave = [delegate objectContext:self shouldSaveChanges:objDict withObject:modifiedObject];
+				var objDict = [self modifyObjectDictionaryForObject:modifiedObject];
+				shouldSave = [delegate objectContext:self shouldSaveChanges:modifiedObject withObject:modifiedObject.object];
 				if (!shouldSave) return;
 			}
         }
