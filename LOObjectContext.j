@@ -16,7 +16,7 @@
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 
 var LOObjectContext_newObjectForType = 1 << 0,
-    LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification = 1 << 1;
+    LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1;
 
 
 @implementation LOModifyRecord : CPObject {
@@ -120,8 +120,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
     } else {
         CPLog.error(@"[LOObjectContext setDelegate]: Delegate must implement selector newObjectForType:");
     }
-    if ([delegate respondsToSelector:@selector(objectsReceived:forObjectContext:withFetchSpecification:)])
-        implementedDelegateMethods |= LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification;
+    if ([delegate respondsToSelector:@selector(objectContext:objectsReceived:withFetchSpecification:)])
+        implementedDelegateMethods |= LOObjectContext_objectContext_objectsReceived_withFetchSpecification;
 }
 
 - (id) newObjectForType:(CPString) type {
@@ -144,8 +144,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:objectList];
     }
-    if (implementedDelegateMethods & LOObjectContext_objectsReceived_forObjectContext_withFetchSpecification) {
-        [delegate objectsReceived:objectList forObjectContext:self withFetchSpecification:fetchSpecification];
+    if (implementedDelegateMethods & LOObjectContext_objectContext_objectsReceived_withFetchSpecification) {
+        [delegate objectContext:self objectsReceived:objectList withFetchSpecification:fetchSpecification];
     }
     var defaultCenter = [CPNotificationCenter defaultCenter];
     [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:@"objects"]];

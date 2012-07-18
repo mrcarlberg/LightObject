@@ -77,7 +77,7 @@
 }
 
 // Delegate method for LOObjectContext
-- (void) objectsReceived:(CPArray)objects forObjectContext:(LOObjectContext)anObjectContext withFetchSpecification:fetchSpecification {
+- (void) objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)objects withFetchSpecification:fetchSpecification {
     if (fetchSpecification.entityName === @"person") {
         persons = objects;
     } else if (fetchSpecification.entityName === @"school") {

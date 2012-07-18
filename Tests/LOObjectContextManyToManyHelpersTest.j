@@ -160,7 +160,7 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 // Delegate method for LOObjectContext
-- (void) objectsReceived:(CPArray)theObjects forObjectContext:(LOObjectContext)anObjectContext withFetchSpecification:aFetchSpecification {
+- (void) objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)theObjects withFetchSpecification:aFetchSpecification {
     if (aFetchSpecification.entityName === @"person") {
         persons = theObjects;
     } else if (aFetchSpecification.entityName === @"school") {
