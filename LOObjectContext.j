@@ -16,7 +16,9 @@
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 
 var LOObjectContext_newObjectForType = 1 << 0,
-    LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1;
+    LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1,
+    LOObjectContext_objectContext_didValidateProperty_withError = 1 << 2,
+    LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3;
 
 
 @implementation LOModifyRecord : CPObject {
@@ -122,6 +124,10 @@ var LOObjectContext_newObjectForType = 1 << 0,
     }
     if ([delegate respondsToSelector:@selector(objectContext:objectsReceived:withFetchSpecification:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_objectsReceived_withFetchSpecification;
+    if ([delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)])
+        implementedDelegateMethods |= LOObjectContext_objectContext_didValidateProperty_withError;
+    if ([delegate respondsToSelector:@selector(objectContext:shouldSaveChanges:withObject:inserted:)])
+        implementedDelegateMethods |= LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted;
 }
 
 - (id) newObjectForType:(CPString) type {
@@ -179,7 +185,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     //console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
-	if (delegate && [delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)] && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
+	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
     	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
 		if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
 			[delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
@@ -566,16 +572,23 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (void) saveChanges {
-	var shouldSave = YES;
-	var size = [modifiedObjects count];
-    for (var i = 0; i < size; i++) {
-        var modifiedObject = [modifiedObjects objectAtIndex:i];
-        if (![modifiedObject isEmpty]) {
-			if ((delegate && [delegate respondsToSelector:@selector(objectContext:shouldSaveChanges:withObject:)])) {
-				var objDict = [self modifyObjectDictionaryForObject:modifiedObject];
-				shouldSave = [delegate objectContext:self shouldSaveChanges:modifiedObject withObject:modifiedObject.object];
-				if (!shouldSave) return;
-			}
+    if (implementedDelegateMethods & LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted) {
+        var shouldSave = YES;
+        var size = [modifiedObjects count];
+        for (var i = 0; i < size; i++) {
+            var modifiedObject = [modifiedObjects objectAtIndex:i];
+            if (![modifiedObject isEmpty]) {
+                if (![modifiedObject deleteDict]) { // Don't validate if is should be deleted
+                    var insertDict = [modifiedObject insertDict];
+                    var changesDict = insertDict ? [insertDict mutableCopy] : [CPMutableDictionary dictionary];
+                    var updateDict = [modifiedObject updateDict];
+                    if (updateDict) {
+                        [changesDict addEntriesFromDictionary:updateDict];
+                    }
+                    shouldSave = [delegate objectContext:self shouldSaveChanges:changesDict withObject:modifiedObject.object inserted:insertDict ? YES : NO];
+                    if (!shouldSave) return;
+                }
+            }
         }
     }
 	
