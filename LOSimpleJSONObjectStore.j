@@ -11,40 +11,19 @@
 @import "LOObjectContext.j"
 @import "LOObjectStore.j"
 @import "LOFaultArray.j"
-@import "ConfigManager.j"
 
 LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector = @selector(objectsReceived:withConnectionDictionary:);
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
 LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
-    CPString        baseURL @accessors;
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
 }
-/*
-+ (void)initialize {
-    if (self !== [LOSimpleJSONObjectStore class]) return;
-    var mainBundle = [CPBundle mainBundle];
-    var bundleURL = [mainBundle bundleURL];
-    var rootURL = [[[bundleURL absoluteString] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
-    var configURL = rootURL + @"/Config/Config";
-    CPLog.trace(_cmd + @" configURL: " + configURL);
-    var answer = [CPURLConnection sendSynchronousRequest:[CPURLRequest requestWithURL:[CPURL URLWithString:configURL]] returningResponse:nil];
-//    CPLog.trace(_cmd + @" answer = " + [answer rawString]);
-    if (answer) {
-        ConfigBaseUrl = [answer rawString];
-    }
-}*/
 
 - (id)init {
     self = [super init];
     if (self) {
-        var configBaseUrl = [[ConfigManager sharedInstance] configBaseUrl];
-        CPLog.trace(_cmd + " configBaseUrl: " + configBaseUrl);
-        if (configBaseUrl) {
-            baseURL = configBaseUrl;
-        }
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
     }
@@ -60,32 +39,18 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext faultArray:(LOFaultArray)faultArray {
-    if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
-    var entityName = [fetchSpecification entityName];
-    var url = baseURL + @"/martin|/" + entityName;
-    if ([fetchSpecification operator]) {
-        url = url + @"/" + [fetchSpecification operator];
-    }
-    if ([fetchSpecification qualifier]) {
-        var qualiferString = [[fetchSpecification qualifier] predicateFormat];
-        var qualiferItems = [qualiferString componentsSeparatedByString:@"=="];
-        var qualiferAttribute = [[qualiferItems objectAtIndex:0] stringByTrimmingWhitespace];
-        var searchString = [[qualiferItems lastObject] stringByTrimmingWhitespace];
-        var searchStringLength = [searchString length];
-        if (searchStringLength >= 2) {
-            searchString = [searchString substringWithRange:CPMakeRange(1, searchStringLength - 2)]
-        }
-        url = url + @"/" + qualiferAttribute + @"=" + searchString;
-    }
+    var url = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     var request = [CPURLRequest requestWithURL:url];
     [request setHTTPMethod:@"GET"];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray}];
-    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + entityName + @", url: " + url);
+    if (!url) debugger;
+    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
-    //    alert(@"tracing: didReceiveResponse");
+    var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    connectionDictionary.statusCode = [response statusCode];
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveData:(CPString)data {
@@ -99,7 +64,6 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
-    //    debugger;
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var receivedData = connectionDictionary.receivedData;
     if (receivedData && [receivedData length] > 0) {
@@ -301,20 +265,19 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
     }
+    [objectContext didSaveChangesWithResult:jSONObjects andStatus:connectionDictionary.statusCode];
 }
 
 - (void) saveChangesWithObjectContext:(LOObjectContext) objectContext {
     var modifyDict = [self _jsonDictionaryForModifiedObjectsWithObjectContext:objectContext];
     if ([modifyDict count] > 0) {       // Only save if thera are changes
-        if (!baseURL) throw new Error(_cmd + @" Has no baseURL to use");
-        [modifyDict setObject:@"martin|" forKey:@"sessionKey"];
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
+        var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
         CPLog.trace(@"POST Data: " + jsonText);
-        var request = [CPURLRequest requestWithURL:baseURL + @"/modify"];
+        var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
-        receivedData = nil;
         var connection = [CPURLConnection connectionWithRequest:request delegate:self];
         var modifiedObjects = [objectContext modifiedObjects];
         [connections addObject:{connection: connection, objectContext: objectContext, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector}];

@@ -30,4 +30,3 @@
 @import "LOFaultArray.j"
 @import "LOLocalDictionaryObjectStore.j"
 @import "LOError.j"
-@import "ConfigManager.j"

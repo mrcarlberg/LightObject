@@ -18,15 +18,16 @@ LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotif
 var LOObjectContext_newObjectForType = 1 << 0,
     LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1,
     LOObjectContext_objectContext_didValidateProperty_withError = 1 << 2,
-    LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3;
+    LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3,
+    LOObjectContext_objectContext_didSaveChangesWithResultAndStatus = 1 << 4;
 
 
 @implementation LOModifyRecord : CPObject {
     id              object @accessors;          // The object that is changed
     CPString        tmpId @accessors;           // Temporary id for object if LOObjectStore needs to keep track on it.
-    CPDictionary    insertDict @accessors;      // A dictionary with attributes when the object is created (will usually be empty)
+    CPDictionary    insertDict @accessors;      // A dictionary with attributes when the object is created
     CPDictionary    updateDict @accessors;      // A dictionary with attributes when the object is updated
-    CPDictionary    deleteDict @accessors;      // A dictionary with attributes when the object is deleted (will usually be empty)
+    CPDictionary    deleteDict @accessors;      // A dictionary with attributes when the object is deleted (will allways be empty)
 }
 
 + (LOModifyRecord) modifyRecordWithObject:(id) theObject {
@@ -128,6 +129,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
         implementedDelegateMethods |= LOObjectContext_objectContext_didValidateProperty_withError;
     if ([delegate respondsToSelector:@selector(objectContext:shouldSaveChanges:withObject:inserted:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted;
+    if ([delegate respondsToSelector:@selector(objectContext:didSaveChangesWithResult:andStatus:)])
+        implementedDelegateMethods |= LOObjectContext_objectContext_didSaveChangesWithResultAndStatus;
 }
 
 - (id) newObjectForType:(CPString) type {
@@ -599,13 +602,18 @@ var LOObjectContext_newObjectForType = 1 << 0,
     if (count) {
         [undoEvents removeObjectAtIndex:count - 1];
     }
+    
+    // Remove modifiedObjects
+    [self setModifiedObjects:[CPArray array]];
 }
 
 /*!
  *  Should be called by the objectStore when the saveChanges are done
  */
-- (void) saveChangesDidComplete {
-    [self setModifiedObjects:[CPArray array]];
+- (void)didSaveChangesWithResult:(id)result andStatus:(int)statusCode {
+    if (implementedDelegateMethods & LOObjectContext_objectContext_didSaveChangesWithResultAndStatus) {
+        [delegate objectContext:self didSaveChangesWithResult:result andStatus:statusCode];
+    }
 }
 
 - (void) revert {
