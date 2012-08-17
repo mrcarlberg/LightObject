@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5B312C91158F221900AAA6BC /* LOLocalDictionaryObjectStore.j in Sources */ = {isa = PBXBuildFile; fileRef = 5B312C90158F221900AAA6BC /* LOLocalDictionaryObjectStore.j */; };
 		5B312CA0158F3F6B00AAA6BC /* Tests in Resources */ = {isa = PBXBuildFile; fileRef = 5B312C9F158F3F6B00AAA6BC /* Tests */; };
+		5B5CA28315DE624500BEE7E7 /* LOError.j in Resources */ = {isa = PBXBuildFile; fileRef = 5B5CA28215DE624500BEE7E7 /* LOError.j */; };
 		5BC7745C1504C74500A134A4 /* CKJSONKeyedUnarchiver.j in Sources */ = {isa = PBXBuildFile; fileRef = 5BC774531504C74500A134A4 /* CKJSONKeyedUnarchiver.j */; };
 		5BC7745D1504C74500A134A4 /* LightObject.j in Sources */ = {isa = PBXBuildFile; fileRef = 5BC774541504C74500A134A4 /* LightObject.j */; };
 		5BC7745E1504C74500A134A4 /* LightObjectClass.j in Sources */ = {isa = PBXBuildFile; fileRef = 5BC774551504C74500A134A4 /* LightObjectClass.j */; };
@@ -39,6 +40,7 @@
 /* Begin PBXFileReference section */
 		5B312C90158F221900AAA6BC /* LOLocalDictionaryObjectStore.j */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.objj; name = LOLocalDictionaryObjectStore.j; path = ../LOLocalDictionaryObjectStore.j; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		5B312C9F158F3F6B00AAA6BC /* Tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Tests; path = ../Tests; sourceTree = "<group>"; };
+		5B5CA28215DE624500BEE7E7 /* LOError.j */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = LOError.j; path = ../LOError.j; sourceTree = "<group>"; };
 		5BC774531504C74500A134A4 /* CKJSONKeyedUnarchiver.j */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.objj; name = CKJSONKeyedUnarchiver.j; path = ../CKJSONKeyedUnarchiver.j; sourceTree = "<group>"; };
 		5BC774541504C74500A134A4 /* LightObject.j */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.objj; name = LightObject.j; path = ../LightObject.j; sourceTree = "<group>"; };
 		5BC774551504C74500A134A4 /* LightObjectClass.j */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.objj; name = LightObjectClass.j; path = ../LightObjectClass.j; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				5BC7745A1504C74500A134A4 /* LOObjectStore.j */,
 				5B312C90158F221900AAA6BC /* LOLocalDictionaryObjectStore.j */,
 				5BC7745B1504C74500A134A4 /* LOSimpleJSONObjectStore.j */,
+				5B5CA28215DE624500BEE7E7 /* LOError.j */,
 				9EEC44CB13574A0B00615446 /* LightObject.framework */,
 				9EEC4496135749D200615446 /* Frameworks */,
 				9EEC4494135749D200615446 /* Products */,
@@ -205,6 +208,7 @@
 				9EEC44CC13574A0B00615446 /* LightObject.framework in Resources */,
 				5BC774711504D4D000A134A4 /* .xCodeSupport in Resources */,
 				5B312CA0158F3F6B00AAA6BC /* Tests in Resources */,
+				5B5CA28315DE624500BEE7E7 /* LOError.j in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

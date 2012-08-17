@@ -152,10 +152,10 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 // Delegate method for LOObjectContext
-- (id) newObjectForType:(CPString) aType {
-    if (aType == "person") return [[Person alloc] init];
-    if (aType == "school") return [[School alloc] init];
-    if (aType == "persons_school") return [[PersonSchoolMapping alloc] init];
+- (Class) classForType:(CPString) aType {
+    if (aType == "person") return Person;
+    if (aType == "school") return School;
+    if (aType == "persons_school") return PersonSchoolMapping;
     return nil;
 }
 

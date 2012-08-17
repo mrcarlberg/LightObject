@@ -15,7 +15,7 @@
 
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 
-var LOObjectContext_newObjectForType = 1 << 0,
+var LOObjectContext_classForType = 1 << 0,
     LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1,
     LOObjectContext_objectContext_didValidateProperty_withError = 1 << 2,
     LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3,
@@ -118,11 +118,8 @@ var LOObjectContext_newObjectForType = 1 << 0,
     delegate = aDelegate;
     implementedDelegateMethods = 0;
     
-    if ([delegate respondsToSelector:@selector(newObjectForType:)]) {
-        implementedDelegateMethods |= LOObjectContext_newObjectForType;
-    } else {
-        CPLog.error(@"[LOObjectContext setDelegate]: Delegate must implement selector newObjectForType:");
-    }
+    if ([delegate respondsToSelector:@selector(classForType:)])
+        implementedDelegateMethods |= LOObjectContext_classForType;
     if ([delegate respondsToSelector:@selector(objectContext:objectsReceived:withFetchSpecification:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_objectsReceived_withFetchSpecification;
     if ([delegate respondsToSelector:@selector(objectContext:didValidateProperty:withError:)])
@@ -134,9 +131,11 @@ var LOObjectContext_newObjectForType = 1 << 0,
 }
 
 - (id) newObjectForType:(CPString) type {
-    if (implementedDelegateMethods & LOObjectContext_newObjectForType) {
-        var obj = [delegate newObjectForType:type];
-        return obj;
+    if (implementedDelegateMethods & LOObjectContext_classForType) {
+        var aClass = [delegate classForType:type];
+        return [[aClass alloc] init];
+    } else {
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"]: Delegate must implement selector classForType: to be able to create new objects");
     }
     return nil;
 }
@@ -185,7 +184,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:newValue ? newValue : [CPNull null] forKey:theKeyPath];
 
-    //console.log(_cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+    CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
 	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
@@ -211,6 +210,7 @@ var LOObjectContext_newObjectForType = 1 << 0,
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
     [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
+    CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
     if (autoCommit) [self saveChanges];
 }
 
@@ -542,10 +542,17 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return index;
 }
 
+/*!
+ * Returns true if the object is already stored on the server side.
+ * It does not matter if the object has changes or is deleted in the object context
+ */
 - (BOOL) isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
 
+/*!
+ * Returns true if the object has unsaved changes in the object context.
+ */
 - (BOOL) isObjectModified:(id)theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (objDict) {
@@ -555,6 +562,9 @@ var LOObjectContext_newObjectForType = 1 << 0,
     return NO;
 }
 
+/*!
+ * Returns true if the object context has unsaved changes.
+ */
 - (BOOL) hasChanges {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {

@@ -54,6 +54,10 @@
     return [];
 }
 
+- (id) newObjectForType:(CPString)aType objectContext:(LOObjectContext)anObjectContext {
+    return [CPMutableDictionary dictionaryWithObject:aType forKey:@"entity"];
+}
+
 @end
 
 @implementation LightObjectTest : OJTestCase {
@@ -69,11 +73,6 @@
     objectStore = [[TestObjectStore alloc] init];
     [objectContext setObjectStore:objectStore];
     [objectContext setAutoCommit:NO];
-}
-
-// Delegate method for LOObjectContext
-- (id) newObjectForType:(CPString) type {
-    return [CPMutableDictionary dictionaryWithObject:type forKey:@"entity"];
 }
 
 // Delegate method for LOObjectContext

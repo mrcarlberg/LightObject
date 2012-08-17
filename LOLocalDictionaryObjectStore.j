@@ -21,7 +21,7 @@
     return self;
 }
 
-- (CPArray) _fetchAndFilterObjects:(LOFFetchSpecification) fetchSpecification  objectContext:(LOObjectContext)objectContext {
+- (CPArray) _fetchAndFilterObjects:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext {
     //print(_cmd + " entity:" + [fetchSpecification entityName] + " oper: " + [fetchSpecification operator] + " qualifier:" + [fetchSpecification qualifier]);
     var fixtureObjects = [objectFixture objectForKey:[fetchSpecification entityName]];
     var predicate = [fetchSpecification qualifier];
@@ -41,7 +41,7 @@
         var objectType = [objectContext typeOfObject:object];
         var newObject = [registeredObjects objectForKey:objectUuid];
         if (!newObject) {
-            var newObject = [objectContext newObjectForType:objectType];
+            var newObject = [self newObjectForType:objectType objectContext:objectContext];
             if (newObject) {
                 [newObject setValue:objectUuid forKey:@"key"];
                 [registeredObjects setObject:newObject forKey:objectUuid];
@@ -80,6 +80,7 @@
                 }
             }
         }
+        //print(_cmd + " setValue: " + value + " for Key: " + key);
         [newObject setValue:value forKey:key];
     }
 }
@@ -171,7 +172,16 @@
  * The objectContext will observe all these attributes for changes and record them.
  */
 - (CPArray) attributeKeysForObject:(id) theObject {
-    return [theObject allKeys];
+    // Maybe not the cleanest way of doing this but it works for now.
+    // The dictionary (theObject) might just have the attribute "key" and "entity" so we need to find a
+    // complete dictionary in the fixture to find all attributes.
+
+    var fixtureObjects = [objectFixture objectForKey:[theObject valueForKey:@"entity"]];
+    if ([fixtureObjects count] > 0) {
+        return [[fixtureObjects objectAtIndex:0] allKeys];
+    } else {
+        return [CPArray array];
+    }
 }
 
 /*!

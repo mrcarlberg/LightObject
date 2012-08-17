@@ -96,23 +96,26 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 /*!
  Creates objects from JSON. If there is a relationship it is up to this method to create a LOFaultArray, LOFaultObject or the actual object.
  */
-- (CPArray) _objectsFromJSON:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary) receivedObjects {
+- (CPArray) _objectsFromJSON:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary)receivedObjects {
     if (!jSONObjects.isa || ![jSONObjects isKindOfClass:CPArray])
         return jSONObjects;
     var objectContext = connectionDictionary.objectContext;
     var fetchSpecification = connectionDictionary.fetchSpecification;
     var entityName = fetchSpecification.entityName;
-//    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
     var possibleToOneFaultObjects =[CPMutableArray array];
     var newArray = [CPArray array];
     var size = [jSONObjects count];
+    [objectContext setDoNotObserveValues:YES];
     for (i = 0; i < size; i++) {
         var row = jSONObjects[i];
         var type = row["_type"];
         var uuid = row["u_pk"];
         var obj = [receivedObjects objectForKey:uuid];
         if (!obj) {
-            obj = [objectContext newObjectForType:type];
+            obj = [objectContext objectForGlobalId:uuid];
+            if (!obj) {
+                obj = [self newObjectForType:type objectContext:objectContext];
+            }
             if (obj) {
                 [receivedObjects setObject:obj forKey:uuid];
             }
@@ -142,9 +145,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                                 value = nil;//[[LOFaultObject alloc] init];
                             }
                         }
-                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care whats in it.
+                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
                     } else if ([value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
+                        // The array contains only type and primaryKey for the relationship objects.
+                        // The complete relationship objects can be sent before or later in the list of all objects.
                         var relations = value;
                         value = [CPArray array];
                         var relationsSize = [relations count];
@@ -154,7 +159,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             var relationUuid = relationRow["u_pk"];
                             var relationObj = [receivedObjects objectForKey:relationUuid];
                             if (!relationObj) {
-                                relationObj = [objectContext newObjectForType:relationType];
+                                relationObj = [self newObjectForType:relationType objectContext:objectContext];
                                 if (relationObj) {
                                     [relationObj setUuid:relationUuid];
                                     [receivedObjects setObject:relationObj forKey:relationUuid];
@@ -165,7 +170,10 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             }
                         }
                     }
-                    [obj setValue:value forKey:column];
+                    if (value !== [obj valueForKey:column]) {
+                        [obj setValue:value forKey:column];
+                        // FIXME: Clean up posible changes in object context if a new value has been set
+                    }
                 }
             }
             if (type === entityName) {
@@ -173,6 +181,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
     }
+    [objectContext setDoNotObserveValues:NO];
     // Try again to find to one relationship objects. They might been registered now
     var size = [possibleToOneFaultObjects count];
     for (var i = 0; i < size; i++) {
@@ -219,12 +228,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var objectContext = connectionDictionary.objectContext;
     var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
     var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
-    var receivedObjectList = [receivedObjects allValues];
+/*    var receivedObjectList = [receivedObjects allValues];
     [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
     if (newArray.isa && [newArray isKindOfClass:CPArray]) {
         newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
     }
-    var faultArray = connectionDictionary.faultArray;
+*/    var faultArray = connectionDictionary.faultArray;
     if (faultArray) {
         [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
     } else {
