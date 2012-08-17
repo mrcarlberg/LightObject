@@ -79,4 +79,39 @@
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
+/*!
+ * Returns the type for the raw row.
+ */
+- (CPString) typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns the primary key for the raw row.
+ */
+- (CPString) primaryKeyForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns true if the attrbiute is a foreign key for the raw row.
+ */
+- (BOOL) isForeignKeyAttribute:(CPString)attribute forRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns a new object for the type.
+ */
+- (id) primaryKeyForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns a new object for the type.
+ */
+- (id) newObjectForType:(CPString)type objectContext:(LOObjectContext)objectContext {
+    return [objectContext newObjectForType:type];
+}
+
 @end
