@@ -82,36 +82,58 @@
 /*!
  * Returns the type for the raw row.
  */
-- (CPString) typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+- (CPString)typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
- * Returns the primary key for the raw row.
+ * Returns type of the object
  */
-- (CPString) primaryKeyForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+- (CPString)typeOfObject:(id)theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
- * Returns true if the attrbiute is a foreign key for the raw row.
+ * Returns the primary key for the type.
  */
-- (BOOL) isForeignKeyAttribute:(CPString)attribute forRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+- (CPString)primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns true if the attrbiute is a foreign key for the type.
+ */
+- (BOOL)isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns to one relationship attribute that correspond to the foreign key attribute for the type
+ */
+- (CPString)toOneRelationshipAttributeForForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns foreign key attribute that correspond to the to one relationship attribute for the type
+ */
+- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns the primary key for the raw row with type aType.
+ */
+- (CPString)primaryKeyForRawRow:(id)row forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    var primaryKeyAttribute = [self primaryKeyAttributeForType:aType objectContext:objectContext];
+    return row[primaryKeyAttribute];
 }
 
 /*!
  * Returns a new object for the type.
  */
-- (id) primaryKeyForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
-    _CPRaiseInvalidAbstractInvocation(self, _cmd);
-}
-
-/*!
- * Returns a new object for the type.
- */
-- (id) newObjectForType:(CPString)type objectContext:(LOObjectContext)objectContext {
-    return [objectContext newObjectForType:type];
+- (id) newObjectForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    return [objectContext newObjectForType:aType];
 }
 
 @end

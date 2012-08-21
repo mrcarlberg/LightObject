@@ -204,7 +204,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (newValue === oldValue) return;
     var newGlobalId = [self globalIdForObject:newValue];
     var oldGlobalId = [self globalIdForObject:oldValue];
-    var foreignKey = theKeyPath + @"_fk";
+    var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:theKeyPath forType:[self typeOfObject:theObject] objectContext:self];
     var updateDict = [[self subDictionaryForKey:@"updateDict" forObject:theObject] copy];
     var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
     [self registerEvent:updateEvent];
@@ -216,14 +216,15 @@ var LOObjectContext_classForType = 1 << 0,
 
 - (void) unregisterObject:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
+    var type = [self typeOfObject:theObject];
     [objects removeObjectForKey:globalId];
     var attributeKeys = [objectStore attributeKeysForObject:theObject];
     var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
     var attributeSize = [attributeKeys count];
     for (var i = 0; i < attributeSize; i++) {
         var attributeKey = [attributeKeys objectAtIndex:i];
-        if ([attributeKey hasSuffix:@"_fk"]) {    // Handle to one relationship
-            attributeKey = [attributeKey substringToIndex:[attributeKey length] - 3]; // Remove "_fk" at end
+        if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship
+            attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
         }
         if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a relationship
             [theObject removeObserver:self forKeyPath:attributeKey];
@@ -234,14 +235,16 @@ var LOObjectContext_classForType = 1 << 0,
 - (void) registerObject:(id) theObject {
     // TODO: Check if theObject is already registrered
     var globalId = [objectStore globalIdForObject:theObject];
+    var type = [self typeOfObject:theObject];
     [objects setObject:theObject forKey:globalId];
     var attributeKeys = [objectStore attributeKeysForObject:theObject];
     var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
     var attributeSize = [attributeKeys count];
     for (var i = 0; i < attributeSize; i++) {
         var attributeKey = [attributeKeys objectAtIndex:i];
-        if ([attributeKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
-            [theObject addObserver:toOneProxyObject forKeyPath:[attributeKey substringToIndex:[attributeKey length] - 3] options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
+        if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship Make observation to proxy object and remove "_fk" from attribute key
+            attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
+            [theObject addObserver:toOneProxyObject forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
         } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
             [theObject addObserver:self forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
         }
@@ -312,6 +315,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (void) _insertObject:(id) theObject {
+    var type = [self typeOfObject:theObject];
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
 
@@ -321,8 +325,9 @@ var LOObjectContext_classForType = 1 << 0,
     var attributeSize = [attributeKeys count];
     for (var i = 0; i < attributeSize; i++) {
         var attributeKey = [attributeKeys objectAtIndex:i];
-        if ([attributeKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
-            var value = [theObject valueForKey:[attributeKey substringToIndex:[attributeKey length] - 3]];
+        if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
+            var toOneAttribute = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
+            var value = [theObject valueForKey:toOneAttribute];
             if (value) {
                 var globalId = [self globalIdForObject:value];
                 if (globalId) {

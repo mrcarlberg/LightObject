@@ -108,8 +108,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [objectContext setDoNotObserveValues:YES];
     for (i = 0; i < size; i++) {
         var row = jSONObjects[i];
-        var type = row["_type"];
-        var uuid = row["u_pk"];
+        var type = [self typeForRawRow:row objectContext:objectContext];
+        var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
         var obj = [receivedObjects objectForKey:uuid];
         if (!obj) {
             obj = [objectContext objectForGlobalId:uuid];
@@ -133,8 +133,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     var value = row[column];
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
 //                    CPLog.trace(@"tracing: " + column + @" value class: " + [value className]);
-                    if ([column hasSuffix:@"_fk"]) {    // Handle to one relationship
-                        column = [column substringToIndex:[column length] - 3]; // Remove "_fk" at end
+                    if ([self isForeignKeyAttribute:column forType:type objectContext:objectContext]) {    // Handle to one relationship.
+                        column = [self toOneRelationshipAttributeForForeignKeyAttribute:column forType:type objectContext:objectContext]; // Remove "_fk" at end
                         if (value) {
                             var toOne = [objectContext objectForGlobalId:value];
                             if (toOne) {
@@ -155,8 +155,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                         var relationsSize = [relations count];
                         for (var k = 0; k < relationsSize; k++) {
                             var relationRow = [relations objectAtIndex:k];
-                            var relationType = relationRow["_type"];
-                            var relationUuid = relationRow["u_pk"];
+                            var relationType = [self typeForRawRow:relationRow objectContext:objectContext];
+                            var relationUuid = [self primaryKeyForRawRow:relationRow forType:relationType objectContext:objectContext];
                             var relationObj = [receivedObjects objectForKey:relationUuid];
                             if (!relationObj) {
                                 relationObj = [self newObjectForType:relationType objectContext:objectContext];
@@ -202,6 +202,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
         var obj = [theObjects objectAtIndex:i];
+        var type = [self typeOfObject:obj];
         if ([objectContext isObjectRegistered:obj]) {   // If we already got the object transfer all attributes to the old object
             CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
             [objectContext setDoNotObserveValues:YES];
@@ -210,8 +211,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var columnSize = [columns count];
             for (var j = 0; j < columnSize; j++) {
                 var columnKey = [columns objectAtIndex:j];
-                if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
-                    columnKey = [columnKey substringToIndex:[columnKey length] - 3];
+                if ([self isForeignKeyAttribute:columnKey forType:type objectContext:objectContext]) {    // Handle to one relationship.
+                    columnKey = [self toOneRelationshipAttributeForForeignKeyAttribute:columnKey forType:type objectContext:objectContext]; // Remove "_fk" at end
                 }
                 var newValue = [obj valueForKey:columnKey];
                 var oldValue = [oldObject valueForKey:columnKey];
@@ -321,6 +322,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         for (var i = 0; i < size; i++) {
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
+            var type = [self typeOfObject:obj];
+            var primaryKeyAttribute = [self primaryKeyAtrributeForType:type];
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
@@ -347,10 +350,10 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     }
                     [updateDictCopy setObject:updateDictValue forKey:updateDictKey];
                 }
-                [updateDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
+                [updateDictCopy setObject:type forKey:@"_type"];
                 var uuid = [obj uuid];
                 if (uuid) {
-                    [updateDictCopy setObject:uuid forKey:@"u_pk"];
+                    [updateDictCopy setObject:uuid forKey:primaryKeyAttribute];
                 } else {
                     [updateDictCopy setObject:[objDict tmpId] forKey:@"_tmpid"];
                 }
@@ -358,10 +361,10 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
             if (deleteDict && !insertDict) {    // Don't do this if it is also inserted
                 var deleteDictCopy = [deleteDict mutableCopy];
-                [deleteDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
+                [deleteDictCopy setObject:type forKey:@"_type"];
                 var uuid = [obj uuid];
                 if (uuid) {
-                    [deleteDictCopy setObject:uuid forKey:@"u_pk"];
+                    [deleteDictCopy setObject:uuid forKey:primaryKeyAttribute];
                 } else {
                     [deleteDictCopy setObject:[objDict tmpId] forKey:@"_tmpid"];
                 }
@@ -379,10 +382,6 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         }
     }
     return modifyDict;
-}
-
-- (CPString) typeOfObject:(id) theObject {
-    return [theObject loObjectType]
 }
 
 - (CPString) globalIdForObject:(id) theObject {

@@ -61,13 +61,14 @@
 }
 
 - (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)thePossibleToOneFaults objectContext:(LOObjectContext)anObjectContext {
+    var type = [self typeOfObject:newObject];
     var attributeKeys = [self attributeKeysForObject:newObject];
-    //print(_cmd + " processing attribute keys of new object: " + [attributeKeys description]);
+    //print(_cmd + " " + type + " processing attribute keys of new object: " + [attributeKeys description]);
     for (var j=0; j<[attributeKeys count]; j++) {
         var key = [attributeKeys objectAtIndex:j];
         var value = [theReceivedObject valueForKey:key];
-        if ([key hasSuffix:@"_fk"]) {    // Handle to one relationship
-            key = [key substringToIndex:[key length] - 3]; // Remove "_fk" at end
+        if ([self isForeignKeyAttribute:key forType:type objectContext:anObjectContext]) {    // Handle to one relationship.
+            key = [self toOneRelationshipAttributeForForeignKeyAttribute:key forType:type objectContext:anObjectContext]; // Remove "_fk" at end
             if (value) {
                 var toOne = [anObjectContext objectForGlobalId:value];
                 if (toOne) {
@@ -107,6 +108,7 @@
 
         // If we already got the object transfer all attributes to the old object
         CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
+        var type = [self typeOfObject:newObject];
         [anObjectContext setDoNotObserveValues:YES];
 
         var oldObject = [anObjectContext objectForGlobalId:[self globalIdForObject:newObject]];
@@ -114,8 +116,8 @@
         var columnsCount = [columns count];
         for (var j = 0; j < columnsCount; j++) {
             var columnKey = [columns objectAtIndex:j];
-            if ([columnKey hasSuffix:@"_fk"]) {      // Handle to one relationship. Make observation to proxy object and remove "_fk" from attribute key
-                columnKey = [columnKey substringToIndex:[columnKey length] - 3];
+            if ([self isForeignKeyAttribute:columnKey forType:type objectContext:anObjectContext]) {    // Handle to one relationship.
+                columnKey = [self toOneRelationshipAttributeForForeignKeyAttribute:columnKey forType:type objectContext:anObjectContext]; // Remove "_fk" at end
             }
             var newValue = [newObject valueForKey:columnKey];
             var oldValue = [oldObject valueForKey:columnKey];
@@ -196,6 +198,49 @@
  */
 - (CPString) globalIdForObject:(id) theObject {
     return [theObject UID];
+}
+
+/*!
+ * Returns the type for the raw row.
+ */
+- (CPString) typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+    return row._type;
+}
+
+/*!
+ * Returns the primary key attribute for the raw row.
+ */
+- (CPString) primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+        return @"key";
+}
+
+/*!
+ * Returns true if the attribute is a foreign key for the raw row.
+ */
+- (BOOL) isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    return [attribute hasSuffix:@"_fk"];
+}
+
+/*!
+ * Returns to one relationship attribute that correspond to the foreign key attribute for the type
+ */
+- (CPString)toOneRelationshipAttributeForForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    return [attribute substringToIndex:[attribute length] - 3]; // Remove "_fk" at end of attribute
+}
+
+/*!
+ * Returns foreign key attribute that correspond to the to one relationship attribute for the type
+ */
+- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    return attribute + @"_fk";
+}
+
+/*!
+ * Returns the primary key for the raw row with type aType.
+ */
+- (CPString)primaryKeyForRawRow:(id)row type:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    var primaryKeyAttribute = [self primaryKeyAttributeForType:aType objectContext:objectContext];
+    return row[primaryKeyAttribute];
 }
 
 @end

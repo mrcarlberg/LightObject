@@ -198,7 +198,9 @@ CPArray         array @accessors;
  */
 - (void) requestFault {
     var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
-    var qualifier = [CPPredicate predicateWithFormat:[objectContext typeOfObject:masterObject] + @"_fk=%@", [objectContext globalIdForObject:masterObject]];
+    var objectStore = [objectContext objectStore];
+    var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:[objectContext typeOfObject:masterObject] forType:entityName objectContext:objectContext];
+    var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
     var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
     [objectContext requestFaultArray:self withFetchSpecification:fs];
 }
