@@ -329,11 +329,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
             var type = [self typeOfObject:obj];
-<<<<<<< HEAD
             var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
-=======
-            var primaryKeyAttribute = [self primaryKeyAttributeForType:type];
->>>>>>> 5c77e5b3c2f537b9757ff73c39cc0b99859c9558
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
