@@ -225,8 +225,14 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     }
 }
 
-- (void) objectsReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
+- (void) objectsReceived:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
+    var error = [self errorForJSON:jSONObjects];
+
+    if (error) {
+        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
+    }
+
     var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
     var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
 /*    var receivedObjectList = [receivedObjects allValues];
@@ -323,7 +329,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
             var type = [self typeOfObject:obj];
+<<<<<<< HEAD
             var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
+=======
+            var primaryKeyAttribute = [self primaryKeyAttributeForType:type];
+>>>>>>> 5c77e5b3c2f537b9757ff73c39cc0b99859c9558
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
@@ -359,7 +369,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 }
                 [updateArray addObject:updateDictCopy];
             }
-            if (deleteDict && !insertDict) {    // Don't do this if it is also inserted
+            if (deleteDict && !insertDict) {    // Don't delete if it is also inserted, just skip it
                 var deleteDictCopy = [deleteDict mutableCopy];
                 [deleteDictCopy setObject:type forKey:@"_type"];
                 var uuid = [obj uuid];

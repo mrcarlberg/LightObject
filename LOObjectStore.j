@@ -136,4 +136,11 @@
     return [objectContext newObjectForType:aType];
 }
 
+/*!
+ * Returns LOError for data if the backend has returned a error.
+ */
+- (LOError) errorForJSON:(CPString)data {
+    return nil;
+}
+
 @end
