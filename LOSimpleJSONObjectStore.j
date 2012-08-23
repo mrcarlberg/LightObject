@@ -191,7 +191,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         if (toOne) {
             [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
         } else {
-            console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+            //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
         }
     }
     return newArray;
@@ -323,7 +323,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
             var type = [self typeOfObject:obj];
-            var primaryKeyAttribute = [self primaryKeyAtrributeForType:type];
+            var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
