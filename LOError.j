@@ -36,4 +36,8 @@ LOObjectValidationDomainString = @"LOObjectValidationDomainString";
 	return self;
 }
 
+- (CPString)description {
+    return [CPString stringWithFormat:@"<%@ Domain: %@ Code: %@ userInfo: %@>", [self className], domain, code, userInfo];
+}
+
 @end

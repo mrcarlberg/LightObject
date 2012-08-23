@@ -65,14 +65,18 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    var statusCode = connectionDictionary.statusCode;
     var receivedData = connectionDictionary.receivedData;
-    if (receivedData && [receivedData length] > 0) {
+    var error = statusCode === 200 ? [self errorForJSON:receivedData] : [LOError errorWithDomain:nil code:statusCode userInfo:[CPDictionary dictionaryWithObject:connectionDictionary.url forKey:@"url"]];
+
+    if (error) {
+        var objectContext = connectionDictionary.objectContext;
+        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
+    } else if (receivedData && [receivedData length] > 0) {
 //        CPLog.trace(@"tracing: LOF objectsReceived: " + receivedData);
         var jSON = [receivedData objectFromJSON];
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
         [connections removeObject:connectionDictionary];
-    } else {
-//        [errorText setObjectValue:@"F√•r ej kontakt med Boplats"];
     }
 }
 
@@ -227,25 +231,18 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void) objectsReceived:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
-    var statusCode = connectionDictionary.statusCode;
-    var error = statusCode === 200 ? [self errorForJSON:jSONObjects] : [LOError errorWithDomain:nil code:statusCode userInfo:[CPDictionary dictionaryWithObject:connectionDictionary.url forKey:@"url"]];
-
-    if (error) {
-        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
+    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
+    var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
+/*    var receivedObjectList = [receivedObjects allValues];
+    [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
+    if (newArray.isa && [newArray isKindOfClass:CPArray]) {
+        newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
+    }
+*/    var faultArray = connectionDictionary.faultArray;
+    if (faultArray) {
+        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
     } else {
-        var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
-        var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
-    /*    var receivedObjectList = [receivedObjects allValues];
-        [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
-        if (newArray.isa && [newArray isKindOfClass:CPArray]) {
-            newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
-        }
-    */    var faultArray = connectionDictionary.faultArray;
-        if (faultArray) {
-            [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
-        } else {
-            [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
-        }
+        [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
     }
 }
 
