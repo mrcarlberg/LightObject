@@ -20,6 +20,7 @@ var LOObjectContext_classForType = 1 << 0,
     LOObjectContext_objectContext_didValidateProperty_withError = 1 << 2,
     LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3,
     LOObjectContext_objectContext_didSaveChangesWithResultAndStatus = 1 << 4;
+    LOObjectContext_objectContext_errorReceived_withFetchSpecification = 1 << 5;
 
 
 @implementation LOModifyRecord : CPObject {
@@ -128,6 +129,8 @@ var LOObjectContext_classForType = 1 << 0,
         implementedDelegateMethods |= LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted;
     if ([delegate respondsToSelector:@selector(objectContext:didSaveChangesWithResult:andStatus:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_didSaveChangesWithResultAndStatus;
+    if ([delegate respondsToSelector:@selector(objectContext:errorReceived:withFetchSpecification:)])
+        implementedDelegateMethods |= LOObjectContext_objectContext_errorReceived_withFetchSpecification;
 }
 
 - (id) newObjectForType:(CPString) type {
@@ -171,6 +174,12 @@ var LOObjectContext_classForType = 1 << 0,
     [array addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];
     [faultArray setFaultPopulated:YES];
+}
+
+- (void) errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+    if (implementedDelegateMethods & LOObjectContext_objectContext_errorReceived_withFetchSpecification) {
+        [delegate objectContext:self errorReceived:error withFetchSpecification:fetchSpecification];
+    }
 }
 
 - (void)observeValueForKeyPath:(CPString)theKeyPath ofObject:(id)theObject change:(CPDictionary)theChanges context:(id)theContext {
