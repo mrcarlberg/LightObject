@@ -191,8 +191,7 @@ var LOObjectContext_classForType = 1 << 0,
     var updateEvent = [LOUpdateEvent updateEventWithObject:theObject updateDict:[[self subDictionaryForKey:@"updateDict" forObject:theObject] copy] key:theKeyPath old:oldValue new:newValue];
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-    [updateDict setObject:newValue ? newValue : [CPNull null] forKey:theKeyPath];
-
+	[updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
     CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
