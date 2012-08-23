@@ -43,7 +43,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var request = [CPURLRequest requestWithURL:url];
     [request setHTTPMethod:@"GET"];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray}];
+    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url}];
     if (!url) debugger;
     CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
 }
@@ -227,24 +227,25 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void) objectsReceived:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
-    var error = [self errorForJSON:jSONObjects];
+    var statusCode = connectionDictionary.statusCode;
+    var error = statusCode === 200 ? [self errorForJSON:jSONObjects] : [LOError errorWithDomain:nil code:statusCode userInfo:[CPDictionary dictionaryWithObject:connectionDictionary.url forKey:@"url"]];
 
     if (error) {
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
-    }
-
-    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
-    var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
-/*    var receivedObjectList = [receivedObjects allValues];
-    [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
-    if (newArray.isa && [newArray isKindOfClass:CPArray]) {
-        newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
-    }
-*/    var faultArray = connectionDictionary.faultArray;
-    if (faultArray) {
-        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
     } else {
-        [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
+        var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
+        var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
+    /*    var receivedObjectList = [receivedObjects allValues];
+        [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
+        if (newArray.isa && [newArray isKindOfClass:CPArray]) {
+            newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
+        }
+    */    var faultArray = connectionDictionary.faultArray;
+        if (faultArray) {
+            [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
+        } else {
+            [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
+        }
     }
 }
 
