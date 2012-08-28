@@ -137,9 +137,9 @@
 }
 
 /*!
- * Returns LOError for data if the backend has returned a error.
+ * Returns LOError for response and data if the backend has returned a error.
  */
-- (LOError) errorForJSON:(CPString)data {
+- (LOError) errorForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString {
     return nil;
 }
 

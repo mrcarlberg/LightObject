@@ -50,7 +50,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
-    connectionDictionary.statusCode = [response statusCode];
+    connectionDictionary.response = response;
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveData:(CPString)data {
@@ -65,9 +65,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
-    var statusCode = connectionDictionary.statusCode;
+    var response = connectionDictionary.response;
     var receivedData = connectionDictionary.receivedData;
-    var error = statusCode === 200 ? [self errorForJSON:receivedData] : [LOError errorWithDomain:nil code:statusCode userInfo:[CPDictionary dictionaryWithObject:connectionDictionary.url forKey:@"url"]];
+    var error = [self errorForResponse:response andData:receivedData fromURL:connectionDictionary.url];
 
     if (error) {
         var objectContext = connectionDictionary.objectContext;
@@ -279,7 +279,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
     }
-    [objectContext didSaveChangesWithResult:jSONObjects andStatus:connectionDictionary.statusCode];
+    [objectContext didSaveChangesWithResult:jSONObjects andStatus:[connectionDictionary.response statusCode]];
 }
 
 - (void) saveChangesWithObjectContext:(LOObjectContext) objectContext {
