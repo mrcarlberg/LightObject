@@ -136,7 +136,7 @@ CPArray         array @accessors;
 
 - (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
     if ([self _handleObserverForKeyPath:aKeyPath]) {
-        [super addObserver:observer forKeyPath:aKeyPath options:options context:context];
+        [[_CPKVOProxy proxyForObject:self] _addObserver:observer forKeyPath:aKeyPath options:options context:context]
     } else {
         [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
     }
@@ -144,7 +144,7 @@ CPArray         array @accessors;
 
 - (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
     if ([self _handleObserverForKeyPath:aKeyPath]) {
-        [super removeObserver:observer forKeyPath:aKeyPath];
+        [[_CPKVOProxy proxyForObject:self] _removeObserver:observer forKeyPath:aKeyPath];
     } else {
         [array removeObserver:observer forKeyPath:aKeyPath];
     }
