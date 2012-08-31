@@ -45,7 +45,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url}];
     if (!url) debugger;
-    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
+    //CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
@@ -208,7 +208,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var obj = [theObjects objectAtIndex:i];
         var type = [self typeOfObject:obj];
         if ([objectContext isObjectRegistered:obj]) {   // If we already got the object transfer all attributes to the old object
-            CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
+            //CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
             [objectContext setDoNotObserveValues:YES];
             var oldObject = [objectContext objectForGlobalId:[self globalIdForObject:obj]];
             var columns = [self _attributeKeysForObject:obj];
@@ -262,7 +262,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (void) updateStatusReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
-    CPLog.trace(@"tracing: LOF update Status: " + [CPString JSONFromObject:jSONObjects]);
+    //CPLog.trace(@"tracing: LOF update Status: " + [CPString JSONFromObject:jSONObjects]);
     var objectContext = connectionDictionary.objectContext;
     var modifiedObjects = connectionDictionary.modifiedObjects;
     var size = [modifiedObjects count];
@@ -288,7 +288,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
-        CPLog.trace(@"POST Data: " + jsonText);
+        //CPLog.trace(@"POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];

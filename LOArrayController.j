@@ -124,12 +124,12 @@
 - (CPArray) arrangeObjects: (CPArray) objects {
     var testArray = [[_CPKVCArray alloc] init];
     var testArrayCopy = [testArray copy];
-    CPLog.trace(@"tracing: arrangeObjects: class = " + [objects class]);
+    //CPLog.trace(@"tracing: arrangeObjects: class = " + [objects class]);
     if ([objects className] === @"_CPKVCArray") {
         debugger;
     }
     var copy = [objects copy];
-    CPLog.trace(@"tracing: arrangeObjects: " + [CPString JSONFromObject:copy]);
+    //CPLog.trace(@"tracing: arrangeObjects: " + [CPString JSONFromObject:copy]);
     [super arrangeObjects:objects];
 }
 */

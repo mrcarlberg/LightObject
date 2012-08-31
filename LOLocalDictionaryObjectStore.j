@@ -107,7 +107,7 @@
         if (![anObjectContext isObjectRegistered:newObject]) continue;
 
         // If we already got the object transfer all attributes to the old object
-        CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
+        //CPLog.trace(@"tracing: " + _cmd + ": Object already in objectContext: " + newObject);
         var type = [self typeOfObject:newObject];
         [anObjectContext setDoNotObserveValues:YES];
 

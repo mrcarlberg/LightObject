@@ -13,7 +13,7 @@ CPArray         array @accessors;
 }
 /*
  + (id)alloc {
- CPLog.trace(@"tracing: LOFaultArray.alloc:");
+ //CPLog.trace(@"tracing: LOFaultArray.alloc:");
  var array = [];
  
  array.isa = self;
@@ -59,7 +59,7 @@ CPArray         array @accessors;
 }
 /*
  - (id)initWithObjects:(id)anObject, ... {
- CPLog.trace(@"tracing: LOFaultArray.initWithObjects:...");
+ //CPLog.trace(@"tracing: LOFaultArray.initWithObjects:...");
  self = [super initWithObjects:anObject];
  if (self) {
  }
