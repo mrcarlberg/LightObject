@@ -488,7 +488,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (relationsShipDict) {
         var insertsArray = [relationsShipDict objectForKey:@"insert"];
         if (insertsArray) {
-            [insertsArray deleteObject:newObject];
+            [insertsArray removeObject:newObject];
         }
     }
 }
