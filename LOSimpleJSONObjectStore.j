@@ -417,11 +417,15 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) _attributeKeysForObject:(id) theObject {
+    if ([theObject respondsToSelector:@selector(attributeKeys)]) {
+        return [theObject attributeKeys];
+    }
+
     var theObjectClass = [theObject class];
     if ([theObjectClass respondsToSelector:@selector(attributeKeys)]) {
         return [theObjectClass attributeKeys];
     } else {
-        return null;
+        return [];
     }
 }
 

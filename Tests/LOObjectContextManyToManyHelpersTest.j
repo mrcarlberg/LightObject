@@ -67,6 +67,10 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (CPArray) attributeKeysForObject:(id) theObject {
+    if ([theObject respondsToSelector:@"attributeKeys"]) {
+        return [theObject attributeKeys];
+    }
+
     var theObjectClass = [theObject class];
     if ([theObjectClass respondsToSelector:@"attributeKeys"]) {
         return [theObjectClass attributeKeys];
