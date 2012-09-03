@@ -404,11 +404,15 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) _relationshipKeysForObject:(id) theObject {
+    if ([theObject respondsToSelector:@selector(relationshipKeys)]) {
+        return [theObject relationshipKeys];
+    }
+
     var theObjectClass = [theObject class];
     if ([theObjectClass respondsToSelector:@selector(relationshipKeys)]) {
         return [theObjectClass relationshipKeys];
     } else {
-        return null;
+        return nil;
     }
 }
 
@@ -425,7 +429,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if ([theObjectClass respondsToSelector:@selector(attributeKeys)]) {
         return [theObjectClass attributeKeys];
     } else {
-        return [];
+        return nil;
     }
 }
 

@@ -29,11 +29,18 @@
     return objectContext;
 }
 
-- (void)insert:(id)sender {
+- (@action)insert:(id)sender {
     if (![self canInsert])
         return;
     
     var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
+    [self insertObject:newObject];
+}
+
+- (void)insertObject:(id)newObject {
+    if (![self canInsert])
+        return;
+
     [self addObject:newObject];
     [self setSelectedObjects:[newObject]];
 
