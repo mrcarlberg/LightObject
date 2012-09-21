@@ -368,6 +368,7 @@ var LOObjectContext_classForType = 1 << 0,
  *  Add objects to context
  */
 - (void) insertObjects:(CPArray) theObjects {
+    //FIXME: create delete event as in -insertObject:
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
         var obj = [theObjects objectAtIndex:i];
