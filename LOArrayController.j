@@ -82,7 +82,7 @@
 - (void)remove:(id)sender {
     var selectedObjectsIndexes = [[self selectionIndexes] copy];
     var selectedObjects = [self selectedObjects];
-    [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes];
+    [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes]; // FIXME: why not selectedObjectsIndexes?
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
     var registeredOwnerObjects = [CPMutableArray array];
