@@ -174,6 +174,7 @@ var LOObjectContext_classForType = 1 << 0,
     [array addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];
     [faultArray setFaultPopulated:YES];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[faultArray masterObject] userInfo:[CPDictionary dictionaryWithObjects:[faultArray, fetchSpecification] forKeys:[LOFaultArrayKey, LOFaultFetchSpecificationKey]]];
 }
 
 - (void) errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {

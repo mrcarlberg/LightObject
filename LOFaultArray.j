@@ -3,6 +3,13 @@
  * Copyright 2012, Your Company All rights reserved.
  */
 
+LOFaultDidFireNotification = @"LOFaultDidFireNotification";
+LOFaultDidPopulateNotification = @"LOFaultDidPopulateNotification";
+
+LOFaultArrayKey = @"LOFaultArrayKey";
+LOFaultFetchSpecificationKey = @"LOFaultFetchSpecificationKey";
+
+
 @implementation LOFaultArray : CPMutableArray {
 LOObjectContext objectContext @accessors;
 id              masterObject @accessors;
@@ -203,6 +210,7 @@ CPArray         array @accessors;
     var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
     var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
     [objectContext requestFaultArray:self withFetchSpecification:fs];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey]]];
 }
 
 @end
