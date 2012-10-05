@@ -97,14 +97,14 @@
     [self _removeObjects:selectedObjects atIndexes:selectedObjectsIndexes];
 }
 
-- (void)_removeObjects:(CPArray)selectedObjects atIndexes:(CPIndexSet)selectedObjectsIndexes {
-    // Note: assumes selectedObjectsIndexes corresponds to selectedObjects.
-    [self removeObjectsAtArrangedObjectIndexes:selectedObjectsIndexes];
+- (void)_removeObjects:(CPArray)objectsToDelete atIndexes:(CPIndexSet)objectsToDeleteIndexes {
+    // Note: assumes objectsToDeleteIndexes corresponds to objectsToDelete.
+    [self removeObjectsAtArrangedObjectIndexes:objectsToDeleteIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
     var registeredOwnerObjects = [CPMutableArray array];
     var lastbindingKeyPath = nil;
-    [selectedObjects enumerateObjectsUsingBlock:function(deletedObject) {
+    [objectsToDelete enumerateObjectsUsingBlock:function(deletedObject) {
         var info = [self infoForBinding:@"contentArray"];
         var bindingKeyPath = [info objectForKey:CPObservedKeyPathKey];
         var keyPathComponents = [bindingKeyPath componentsSeparatedByString:@"."];
@@ -118,9 +118,9 @@
         }];
     }];
 
-    var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:selectedObjectsIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+    var deleteEvent = [LODeleteEvent deleteEventWithObjects:objectsToDelete atArrangedObjectIndexes:objectsToDeleteIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:deleteEvent];
-    [objectContext deleteObjects: selectedObjects]; // this will commit if auto commit is enabled
+    [objectContext deleteObjects: objectsToDelete]; // this will commit if auto commit is enabled
 }
 
 - (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)indexSet ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
