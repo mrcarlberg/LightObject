@@ -79,10 +79,27 @@
     }
 }
 
+- (void)removeObjects:(CPArray)objectsToDelete {
+    var objectsToDeleteIndexes = [CPMutableIndexSet indexSet];
+    [objectsToDelete enumerateObjectsUsingBlock:function(aCandidate) {
+        var anIndex = [[self arrangedObjects] indexOfObjectIdenticalTo:aCandidate];
+        if (anIndex === CPNotFound) {
+            [CPException raise:CPInvalidArgumentException reason:@"Can't delete object not in array controller: " + aCandidate];
+        }
+        [objectsToDeleteIndexes addIndex:anIndex];
+    }];
+    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes];
+}
+
 - (void)remove:(id)sender {
     var selectedObjectsIndexes = [[self selectionIndexes] copy];
     var selectedObjects = [self selectedObjects];
-    [self removeObjectsAtArrangedObjectIndexes:_selectionIndexes]; // FIXME: why not selectedObjectsIndexes?
+    [self _removeObjects:selectedObjects atIndexes:selectedObjectsIndexes];
+}
+
+- (void)_removeObjects:(CPArray)selectedObjects atIndexes:(CPIndexSet)selectedObjectsIndexes {
+    // Note: assumes selectedObjectsIndexes corresponds to selectedObjects.
+    [self removeObjectsAtArrangedObjectIndexes:selectedObjectsIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
     var registeredOwnerObjects = [CPMutableArray array];
