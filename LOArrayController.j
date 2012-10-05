@@ -103,24 +103,20 @@
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
     var registeredOwnerObjects = [CPMutableArray array];
-    var selectedObjectsSize = [selectedObjects count];
-    for (var i = 0; i < selectedObjectsSize; i ++) {
-        var deletedObject = [selectedObjects objectAtIndex:i];
+    var lastbindingKeyPath = nil;
+    [selectedObjects enumerateObjectsUsingBlock:function(deletedObject) {
         var info = [self infoForBinding:@"contentArray"];
         var bindingKeyPath = [info objectForKey:CPObservedKeyPathKey];
         var keyPathComponents = [bindingKeyPath componentsSeparatedByString:@"."];
-        var lastbindingKeyPath = [keyPathComponents objectAtIndex:[keyPathComponents count] - 1];
+        lastbindingKeyPath = [keyPathComponents objectAtIndex:[keyPathComponents count] - 1];
         var bindToObject = [info objectForKey:CPObservedObjectKey];
-        var selectedOwnerObjects = [bindToObject selectedObjects];
-        var selectedOwnerObjectsSize = [selectedOwnerObjects count];
-        for (var j = 0; j < selectedOwnerObjectsSize; j++) {
-            var selectedOwnerObject = [selectedOwnerObjects objectAtIndex:j];
+        [[bindToObject selectedObjects] enumerateObjectsUsingBlock:function(selectedOwnerObject) {
             if ([objectContext isObjectRegistered:selectedOwnerObject]) {
                 [registeredOwnerObjects addObject:selectedOwnerObject];
                 [objectContext _delete:deletedObject withRelationshipWithKey:lastbindingKeyPath forObject:selectedOwnerObject];
             }
-        }
-    }
+        }];
+    }];
 
     var deleteEvent = [LODeleteEvent deleteEventWithObjects:selectedObjects atArrangedObjectIndexes:selectedObjectsIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
     [objectContext registerEvent:deleteEvent];
