@@ -478,13 +478,11 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (void) unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
-    console.log([self className] + " " + _cmd + " " + relationshipKey);
     [self _unAdd:newObject toRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
 }
 
 - (void) _unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
-    console.log([self className] + " " + _cmd + " " + relationshipKey);
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
     if (relationsShipDict) {
