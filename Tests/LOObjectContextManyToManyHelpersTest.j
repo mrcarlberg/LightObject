@@ -59,23 +59,12 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (CPArray)relationshipKeysForObject:(id)theObject {
-    var theObjectClass = [theObject class];
-    if ([theObjectClass respondsToSelector:@"relationshipKeys"]) {
-        return [theObjectClass relationshipKeys];
-    }
-    return [];
+    return [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
 }
 
-- (CPArray) attributeKeysForObject:(id) theObject {
-    if ([theObject respondsToSelector:@"attributeKeys"]) {
-        return [theObject attributeKeys];
-    }
 
-    var theObjectClass = [theObject class];
-    if ([theObjectClass respondsToSelector:@"attributeKeys"]) {
-        return [theObjectClass attributeKeys];
-    }
-    return [];
+- (CPArray) attributeKeysForObject:(id) theObject {
+    return [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [];
 }
 
 @end
@@ -91,8 +80,8 @@ CPLogRegister(CPLogPrint, "warn");
     CPString name @accessors;
     CPArray persons_schools @accessors;
 }
-+ (CPArray)attributeKeys { return [@"name"]; }
-+ (CPArray)relationshipKeys { return ["persons_schools"]; }
+- (CPArray)attributeKeys { return [@"name"]; }
+- (CPArray)relationshipKeys { return ["persons_schools"]; }
 - (CPString)loObjectType { return "person"; }
 @end
 
@@ -101,8 +90,8 @@ CPLogRegister(CPLogPrint, "warn");
     CPString name @accessors;
     CPArray persons_schools @accessors;
 }
-+ (CPArray)attributeKeys { return [@"name"]; }
-+ (CPArray)relationshipKeys { return ["persons_schools"]; }
+- (CPArray)attributeKeys { return [@"name"]; }
+- (CPArray)relationshipKeys { return ["persons_schools"]; }
 - (CPString)loObjectType { return "school"; }
 @end
 
@@ -111,7 +100,7 @@ CPLogRegister(CPLogPrint, "warn");
     Person person @accessors;
     School school @accessors;
 }
-+ (CPArray)attributeKeys { return [@"person_fk", @"school_fk"]; }
+- (CPArray)attributeKeys { return [@"person_fk", @"school_fk"]; }
 - (CPString)loObjectType { return "persons_school"; }
 @end
 

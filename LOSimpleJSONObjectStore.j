@@ -126,11 +126,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         }
         if (obj) {
             var relationshipKeys = [self relationshipKeysForObject:obj];
-            var columns = [self _attributeKeysForObject:obj];
+            var columns = [self attributeKeysForObject:obj];
 
-            if (!columns) {
-                columns = [self _createAttributeKeysFromRow:row forObject:obj];
-            }
             [obj setUuid:uuid];
             var columnSize = [columns count];
 
@@ -214,7 +211,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             //CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
             [objectContext setDoNotObserveValues:YES];
             var oldObject = [objectContext objectForGlobalId:[self globalIdForObject:obj]];
-            var columns = [self _attributeKeysForObject:obj];
+            var columns = [self attributeKeysForObject:obj];
             var columnSize = [columns count];
             for (var j = 0; j < columnSize; j++) {
                 var columnKey = [columns objectAtIndex:j];
@@ -403,37 +400,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray) relationshipKeysForObject:(id) theObject {
-    return [self _relationshipKeysForObject:theObject] || [];
+    return [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
 }
 
-- (CPArray) _relationshipKeysForObject:(id) theObject {
-    if ([theObject respondsToSelector:@selector(relationshipKeys)]) {
-        return [theObject relationshipKeys];
-    }
-
-    var theObjectClass = [theObject class];
-    if ([theObjectClass respondsToSelector:@selector(relationshipKeys)]) {
-        return [theObjectClass relationshipKeys];
-    } else {
-        return nil;
-    }
-}
 
 - (CPArray) attributeKeysForObject:(id) theObject {
-    return [self _attributeKeysForObject:theObject] || [self _createAttributeKeysFromRow:nil forObject:theObject];
-}
-
-- (CPArray) _attributeKeysForObject:(id) theObject {
-    if ([theObject respondsToSelector:@selector(attributeKeys)]) {
-        return [theObject attributeKeys];
-    }
-
-    var theObjectClass = [theObject class];
-    if ([theObjectClass respondsToSelector:@selector(attributeKeys)]) {
-        return [theObjectClass attributeKeys];
-    } else {
-        return nil;
-    }
+    return [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
 }
 
 - (CPArray) _createAttributeKeysFromRow:(id) row forObject: theObject {
@@ -442,7 +414,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (row) {
         if (!attributeKeysSet) {
             attributeKeysSet = [CPSet set];
-            [attributeKeysForObjectClassName setOBject:attributeKeysSet forKey:className];
+            [attributeKeysForObjectClassName setObject:attributeKeysSet forKey:className];
         }
         for (var key in row) {
             [attributeKeysSet setObject:key];
