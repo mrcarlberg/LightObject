@@ -154,7 +154,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                         }
                     } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
-                    } else if ([value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
+                    } else if ([relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         // The array contains only type and primaryKey for the relationship objects.
                         // The complete relationship objects can be sent before or later in the list of all objects.
                         var relations = value;
