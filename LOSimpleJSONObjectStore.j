@@ -125,12 +125,15 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
         if (obj) {
+            var relationshipKeys = [self relationshipKeysForObject:obj];
             var columns = [self _attributeKeysForObject:obj];
+
             if (!columns) {
                 columns = [self _createAttributeKeysFromRow:row forObject:obj];
             }
             [obj setUuid:uuid];
             var columnSize = [columns count];
+
             for (var j = 0; j < columnSize; j++) {
                 var column = [columns objectAtIndex:j];
                 if (row.hasOwnProperty(column)) {
