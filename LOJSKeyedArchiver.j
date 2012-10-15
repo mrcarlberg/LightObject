@@ -57,10 +57,11 @@ var LOJSKeyedArchiverClassKey = @"_type";
     } else if (objectToEncode === [CPNull null]) { // Override CPNull's default encoding because we want native JS Objects
         encodedJS = nil;
     } else {
-        var archiver = [[[self class] alloc] initForWritingWithMutableData:encodedJS];
+        encodedJS = [objectToEncode jsonWithCoder:self];
+//        var archiver = [[[self class] alloc] initForWritingWithMutableData:encodedJS];
         
 //        encodedJS[LOJSKeyedArchiverClassKey] = [objectToEncode loObjectType];
-        [objectToEncode encodeWithCoder:archiver];
+//        [objectToEncode encodeWithCoder:archiver];
     }
 
     return encodedJS;
