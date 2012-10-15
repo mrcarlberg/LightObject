@@ -77,6 +77,28 @@ var LOObjectContext_classForType = 1 << 0,
 
 @end
 
+/*!
+ @ingroup LightObject
+ @class LOObjectContext
+
+ LOObjectContext represents a single "object space" or document in an application. Its primary responsibility is managing a graph of objects. This object graph is a group of related business objects that represent an internally consistent view of one object store.
+ All objects fetched from an object store are registered in an LOObjectContext along with a global identifier (LOGlobalID)(LOGlobalID not yet implemented) that's used to uniquely identify each object to the object store. The LOObjectContext is responsible for watching for changes in its objects (using the CPKeyValueObserving protocol). A single object instance exists in one and only one LOObjectContext.
+
+     The object context observes all changes of the object graph except toMany relations. The caller is responsible to use the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method to let the object context know about changes in to many relations.
+
+
+ @delegate -(void)objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)objects withFetchSpecification:(LOFetchSpecification)aFetchSpecification;
+ Receives objects from an fetch request specified by the fetch specification.
+ @param anObjectContext contains the object context
+ @param objects contains the received objects
+ @param aFetchSpecification contains the fetch specification
+
+ @delegate -(void)objectContext:(LOObjectContext)anObjectContext errorReceived:(LOError)anError withFetchSpecification:(LOFetchSpecification)aFetchSpecification;
+ Receives error from an fetch request specified by the fetch specification.
+ @param anObjectContext contains the object context
+ @param anError contains the error
+ @param aFetchSpecification contains the fetch specification
+ */
 @implementation LOObjectContext : CPObject {
     LOToOneProxyObject  toOneProxyObject;
     CPString            receivedData;
