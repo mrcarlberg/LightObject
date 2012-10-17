@@ -94,14 +94,14 @@
 }
 
 /*!
- * Returns the primary key for the type.
+ * Returns the primary key attribute for the raw row of a type and for an object context.
  */
 - (CPString)primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
- * Returns true if the attrbiute is a foreign key for the type.
+ * Returns true if the attribute for the raw row is a foreign key for a type and for an object context.
  */
 - (BOOL)isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
@@ -127,6 +127,20 @@
 - (CPString)primaryKeyForRawRow:(id)row forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     var primaryKeyAttribute = [self primaryKeyAttributeForType:aType objectContext:objectContext];
     return row[primaryKeyAttribute];
+}
+
+/*!
+ * Returns the primary key value for an object.
+ */
+- (CPString)primaryKeyForObject:(id)theObject {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Sets the primary key value for an object.
+ */
+- (void)setPrimaryKey:(CPString)thePrimaryKey forObject:(id)theObject {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!

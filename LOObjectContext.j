@@ -86,6 +86,7 @@ var LOObjectContext_classForType = 1 << 0,
 
      The object context observes all changes of the object graph except toMany relations. The caller is responsible to use the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method to let the object context know about changes in to many relations.
 
+     Right now the global id is the same as the primary key. A primary key has to be unique for all objects in the object context.
 
  @delegate -(void)objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)objects withFetchSpecification:(LOFetchSpecification)aFetchSpecification;
  Receives objects from an fetch request specified by the fetch specification.
@@ -233,14 +234,30 @@ var LOObjectContext_classForType = 1 << 0,
     var newValue = [theChanges valueForKey:CPKeyValueChangeNewKey];
     var oldValue = [theChanges valueForKey:CPKeyValueChangeOldKey];
     if (newValue === oldValue) return;
-    var newGlobalId = [self globalIdForObject:newValue];
+    var newGlobalId;
+    var shouldSetForeignKey;       // We don't want to set a foreign key if the master object don't have a primary key.
+    if (newValue) {
+        var primaryKey = [objectStore primaryKeyForObject:newValue];
+        if (primaryKey) {
+            shouldSetForeignKey = YES;
+            newGlobalId = [self globalIdForObject:newValue];
+        } else {
+            shouldSetForeignKey = NO;
+            newGlobalId = nil;
+        }
+    } else {
+        shouldSetForeignKey = YES;
+        newGlobalId = nil;
+    }
     var oldGlobalId = [self globalIdForObject:oldValue];
     var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:theKeyPath forType:[self typeOfObject:theObject] objectContext:self];
     var updateDict = [[self subDictionaryForKey:@"updateDict" forObject:theObject] copy];
     var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-    [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
+    if (shouldSetForeignKey) {
+        [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
+    }
     //CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
     if (autoCommit) [self saveChanges];
 }
@@ -361,7 +378,7 @@ var LOObjectContext_classForType = 1 << 0,
             var value = [theObject valueForKey:toOneAttribute];
             if (value) {
                 var globalId = [self globalIdForObject:value];
-                if (globalId) {
+                if (globalId && [objectStore primaryKeyForObject:value]) {  // If the master object doesn't have a primary key don't set the foreign key
                     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
                     [updateDict setObject:globalId forKey:attributeKey];
                 }

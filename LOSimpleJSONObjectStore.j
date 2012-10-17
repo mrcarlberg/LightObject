@@ -128,7 +128,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var relationshipKeys = [self relationshipKeysForObject:obj];
             var columns = [self attributeKeysForObject:obj];
 
-            [obj setUuid:uuid];
+            [self setPrimaryKey:uuid forObject:obj];
             var columnSize = [columns count];
 
             for (var j = 0; j < columnSize; j++) {
@@ -165,7 +165,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             if (!relationObj) {
                                 relationObj = [self newObjectForType:relationType objectContext:objectContext];
                                 if (relationObj) {
-                                    [relationObj setUuid:relationUuid];
+                                    [self setPrimaryKey:relationUuid forObject:relationObj];
                                     [receivedObjects setObject:relationObj forKey:relationUuid];
                                 }
                             }
@@ -275,7 +275,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 var tmpId = [CPString stringWithFormat:@"%d", i];
                 var uuid = jSONObjects.insertedIds[tmpId];
                 [objectContext reregisterObject:obj fromGlobalId:[self globalIdForObject:obj] toGlobalId:uuid];
-                [obj setUuid:uuid];
+                [self setPrimaryKey:uuid forObject:obj];
             }
         }
     }
@@ -288,7 +288,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
-        //CPLog.trace(@"POST Data: " + jsonText);
+        CPLog.trace(@"POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
@@ -314,7 +314,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
-                tmpId = [CPString stringWithFormat:@"%d", i];
+                var tmpId = [CPString stringWithFormat:@"%d", i];
                 [insertedObjectToTempIdDict setObject:tmpId forKey:obj._UID];
                 [objDict setTmpId:tmpId];
                 var insertDictCopy = [insertDict copy];
@@ -346,7 +346,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             var insertedRelationshipObject = [insertedRelationshipObjects objectAtIndex:k];
                             var insertedRelationshipObjectTempId = [insertedObjectToTempIdDict objectForKey:insertedRelationshipObject._UID];
                             if (!insertedRelationshipObjectTempId) {
-                                CPLog.error([self className] + @"." + _cmd + @": Can't get temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
+                                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't get temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
                             }
                             [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectTempId forKey:@"_tmpid"]];
                         }
@@ -355,7 +355,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     [updateDictCopy setObject:updateDictValue forKey:updateDictKey];
                 }
                 [updateDictCopy setObject:type forKey:@"_type"];
-                var uuid = [obj uuid];
+                var uuid = [self primaryKeyForObject:obj];
                 if (uuid) {
                     [updateDictCopy setObject:uuid forKey:primaryKeyAttribute];
                 } else {
@@ -366,13 +366,19 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             if (deleteDict && !insertDict) {    // Don't delete if it is also inserted, just skip it
                 var deleteDictCopy = [deleteDict mutableCopy];
                 [deleteDictCopy setObject:type forKey:@"_type"];
-                var uuid = [obj uuid];
+                var uuid = [self primaryKeyForObject:obj];
                 if (uuid) {
                     [deleteDictCopy setObject:uuid forKey:primaryKeyAttribute];
+                    [deleteArray addObject:deleteDictCopy];
                 } else {
-                    [deleteDictCopy setObject:[objDict tmpId] forKey:@"_tmpid"];
+                    var tmpId = [objDict tmpId];
+                    if (tmpId) {
+                        [deleteDictCopy setObject:tmpId forKey:@"_tmpid"];
+                        [deleteArray addObject:deleteDictCopy];
+                    } else {
+                        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Has no primary key or tmpId for object:" + obj + " objDict: " + [objDict description]);
+                    }
                 }
-                [deleteArray addObject:deleteDictCopy];
             }
         }
         if ([insertArray count] > 0) {
@@ -390,7 +396,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (CPString) globalIdForObject:(id) theObject {
     if ([theObject respondsToSelector:@selector(uuid)]) {
-        var uuid = [theObject uuid];
+        var uuid = [self primaryKeyForObject:theObject];
         if (!uuid) {    // If we don't have one from the backend, create a temporary until we get one.
             uuid = [self typeOfObject:theObject] + theObject._UID;
         }
