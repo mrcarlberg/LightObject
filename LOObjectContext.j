@@ -1,5 +1,5 @@
-/*
- * LOObjectContext.j
+/*!
+   LOObjectContext.j
  *
  * Created by Martin Carlberg on Feb 23, 2012.
  * Copyright 2012, Your Company All rights reserved.
@@ -14,6 +14,7 @@
 @import "LOError.j"
 
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
+LOObjectsKey = @"LOObjectsKey";
 
 var LOObjectContext_classForType = 1 << 0,
     LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1,
@@ -81,11 +82,20 @@ var LOObjectContext_classForType = 1 << 0,
  @ingroup LightObject
  @class LOObjectContext
 
- LOObjectContext represents a single "object space" or document in an application. Its primary responsibility is managing a graph of objects. This object graph is a group of related business objects that represent an internally consistent view of one object store.
- All objects fetched from an object store are registered in an LOObjectContext along with a global identifier (LOGlobalID)(LOGlobalID not yet implemented) that's used to uniquely identify each object to the object store. The LOObjectContext is responsible for watching for changes in its objects (using the CPKeyValueObserving protocol). A single object instance exists in one and only one LOObjectContext.
+     LOObjectContext represents a single "object space" or document in an application. Its primary responsibility is managing a graph of objects. This object graph is a group of related business objects that represent an internally consistent view of one object store.
+ 
+     All objects fetched from an object store are registered in an LOObjectContext along with a global identifier (LOGlobalID)(LOGlobalID not yet implemented) that's used to uniquely identify each object to the object store. The LOObjectContext is responsible for watching for changes in its objects (using the CPKeyValueObserving protocol). A single object instance exists in one and only one LOObjectContext.
 
-     The object context observes all changes of the object graph except toMany relations. The caller is responsible to use the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method to let the object context know about changes in to many relations.
+     The object context observes all changes of the object graph except toMany relations. The caller is responsible to use the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method to let the object context know about changes in tomany relations.
+ 
+     A LOArrayController can keep track of changes in tomany relations and make sure that the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method is used appropriate.
+ 
+     The framework supports "fault" and "deep fetch" for tomany relations. The backend can send a fault or an array with type and primary key values for a deep fetch. In a "deep fetch" the rows corresponding to the tomany relationship should be sent together with the fetched objects (in the same list).
 
+     When a fetch is requested with the requestObjectsWithFetchSpecification: method the answer is later sent with the delegate method objectContext:objectsReceived:withFetchSpecification: or sent as the notification LOObjectContextReceivedObjectNotification with the fetch specification as object and result in userInfo.
+ 
+     When a fault is triggered the notification LOFaultDidFireNotification is sent and when it is received the notification LOFaultDidPopulateNotification is sent.
+    
      Right now the global id is the same as the primary key. A primary key has to be unique for all objects in the object context.
 
  @delegate -(void)objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)objects withFetchSpecification:(LOFetchSpecification)aFetchSpecification;
@@ -182,7 +192,7 @@ var LOObjectContext_classForType = 1 << 0,
         [delegate objectContext:self objectsReceived:objectList withFetchSpecification:fetchSpecification];
     }
     var defaultCenter = [CPNotificationCenter defaultCenter];
-    [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:@"objects"]];
+    [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:LOObjectsKey]];
 }
 
 - (void) faultReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray {
@@ -309,8 +319,8 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-/*
- *  Reregister the object with toGlobalId and removes it with fromGlobalId
+/*!
+    Reregister the object with toGlobalId and removes it with fromGlobalId
  */
 - (void) reregisterObject:(id) theObject fromGlobalId:(CPString) fromGlobalId toGlobalId:(CPString) toGlobalId {
     //TODO: Check if the object is registered
@@ -318,32 +328,32 @@ var LOObjectContext_classForType = 1 << 0,
     [objects removeObjectForKey:fromGlobalId];
 }
 
-/*
- *  @return YES if theObject is stored by the object store and is registered in the context
- *  If you insert a new object to the object context this method will return NO until you send a saveChanges:
+/*!
+    @return YES if theObject is stored by the object store and is registered in the context
+    If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
 - (BOOL) isObjectStored:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
 
-/*
- *  @return YES if theObject is registered in the context
+/*!
+    @return YES if theObject is registered in the context
  */
 - (BOOL) isObjectRegistered:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] != nil;
 }
 
-/*
- *  @return object to context
+/*!
+    @return object to context
  */
 - (id) objectForGlobalId:(CPString) globalId {
     return [objects objectForKey:globalId];
 }
 
-/*
- *  @return global id for the Object. If it is not in the context nil is returned
+/*!
+    @return global id for the Object. If it is not in the context nil is returned
  */
 - (CPString) globalIdForObject:(id) theObject {
     if (theObject) {
@@ -356,7 +366,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * Returns the type of the object
+   Returns the type of the object
  */
 - (CPString) typeOfObject:(id)theObject {
     return [objectStore typeOfObject:theObject];
@@ -394,8 +404,8 @@ var LOObjectContext_classForType = 1 << 0,
     [self registerObject:theObject];
 }
 
-/*
- *  Add object to context and add all non nil attributes as updated attributes
+/*!
+    Add object to context and add all non nil attributes as updated attributes
  */
 - (void) insertObject:(id) theObject {
     [self _insertObject: theObject];
@@ -404,8 +414,8 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-/*
- *  Add objects to context
+/*!
+    Add objects to context
  */
 - (void) insertObjects:(CPArray) theObjects {
     //FIXME: create delete event as in -insertObject:
@@ -417,8 +427,8 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-/*
- *  Uninsert object to context. Used when doing undo
+/*!
+    Uninsert object to context. Used when doing undo
  */
 - (void) unInsertObject:(id) theObject {
     [self _unInsertObject: theObject];
@@ -442,8 +452,8 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 
-/*
- *  Remove object from context
+/*!
+    Remove object from context
  */
 - (void) deleteObject:(id) theObject {
     var deleteEvent = [LODeleteEvent deleteEventWithObjects:[theObject] atArrangedObjectIndexes:nil arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
@@ -452,8 +462,8 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-/*
- *  Remove objects from context
+/*!
+    Remove objects from context
  */
 - (void) deleteObjects:(CPArray) theObjects {
     //FIXME: create delete event as in -deleteObject:
@@ -465,8 +475,8 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-/*
- *  Undelete object to context. Used when doing undo
+/*!
+    Undelete object to context. Used when doing undo
  */
 - (void) unDeleteObject:(id) theObject {
     [self _unDeleteObject: theObject];
@@ -482,8 +492,8 @@ var LOObjectContext_classForType = 1 << 0,
     [self registerObject:theObject];
 }
 
-/*
- *  Undelete objects to context. Used when doing undo
+/*!
+    Undelete objects to context. Used when doing undo
  */
 - (void) unDeleteObjects:(CPArray) theObjects {
     var size = [theObjects count];
@@ -595,7 +605,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * Returns true if the object is already stored on the server side.
+   Returns true if the object is already stored on the server side.
  * It does not matter if the object has changes or is deleted in the object context
  */
 - (BOOL) isObjectStored:(id)theObject {
@@ -603,7 +613,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * Returns true if the object has unsaved changes in the object context.
+   Returns true if the object has unsaved changes in the object context.
  */
 - (BOOL) isObjectModified:(id)theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
@@ -615,7 +625,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * Returns true if the object context has unsaved changes.
+   Returns true if the object context has unsaved changes.
  */
 - (BOOL) hasChanges {
     var size = [modifiedObjects count];
@@ -629,8 +639,8 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * Start a new transaction. All changes will be stored separate from previus changes.
- * Transaction must be ended by a saveChanges or revert call.
+   Start a new transaction. All changes will be stored separate from previus changes.
+   Transaction must be ended by a saveChanges or revert call.
  */
 - (void) startTransaction {
     [undoEvents addObject:[]];
@@ -670,7 +680,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- *  Should be called by the objectStore when the saveChanges are done
+    Should be called by the objectStore when the saveChanges are done
  */
 - (void)didSaveChangesWithResult:(id)result andStatus:(int)statusCode {
     if (implementedDelegateMethods & LOObjectContext_objectContext_didSaveChangesWithResultAndStatus) {
