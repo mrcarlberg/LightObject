@@ -274,7 +274,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             if (insertDict) {
                 var tmpId = [CPString stringWithFormat:@"%d", i];
                 var uuid = jSONObjects.insertedIds[tmpId];
-                [objectContext reregisterObject:obj fromGlobalId:[self globalIdForObject:obj] toGlobalId:uuid];
+                [objectContext reregisterObject:obj withNewGlobalId:uuid];
                 [self setPrimaryKey:uuid forObject:obj];
             }
         }
@@ -314,12 +314,20 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
-                var tmpId = [CPString stringWithFormat:@"%d", i];
-                [insertedObjectToTempIdDict setObject:tmpId forKey:obj._UID];
-                [objDict setTmpId:tmpId];
+                var primaryKey = [self primaryKeyForObject:obj];
                 var insertDictCopy = [insertDict copy];
+                // Use primary key if object has it, otherwise create a tmp id
+                if (primaryKey) {
+                    var type = [self typeOfObject:obj];
+                    var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
+                    [insertDictCopy setObject:primaryKey forKey:primaryKeyAttribute];
+                } else {
+                    var tmpId = [CPString stringWithFormat:@"%d", i];
+                    [insertedObjectToTempIdDict setObject:tmpId forKey:[obj UID]];
+                    [objDict setTmpId:tmpId];
+                    [insertDictCopy setObject:tmpId forKey:@"_tmpid"];
+                }
                 [insertDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
-                [insertDictCopy setObject:tmpId forKey:@"_tmpid"];
                 [insertArray addObject:insertDictCopy];
             }
         }
@@ -344,11 +352,19 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                         var insertedRelationshipObjectsSize = [insertedRelationshipObjects count];
                         for (var k = 0; k < insertedRelationshipObjectsSize; k++) {
                             var insertedRelationshipObject = [insertedRelationshipObjects objectAtIndex:k];
-                            var insertedRelationshipObjectTempId = [insertedObjectToTempIdDict objectForKey:insertedRelationshipObject._UID];
-                            if (!insertedRelationshipObjectTempId) {
-                                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't get temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
+                            var insertedRelationshipObjectPrimaryKey = [self primaryKeyForObject:insertedRelationshipObject];
+                            // Use primary key if object has it, otherwise use the created tmp id
+                            if (insertedRelationshipObjectPrimaryKey) {
+                                var insertedRelationshipObjectType = [self typeOfObject:insertedRelationshipObject];
+                                var insertedRelationshipObjectPrimaryKeyAttribute = [self primaryKeyAttributeForType:insertedRelationshipObjectType objectContext:objectContext];
+                                [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectPrimaryKey forKey:insertedRelationshipObjectPrimaryKeyAttribute]];
+                            } else {
+                                var insertedRelationshipObjectTempId = [insertedObjectToTempIdDict objectForKey:insertedRelationshipObject._UID];
+                                if (!insertedRelationshipObjectTempId) {
+                                    CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't get primary key or temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
+                                }
+                                [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectTempId forKey:@"_tmpid"]];
                             }
-                            [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectTempId forKey:@"_tmpid"]];
                         }
                         updateDictValue = [CPDictionary dictionaryWithObject:insertedRelationshipArray forKey:@"inserts"];
                     }

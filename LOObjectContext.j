@@ -166,25 +166,35 @@ var LOObjectContext_classForType = 1 << 0,
         implementedDelegateMethods |= LOObjectContext_objectContext_errorReceived_withFetchSpecification;
 }
 
-- (id) newObjectForType:(CPString) type {
+/*!
+ This method will create a new object. Always use this method to create a object for a object context
+ */
+- (id)createNewObjectForType:(CPString)type {
+    return [objectStore newObjectForType:type objectContext:self];
+}
+
+/*!
+ This method will ask the delegate for a class and create an object. Never use this method directly to create a new object, use the createNewObjectForType: method instead.
+ */
+- (id)newObjectForType:(CPString)type {
     if (implementedDelegateMethods & LOObjectContext_classForType) {
         var aClass = [delegate classForType:type];
         return [[aClass alloc] init];
     } else {
-        CPLog.error(@"[" + [self className] + @" " + _cmd + @"]: Delegate must implement selector classForType: to be able to create new objects");
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"]: Delegate must implement selector classForType: to be able to create new object of type: " + type);
     }
     return nil;
 }
 
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification {
     [objectStore requestObjectsWithFetchSpecification:fetchSpecification objectContext:self];
 }
 
-- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification {
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self];
 }
 
-- (void) objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+- (void)objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:objectList];
     }
@@ -195,7 +205,7 @@ var LOObjectContext_classForType = 1 << 0,
     [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:LOObjectsKey]];
 }
 
-- (void) faultReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray {
+- (void)faultReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray {
     [self registerObjects:objectList];
     var masterObject = [faultArray masterObject];
     var relationshipKey = [faultArray relationshipKey];
@@ -210,7 +220,7 @@ var LOObjectContext_classForType = 1 << 0,
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[faultArray masterObject] userInfo:[CPDictionary dictionaryWithObjects:[faultArray, fetchSpecification] forKeys:[LOFaultArrayKey, LOFaultFetchSpecificationKey]]];
 }
 
-- (void) errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+- (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
     if (implementedDelegateMethods & LOObjectContext_objectContext_errorReceived_withFetchSpecification) {
         [delegate objectContext:self errorReceived:error withFetchSpecification:fetchSpecification];
     }
@@ -320,12 +330,14 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
-    Reregister the object with toGlobalId and removes it with fromGlobalId
+    Reregister the object with toGlobalId and removes it the old global id. This method asks the object for the current global id before the reregister. The caller is responseble to set the primary key afterward if necessary.
  */
-- (void) reregisterObject:(id) theObject fromGlobalId:(CPString) fromGlobalId toGlobalId:(CPString) toGlobalId {
-    //TODO: Check if the object is registered
-    [objects setObject:theObject forKey:toGlobalId];
-    [objects removeObjectForKey:fromGlobalId];
+- (void) reregisterObject:(id)theObject withNewGlobalId:(CPString)toGlobalId {
+    var fromGlobalId = [self globalIdForObject:theObject];
+    if (fromGlobalId) {
+        [objects setObject:theObject forKey:toGlobalId];
+        [objects removeObjectForKey:fromGlobalId];
+    }
 }
 
 /*!
@@ -520,8 +532,13 @@ var LOObjectContext_classForType = 1 << 0,
     [insertsArray addObject:newObject];
 }
 
+/*
+    This method will register the newObject as a new to many relationship with the attribute relationshipKey for the master object.
+    This method will not register the newObject as a new object in the object context. It has to be done by the insertObject: method.
+    This method will not add the newObject to the array of to many relationship objects for the master object. This has to be done by the caller.
+ */
 - (void) add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
-    console.log([self className] + " " + _cmd + " " + relationshipKey);
+    //console.log([self className] + " " + _cmd + " " + relationshipKey);
     [self _add:newObject toRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
 }

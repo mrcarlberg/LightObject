@@ -8,6 +8,7 @@ LOFaultDidPopulateNotification = @"LOFaultDidPopulateNotification";
 
 LOFaultArrayKey = @"LOFaultArrayKey";
 LOFaultFetchSpecificationKey = @"LOFaultFetchSpecificationKey";
+LOFaultFetchRelationshipKey = @"LOFaultFetchRelationshipKey";
 
 
 @implementation LOFaultArray : CPMutableArray {
@@ -199,9 +200,7 @@ CPArray         array @accessors;
 }
 
 /*!
- *  This is hard coded: The master object has an attribute (relationshipKey) that is used as the
- *  entity name (the last character is removed, "attribute:persons -> entity:person)
- *  The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
+    This is hard coded: The master object has an attribute (relationshipKey) that is used as the entity name (the last character is removed, "attribute:persons -> entity:person) The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
  */
 - (void) requestFault {
     var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
@@ -210,7 +209,7 @@ CPArray         array @accessors;
     var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
     var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
     [objectContext requestFaultArray:self withFetchSpecification:fs];
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey]]];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
 }
 
 @end
