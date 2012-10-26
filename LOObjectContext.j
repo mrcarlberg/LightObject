@@ -109,10 +109,11 @@ var LOObjectContext_classForType = 1 << 0,
  @param anObjectContext contains the object context
  @param anError contains the error
  @param aFetchSpecification contains the fetch specification
+
+ //TODO: Add more delegate methods to this documentation
  */
 @implementation LOObjectContext : CPObject {
-    LOToOneProxyObject  toOneProxyObject;
-    CPString            receivedData;
+    LOToOneProxyObject  toOneProxyObject;               // Extra observer proxy for to one relation attributes
     CPDictionary        objects;                        // List of all objects in context with globalId as key
     CPArray             modifiedObjects @accessors;     // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
     CPArray             undoEvents;                     // Array of arrays with LOUpdateEvents. Each transaction has its own array.
@@ -122,6 +123,7 @@ var LOObjectContext_classForType = 1 << 0,
     CPInteger           implementedDelegateMethods;
     BOOL                autoCommit @accessors;          // True if the context should directly save changes to object store.
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
+    BOOL                readOnly;            // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
 }
 
 - (id)init {
@@ -131,9 +133,10 @@ var LOObjectContext_classForType = 1 << 0,
         objects = [CPDictionary dictionary];
         modifiedObjects = [CPArray array];
         connections = [CPArray array];
-        autoCommit = true;
+        autoCommit = YES;
         undoEvents = [CPArray array];
-        doNotObserveValues = false;
+        doNotObserveValues = NO;
+        readOnly = NO;
     }
     return self;
 }
@@ -164,6 +167,19 @@ var LOObjectContext_classForType = 1 << 0,
         implementedDelegateMethods |= LOObjectContext_objectContext_didSaveChangesWithResultAndStatus;
     if ([delegate respondsToSelector:@selector(objectContext:errorReceived:withFetchSpecification:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_errorReceived_withFetchSpecification;
+}
+
+- (BOOL)readOnly {
+    return readOnly;
+}
+
+- (void)setReadOnly:(BOOL)aValue {
+    // TODO: Add or remove observers for the objects in the context. Now we can only set read only for an empty context
+    if ([objects count] && aValue !== readOnly) {
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't change the Read Only state of a Object Context when there are objects registered in the context. Number of registered objects: " + [objects count]);
+    } else {
+        readOnly = aValue;
+    }
 }
 
 /*!
@@ -286,16 +302,18 @@ var LOObjectContext_classForType = 1 << 0,
     var globalId = [objectStore globalIdForObject:theObject];
     var type = [self typeOfObject:theObject];
     [objects removeObjectForKey:globalId];
-    var attributeKeys = [objectStore attributeKeysForObject:theObject];
-    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
-    var attributeSize = [attributeKeys count];
-    for (var i = 0; i < attributeSize; i++) {
-        var attributeKey = [attributeKeys objectAtIndex:i];
-        if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship
-            attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
-        }
-        if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a relationship
-            [theObject removeObserver:self forKeyPath:attributeKey];
+    if (!readOnly) {
+        var attributeKeys = [objectStore attributeKeysForObject:theObject];
+        var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+        var attributeSize = [attributeKeys count];
+        for (var i = 0; i < attributeSize; i++) {
+            var attributeKey = [attributeKeys objectAtIndex:i];
+            if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship
+                attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
+            }
+            if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a relationship
+                [theObject removeObserver:self forKeyPath:attributeKey];
+            }
         }
     }
 }
@@ -305,16 +323,18 @@ var LOObjectContext_classForType = 1 << 0,
     var globalId = [objectStore globalIdForObject:theObject];
     var type = [self typeOfObject:theObject];
     [objects setObject:theObject forKey:globalId];
-    var attributeKeys = [objectStore attributeKeysForObject:theObject];
-    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
-    var attributeSize = [attributeKeys count];
-    for (var i = 0; i < attributeSize; i++) {
-        var attributeKey = [attributeKeys objectAtIndex:i];
-        if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship Make observation to proxy object and remove "_fk" from attribute key
-            attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
-            [theObject addObserver:toOneProxyObject forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
-        } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
-            [theObject addObserver:self forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
+    if (!readOnly) {
+        var attributeKeys = [objectStore attributeKeysForObject:theObject];
+        var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+        var attributeSize = [attributeKeys count];
+        for (var i = 0; i < attributeSize; i++) {
+            var attributeKey = [attributeKeys objectAtIndex:i];
+            if ([objectStore isForeignKeyAttribute:attributeKey forType:type objectContext:self]) {    // Handle to one relationship Make observation to proxy object and remove "_fk" from attribute key
+                attributeKey = [objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:type objectContext:self]; // Remove "_fk" at end
+                [theObject addObserver:toOneProxyObject forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
+            } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
+                [theObject addObserver:self forKeyPath:attributeKey options:CPKeyValueObservingOptionNew | CPKeyValueObservingOptionOld /*| CPKeyValueObservingOptionInitial | CPKeyValueObservingOptionPrior*/ context:nil];
+            }
         }
     }
 }
