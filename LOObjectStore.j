@@ -16,14 +16,21 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext withCompletionBlock:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
+ */
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext {
+    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext withCompletionBlock:nil];
 }
 
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 

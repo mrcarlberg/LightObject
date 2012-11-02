@@ -155,9 +155,9 @@
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
-    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification faultArray:faultArray];
+    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock faultArray:faultArray];
 }
 
 /*!

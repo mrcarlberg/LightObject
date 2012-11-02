@@ -202,26 +202,36 @@ var LOObjectContext_classForType = 1 << 0,
     return nil;
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification {
-    [objectStore requestObjectsWithFetchSpecification:fetchSpecification objectContext:self];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification {
+    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:nil];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification {
-    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
-- (void)objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+}
+
+- (void)objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:objectList];
     }
-    if (implementedDelegateMethods & LOObjectContext_objectContext_objectsReceived_withFetchSpecification) {
+    if (completionBlocks) {
+        var size = [completionBlocks count];
+        for (var i = 0; i < size; i++) {
+            var aCompletionBlock = [completionBlocks objectAtIndex:i];
+            aCompletionBlock(objectList);
+        }
+    } else if (implementedDelegateMethods & LOObjectContext_objectContext_objectsReceived_withFetchSpecification) {
         [delegate objectContext:self objectsReceived:objectList withFetchSpecification:fetchSpecification];
     }
     var defaultCenter = [CPNotificationCenter defaultCenter];
     [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:LOObjectsKey]];
 }
 
-- (void)faultReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray {
+- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks faultArray:(LOFaultArray)faultArray {
     [self registerObjects:objectList];
     var masterObject = [faultArray masterObject];
     var relationshipKey = [faultArray relationshipKey];
@@ -233,6 +243,13 @@ var LOObjectContext_classForType = 1 << 0,
     [array addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];
     [faultArray setFaultPopulated:YES];
+    if (completionBlocks) {
+        var size = [completionBlocks count];
+        for (var i = 0; i < size; i++) {
+            var aCompletionBlock = [completionBlocks objectAtIndex:i];
+            aCompletionBlock(objectList);
+        }
+    }
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[faultArray masterObject] userInfo:[CPDictionary dictionaryWithObjects:[faultArray, fetchSpecification] forKeys:[LOFaultArrayKey, LOFaultFetchSpecificationKey]]];
 }
 
@@ -298,7 +315,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-- (void) unregisterObject:(id) theObject {
+- (void)unregisterObject:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     var type = [self typeOfObject:theObject];
     [objects removeObjectForKey:globalId];
@@ -318,7 +335,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void) registerObject:(id) theObject {
+- (void)registerObject:(id) theObject {
     // TODO: Check if theObject is already registrered
     var globalId = [objectStore globalIdForObject:theObject];
     var type = [self typeOfObject:theObject];
@@ -339,7 +356,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void) registerObjects:(CPArray) someObjects {
+- (void)registerObjects:(CPArray) someObjects {
     var size = [someObjects count];
     for (var i = 0; i < size; i++) {
         var object = [someObjects objectAtIndex:i];
@@ -352,7 +369,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Reregister the object with toGlobalId and removes it the old global id. This method asks the object for the current global id before the reregister. The caller is responseble to set the primary key afterward if necessary.
  */
-- (void) reregisterObject:(id)theObject withNewGlobalId:(CPString)toGlobalId {
+- (void)reregisterObject:(id)theObject withNewGlobalId:(CPString)toGlobalId {
     var fromGlobalId = [self globalIdForObject:theObject];
     if (fromGlobalId) {
         [objects setObject:theObject forKey:toGlobalId];
@@ -364,7 +381,7 @@ var LOObjectContext_classForType = 1 << 0,
     @return YES if theObject is stored by the object store and is registered in the context
     If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
-- (BOOL) isObjectStored:(id) theObject {
+- (BOOL)isObjectStored:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
@@ -372,7 +389,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     @return YES if theObject is registered in the context
  */
-- (BOOL) isObjectRegistered:(id) theObject {
+- (BOOL)isObjectRegistered:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] != nil;
 }
@@ -380,14 +397,14 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     @return object to context
  */
-- (id) objectForGlobalId:(CPString) globalId {
+- (id)objectForGlobalId:(CPString) globalId {
     return [objects objectForKey:globalId];
 }
 
 /*!
     @return global id for the Object. If it is not in the context nil is returned
  */
-- (CPString) globalIdForObject:(id) theObject {
+- (CPString)globalIdForObject:(id) theObject {
     if (theObject) {
         var globalId = [objectStore globalIdForObject:theObject];
         if ([objects objectForKey:globalId]) {
@@ -400,11 +417,11 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
    Returns the type of the object
  */
-- (CPString) typeOfObject:(id)theObject {
+- (CPString)typeOfObject:(id)theObject {
     return [objectStore typeOfObject:theObject];
 }
 
-- (void) _insertObject:(id) theObject {
+- (void)_insertObject:(id) theObject {
     var type = [self typeOfObject:theObject];
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
@@ -439,7 +456,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Add object to context and add all non nil attributes as updated attributes
  */
-- (void) insertObject:(id) theObject {
+- (void)insertObject:(id) theObject {
     [self _insertObject: theObject];
     var insertEvent = [LOInsertEvent insertEventWithObject:theObject arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
     [self registerEvent:insertEvent];
@@ -449,7 +466,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Add objects to context
  */
-- (void) insertObjects:(CPArray) theObjects {
+- (void)insertObjects:(CPArray) theObjects {
     //FIXME: create delete event as in -insertObject:
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
@@ -462,7 +479,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Uninsert object to context. Used when doing undo
  */
-- (void) unInsertObject:(id) theObject {
+- (void)unInsertObject:(id) theObject {
     [self _unInsertObject: theObject];
     if (autoCommit) [self saveChanges];
 }
@@ -477,7 +494,7 @@ var LOObjectContext_classForType = 1 << 0,
     [self unregisterObject:theObject];
 }
 
-- (void) _deleteObject:(id) theObject {
+- (void)_deleteObject:(id) theObject {
     [self unregisterObject:theObject];
     // Just need to create the dict to mark it for delete
     var deleteDict = [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:theObject];
@@ -487,7 +504,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Remove object from context
  */
-- (void) deleteObject:(id) theObject {
+- (void)deleteObject:(id) theObject {
     var deleteEvent = [LODeleteEvent deleteEventWithObjects:[theObject] atArrangedObjectIndexes:nil arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
     [self registerEvent:deleteEvent];
     [self _deleteObject: theObject];
@@ -497,7 +514,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Remove objects from context
  */
-- (void) deleteObjects:(CPArray) theObjects {
+- (void)deleteObjects:(CPArray) theObjects {
     //FIXME: create delete event as in -deleteObject:
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
@@ -510,12 +527,12 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Undelete object to context. Used when doing undo
  */
-- (void) unDeleteObject:(id) theObject {
+- (void)unDeleteObject:(id) theObject {
     [self _unDeleteObject: theObject];
     if (autoCommit) [self saveChanges];
 }
 
-- (void) _unDeleteObject:(id) theObject {
+- (void)_unDeleteObject:(id) theObject {
     if ([self subDictionaryForKey:@"deleteDict" forObject:theObject]) {
         [self setSubDictionary:nil forKey:@"deleteDict" forObject:theObject];
     } else {
@@ -527,7 +544,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Undelete objects to context. Used when doing undo
  */
-- (void) unDeleteObjects:(CPArray) theObjects {
+- (void)unDeleteObjects:(CPArray) theObjects {
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
         var obj = [theObjects objectAtIndex:i];
@@ -536,7 +553,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-- (void) _add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)_add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     //CPLog.trace(@"Added new object " + [newObject className] + @" to master of type " + [masterObject className] + @" for key " + relationshipKey);
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
@@ -557,18 +574,18 @@ var LOObjectContext_classForType = 1 << 0,
     This method will not register the newObject as a new object in the object context. It has to be done by the insertObject: method.
     This method will not add the newObject to the array of to many relationship objects for the master object. This has to be done by the caller.
  */
-- (void) add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     //console.log([self className] + " " + _cmd + " " + relationshipKey);
     [self _add:newObject toRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
 }
 
-- (void) unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     [self _unAdd:newObject toRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
 }
 
-- (void) _unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)_unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
     if (relationsShipDict) {
@@ -579,17 +596,17 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void) _delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)_delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     // Right now we do nothing. A delete of the object will be sent and it is enought for one to many relations
     //CPLog.trace(@"Deleted object " + [deletedObject className] + @" for master of type " + [masterObject className] + @" for key " + relationshipKey);
 }
 
-- (void) delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
+- (void)delete:(id)deletedObject withRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     [self _delete:deletedObject withRelationshipWithKey:relationshipKey forObject:masterObject];
     if (autoCommit) [self saveChanges];
 }
 
-- (void) delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
+- (void)delete:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     //FIXME: raise on index==NSNotFound?
     var leftIndex = [self _findIndexOfObject:aMapping andRemoveItFromRelationshipWithKey:aRelationshipKey ofObject:firstObject];
     var rightIndex = [self _findIndexOfObject:aMapping andRemoveItFromRelationshipWithKey:aRelationshipKey ofObject:secondObject];
@@ -603,7 +620,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (autoCommit) [self saveChanges];
 }
 
-- (int) _findIndexOfObject:(id)anObject andRemoveItFromRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+- (int)_findIndexOfObject:(id)anObject andRemoveItFromRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
 {
     var array = [theParent valueForKey:aRelationshipKey];
     var index = [array indexOfObjectIdenticalTo:anObject];
@@ -618,7 +635,7 @@ var LOObjectContext_classForType = 1 << 0,
     return index;
 }
 
-- (void) insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
+- (void)insert:(id)aMapping withRelationshipWithKey:(CPString)aRelationshipKey between:(id)firstObject and:(id)secondObject {
     var leftIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:firstObject];
     var rightIndex = [self _findInsertionIndexForObject:aMapping andInsertItIntoRelationshipWithKey:aRelationshipKey ofObject:secondObject];
 
@@ -630,7 +647,7 @@ var LOObjectContext_classForType = 1 << 0,
     [self registerEvent:insertEvent];
 }
 
-- (int) _findInsertionIndexForObject:(id)anObject andInsertItIntoRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
+- (int)_findInsertionIndexForObject:(id)anObject andInsertItIntoRelationshipWithKey:(CPString)aRelationshipKey ofObject:(id)theParent
 {
     var array = [theParent valueForKey:aRelationshipKey];
     var index = [array count];
@@ -645,7 +662,7 @@ var LOObjectContext_classForType = 1 << 0,
    Returns true if the object is already stored on the server side.
  * It does not matter if the object has changes or is deleted in the object context
  */
-- (BOOL) isObjectStored:(id)theObject {
+- (BOOL)isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
 
@@ -664,7 +681,7 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
    Returns true if the object context has unsaved changes.
  */
-- (BOOL) hasChanges {
+- (BOOL)hasChanges {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
         var modifiedObject = [modifiedObjects objectAtIndex:i];
@@ -679,11 +696,11 @@ var LOObjectContext_classForType = 1 << 0,
    Start a new transaction. All changes will be stored separate from previus changes.
    Transaction must be ended by a saveChanges or revert call.
  */
-- (void) startTransaction {
+- (void)startTransaction {
     [undoEvents addObject:[]];
 }
 
-- (void) saveChanges {
+- (void)saveChanges {
     if (implementedDelegateMethods & LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted) {
         var shouldSave = YES;
         var size = [modifiedObjects count];
@@ -725,7 +742,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void) revert {
+- (void)revert {
 //    [self setModifiedObjects:[CPArray array]];
 
     var lastUndoEvents = [undoEvents lastObject];
@@ -743,7 +760,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (id) modifyObjectDictionaryForObject:(id) theObject {
+- (id)modifyObjectDictionaryForObject:(id) theObject {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
         var objDict = [modifiedObjects objectAtIndex:i];
@@ -756,7 +773,7 @@ var LOObjectContext_classForType = 1 << 0,
     return nil;
 }
 
-- (void) removeModifyObjectDictionaryForObject:(id) theObject {
+- (void)removeModifyObjectDictionaryForObject:(id) theObject {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
         var objDict = [modifiedObjects objectAtIndex:i];
@@ -769,7 +786,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void) setSubDictionary:(CPDictionary)subDict forKey:(CPString) key forObject:(id) theObject {
+- (void)setSubDictionary:(CPDictionary)subDict forKey:(CPString) key forObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (!objDict) {
         if (!subDict) return;       // Bail out if we should set it to nil and we don't have any
@@ -782,7 +799,7 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (CPDictionary) subDictionaryForKey:(CPString) key forObject:(id) theObject {
+- (CPDictionary)subDictionaryForKey:(CPString) key forObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (objDict) {
         var subDict = [objDict valueForKey:key];
@@ -793,7 +810,7 @@ var LOObjectContext_classForType = 1 << 0,
     return null;
 }
 
-- (CPDictionary) createSubDictionaryForKey:(CPString) key forModifyObjectDictionaryForObject:(id) theObject {
+- (CPDictionary)createSubDictionaryForKey:(CPString) key forModifyObjectDictionaryForObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (!objDict) {
         objDict = [LOModifyRecord modifyRecordWithObject:theObject];
@@ -807,7 +824,7 @@ var LOObjectContext_classForType = 1 << 0,
     return subDict;
 }
 
-- (void) registerEvent:(LOUpdateEvent)updateEvent {
+- (void)registerEvent:(LOUpdateEvent)updateEvent {
     var lastUndoEvents = [undoEvents lastObject];
 
     if (!lastUndoEvents) {
@@ -816,6 +833,12 @@ var LOObjectContext_classForType = 1 << 0,
     }
 
     [lastUndoEvents addObject:updateEvent];
+}
+
+- (void)triggerFault:(CPArray)faultArray withCompletionBlock:(Function)aCompletionBlock {
+    if ([faultArray isKindOfClass:[LOFaultArray class]]) {
+        [faultArray requestFaultWithCompletionBlock:aCompletionBlock];
+    }
 }
 
 @end

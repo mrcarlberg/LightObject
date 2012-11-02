@@ -30,21 +30,20 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     return self;
 }
 
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext faultArray:nil];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faultArray:nil];
 }
 
-- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext faultArray:faultArray];
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faultArray:faultArray];
 }
 
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext faultArray:(LOFaultArray)faultArray {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faultArray:(LOFaultArray)faultArray {
     var url = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     var request = [CPURLRequest requestWithURL:url];
     [request setHTTPMethod:@"GET"];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url}];
-    if (!url) debugger;
+    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
     //CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
@@ -240,9 +239,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     }
 */    var faultArray = connectionDictionary.faultArray;
     if (faultArray) {
-        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification faultArray:faultArray];
+        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks faultArray:faultArray];
     } else {
-        [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification];
+        [objectContext objectsReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks];
     }
 }
 
@@ -288,7 +287,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
-        CPLog.trace(@"POST Data: " + jsonText);
+//        CPLog.trace(@"POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
@@ -443,6 +442,16 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         }
     }
     return [attributeKeysSet allValues];
+}
+
+- (void)addCompletionBlock:(Function)aCompletionBlock toTriggeredFaultArray:(LOFaultArray)aFaultArray {
+    var size = [connections count];
+    for (i = 0; i < size; i++) {
+        var connectionDictionary = [connections objectAtIndex:i];
+        if (connectionDictionary.faultArray === aFaultArray) {
+            [connectionDictionary.completionBlocks addObject:aCompletionBlock];
+        }
+    }
 }
 
 @end

@@ -193,23 +193,31 @@ CPArray         array @accessors;
 
 - (void)_requestFaultIfNecessary {
     if (!faultFired) {
-        faultFired = YES;
-        faultPopulated = NO;
-        [self requestFault];
+        [self requestFaultWithCompletionBlock:nil];
     }
 }
 
 /*!
     This is hard coded: The master object has an attribute (relationshipKey) that is used as the entity name (the last character is removed, "attribute:persons -> entity:person) The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
  */
-- (void) requestFault {
-    var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
-    var objectStore = [objectContext objectStore];
-    var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:[objectContext typeOfObject:masterObject] forType:entityName objectContext:objectContext];
-    var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
-    var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-    [objectContext requestFaultArray:self withFetchSpecification:fs];
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
+- (void) requestFaultWithCompletionBlock:(Function)aCompletionBlock {
+    if (!faultFired) {
+        faultFired = YES;
+        faultPopulated = NO;
+        var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
+        var objectStore = [objectContext objectStore];
+        var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:[objectContext typeOfObject:masterObject] forType:entityName objectContext:objectContext];
+        var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
+        var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+        [objectContext requestFaultArray:self withFetchSpecification:fs withCompletionBlock:aCompletionBlock];
+        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
+    } else if (aCompletionBlock) {
+        if (faultPopulated) {
+            aCompletionBlock(self);
+        } else {
+            [objectStore addCompletionBlock:aCompletionBlock toTriggeredFaultArray:self];
+        }
+    }
 }
 
 @end
