@@ -247,7 +247,7 @@ var LOObjectContext_classForType = 1 << 0,
         var size = [completionBlocks count];
         for (var i = 0; i < size; i++) {
             var aCompletionBlock = [completionBlocks objectAtIndex:i];
-            aCompletionBlock(objectList);
+            aCompletionBlock(array);
         }
     }
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[faultArray masterObject] userInfo:[CPDictionary dictionaryWithObjects:[faultArray, fetchSpecification] forKeys:[LOFaultArrayKey, LOFaultFetchSpecificationKey]]];
@@ -749,14 +749,14 @@ var LOObjectContext_classForType = 1 << 0,
 
     if (lastUndoEvents) {
         var count = [lastUndoEvents count];
-        doNotObserveValues = true;
+        doNotObserveValues = YES;
 
         while (count--) {
             var event = [lastUndoEvents objectAtIndex:count];
             [event undoForContext:self];
         }
         [undoEvents removeObject:lastUndoEvents];
-        doNotObserveValues = false;
+        doNotObserveValues = NO;
     }
 }
 
