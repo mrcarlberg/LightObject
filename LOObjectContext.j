@@ -287,6 +287,8 @@ var LOObjectContext_classForType = 1 << 0,
     var newValue = [theChanges valueForKey:CPKeyValueChangeNewKey];
     var oldValue = [theChanges valueForKey:CPKeyValueChangeOldKey];
     if (newValue === oldValue) return;
+    if (newValue === [CPNull null])
+        newValue = nil;
     var newGlobalId;
     var shouldSetForeignKey;       // We don't want to set a foreign key if the master object don't have a primary key.
     if (newValue) {
