@@ -44,7 +44,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [request setHTTPMethod:@"GET"];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
-    //CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
+    CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
@@ -72,7 +72,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var objectContext = connectionDictionary.objectContext;
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
     } else if (receivedData && [receivedData length] > 0) {
-//        CPLog.trace(@"tracing: LOF objectsReceived: " + receivedData);
+        CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: " + receivedData);
         var jSON = [receivedData objectFromJSON];
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
         [connections removeObject:connectionDictionary];
@@ -287,7 +287,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
-//        CPLog.trace(@"POST Data: " + jsonText);
+        CPLog.trace(@"POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
@@ -338,7 +338,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var insertDict = [objDict insertDict];
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
-            if (updateDict && !(deleteDict && insertDict)) { // Don't do this if it is both inserted and deleted
+            if (updateDict && !deleteDict) { // Don't do this if it is deleted
                 var updateDictCopy = [CPMutableDictionary dictionary];
                 var updateDictKeys = [updateDict allKeys];
                 var updateDictKeysSize = [updateDictKeys count];
