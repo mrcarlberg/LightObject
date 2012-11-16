@@ -207,7 +207,11 @@ CPArray         array @accessors;
         var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
         var objectStore = [objectContext objectStore];
         var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:[objectContext typeOfObject:masterObject] forType:entityName objectContext:objectContext];
-        var qualifier = [CPPredicate predicateWithFormat:foreignKey + @"=%@", [objectContext globalIdForObject:masterObject]];
+        var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:foreignKey]
+                                                           rightExpression:[CPExpression expressionForConstantValue:[objectContext globalIdForObject:masterObject]]
+                                                                  modifier:CPDirectPredicateModifier
+                                                                      type:CPEqualToPredicateOperatorType
+                                                                   options:0];
         var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
         [objectContext requestFaultArray:self withFetchSpecification:fs withCompletionBlock:aCompletionBlock];
         [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
