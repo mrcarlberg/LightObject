@@ -82,7 +82,7 @@
 /*!
  * Returns an url for requestObjects.
  */
-- (CPString)urlForRequestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification {
+- (CPURLRequest)urlForRequestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 

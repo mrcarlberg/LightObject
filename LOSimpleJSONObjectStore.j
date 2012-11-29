@@ -39,9 +39,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 - (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faultArray:(LOFaultArray)faultArray {
-    var url = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
-    var request = [CPURLRequest requestWithURL:url];
-    [request setHTTPMethod:@"GET"];
+    var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
+    var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
     CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
