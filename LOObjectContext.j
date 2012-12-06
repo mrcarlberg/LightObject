@@ -840,6 +840,8 @@ var LOObjectContext_classForType = 1 << 0,
 - (void)triggerFault:(CPArray)faultArray withCompletionBlock:(Function)aCompletionBlock {
     if ([faultArray isKindOfClass:[LOFaultArray class]]) {
         [faultArray requestFaultWithCompletionBlock:aCompletionBlock];
+    } else {
+        aCompletionBlock(faultArray);
     }
 }
 
