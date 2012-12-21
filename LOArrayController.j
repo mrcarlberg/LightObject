@@ -69,7 +69,7 @@
 }
 
 - (id) unInsertObject:(id)object ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
-    [self removeObjects:[object]];
+    [self _removeObjects:[object]];
     if (ownerObjects && ownerRelationshipKey) {
         var size = [ownerObjects count];
         for (var i = 0; i < size; i++) {
@@ -88,16 +88,28 @@
         }
         [objectsToDeleteIndexes addIndex:anIndex];
     }];
-    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes];
+    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes, YES];
+}
+
+- (void)_removeObjects:(CPArray)objectsToDelete {
+    var objectsToDeleteIndexes = [CPMutableIndexSet indexSet];
+    [objectsToDelete enumerateObjectsUsingBlock:function(aCandidate) {
+        var anIndex = [[self arrangedObjects] indexOfObjectIdenticalTo:aCandidate];
+        if (anIndex === CPNotFound) {
+            [CPException raise:CPInvalidArgumentException reason:@"Can't delete object not in array controller: " + aCandidate];
+        }
+        [objectsToDeleteIndexes addIndex:anIndex];
+    }];
+    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes shouldRegisterEvent:NO];
 }
 
 - (void)remove:(id)sender {
     var selectedObjectsIndexes = [[self selectionIndexes] copy];
     var selectedObjects = [self selectedObjects];
-    [self _removeObjects:selectedObjects atIndexes:selectedObjectsIndexes];
+    [self _removeObjects:selectedObjects atIndexes:selectedObjectsIndexes shouldRegisterEvent:YES];
 }
 
-- (void)_removeObjects:(CPArray)objectsToDelete atIndexes:(CPIndexSet)objectsToDeleteIndexes {
+- (void)_removeObjects:(CPArray)objectsToDelete atIndexes:(CPIndexSet)objectsToDeleteIndexes shouldRegisterEvent:(BOOL)shouldRegisterEvent {
     // Note: assumes objectsToDeleteIndexes corresponds to objectsToDelete.
     [self removeObjectsAtArrangedObjectIndexes:objectsToDeleteIndexes];
     // Ok, now we need to tell the object context that we have this removed object and it is a removed relationship for the owner object.
@@ -118,9 +130,11 @@
         }];
     }];
 
-    var deleteEvent = [LODeleteEvent deleteEventWithObjects:objectsToDelete atArrangedObjectIndexes:objectsToDeleteIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
-    [objectContext registerEvent:deleteEvent];
-    [objectContext deleteObjects: objectsToDelete]; // this will commit if auto commit is enabled
+    if (shouldRegisterEvent) {
+        var deleteEvent = [LODeleteEvent deleteEventWithObjects:objectsToDelete atArrangedObjectIndexes:objectsToDeleteIndexes arrayController:self ownerObjects:[registeredOwnerObjects count] ? registeredOwnerObjects : nil ownerRelationshipKey:lastbindingKeyPath];
+        [objectContext registerEvent:deleteEvent];
+        [objectContext deleteObjects: objectsToDelete]; // this will commit if auto commit is enabled
+    }
 }
 
 - (id) unDeleteObjects:(id)objects atArrangedObjectIndexes:(CPIndexSet)indexSet ownerObjects:(CPArray) ownerObjects ownerRelationshipKey:(CPString) ownerRelationshipKey {
