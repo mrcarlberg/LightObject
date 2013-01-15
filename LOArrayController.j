@@ -6,6 +6,7 @@
  */
 
 @import <Foundation/CPObject.j>
+@import <AppKit/CPArrayController.j>
 
 @implementation LOArrayController : CPArrayController
 {

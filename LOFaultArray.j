@@ -3,6 +3,8 @@
  * Copyright 2012, Your Company All rights reserved.
  */
 
+@import <Foundation/CPArray.j>
+
 LOFaultDidFireNotification = @"LOFaultDidFireNotification";
 LOFaultDidPopulateNotification = @"LOFaultDidPopulateNotification";
 
