@@ -74,8 +74,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         //CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: " + receivedData);
         var jSON = [receivedData objectFromJSON];
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
-        [connections removeObject:connectionDictionary];
     }
+    [connections removeObject:connectionDictionary];
 }
 
 - (void)connection:(CPURLConnection)connection didFailWithError:(id)error {
