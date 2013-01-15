@@ -417,6 +417,19 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
+    @return primary key for the Object. If it is not in the context nil is returned
+ */
+- (CPString)primaryKeyForObject:(id) theObject {
+    if (theObject) {
+        var globalId = [objectStore globalIdForObject:theObject];
+        if ([objects objectForKey:globalId]) {
+            return [objectStore primaryKeyForObject:theObject];
+        }
+    }
+    return nil;
+}
+
+/*!
    Returns the type of the object
  */
 - (CPString)typeOfObject:(id)theObject {
