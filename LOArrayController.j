@@ -89,7 +89,7 @@
         }
         [objectsToDeleteIndexes addIndex:anIndex];
     }];
-    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes, YES];
+    [self _removeObjects:objectsToDelete atIndexes:objectsToDeleteIndexes shouldRegisterEvent:YES];
 }
 
 - (void)_removeObjects:(CPArray)objectsToDelete {
