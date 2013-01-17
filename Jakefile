@@ -98,7 +98,7 @@ task("test", function()
     var tests = new FileList('Tests/*Test.j');
     var cmd = ["ojtest"].concat(tests.items());
     var cmdString = cmd.map(OS.enquote).join(" ");
-    var cmdString = "env OBJJ_INCLUDE_PATHS='.:../Frameworks/Debug:../Frameworks' " + cmdString;
+    var cmdString = "env OBJJ_INCLUDE_PATHS='.:../LocalDeploy/Frameworks/Debug:../LocalDeploy/Frameworks' " + cmdString;
 
     //print("will run `" + cmdString + "`");
     var code = OS.system(cmdString);
