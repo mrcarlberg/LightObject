@@ -86,7 +86,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (id) connectionDictionaryForConnection:(CPURLConnection) connection {
     var size = [connections count];
-    for (i = 0; i < size; i++) {
+    for (var i = 0; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];
         if (connection === connectionDictionary.connection) {
             return connectionDictionary;
@@ -108,7 +108,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var newArray = [CPArray array];
     var size = [jSONObjects count];
     [objectContext setDoNotObserveValues:YES];
-    for (i = 0; i < size; i++) {
+    for (var i = 0; i < size; i++) {
         var row = jSONObjects[i];
         var type = [self typeForRawRow:row objectContext:objectContext];
         var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
@@ -445,7 +445,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (void)addCompletionBlock:(Function)aCompletionBlock toTriggeredFaultArray:(LOFaultArray)aFaultArray {
     var size = [connections count];
-    for (i = 0; i < size; i++) {
+    for (var i = 0; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];
         if (connectionDictionary.faultArray === aFaultArray) {
             [connectionDictionary.completionBlocks addObject:aCompletionBlock];
