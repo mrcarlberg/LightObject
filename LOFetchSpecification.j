@@ -10,7 +10,8 @@
 @implementation LOFetchSpecification : CPObject
 {
     CPString        entityName  @accessors;
-    CPString        operator  @accessors;
+    CPString        method  @accessors; // This is user info for the object store. It can be used to add to the url path
+    CPString        operator  @accessors; // This is user info for the object store. It can be used to add to the url path
     CPPredicate     qualifier  @accessors;
     id              userInfo  @accessors;
 }
