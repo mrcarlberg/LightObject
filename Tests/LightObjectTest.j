@@ -67,7 +67,7 @@
     CPArray             schools;
 }
 
-- (void)setUp()
+- (void)setUp
 {
     objectContext = [[LOObjectContext alloc] initWithDelegate:self];
     objectStore = [[TestObjectStore alloc] init];
@@ -84,7 +84,7 @@
     }
 }    
     
-- (void)testBasicInitialSetup()
+- (void)testBasicInitialSetup
 {
     [self assertNotNull:objectContext];
     [self assertNotNull:objectStore];

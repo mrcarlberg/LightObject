@@ -71,6 +71,7 @@ var stream = require("narwhal/term").stream,
 
 var frameworkTask = framework (productName, function(frameworkTask)
 {
+    ENV['OBJJ_INCLUDE_PATHS'] = '../../LocalDeploy/Frameworks/Debug:../../LocalDeploy/Frameworks'
     frameworkTask.setBuildIntermediatesPath(FILE.join(buildPath, configuration));
     frameworkTask.setBuildPath(FILE.join(buildDir, configuration));
 
@@ -98,7 +99,7 @@ task("test", function()
     var tests = new FileList('Tests/*Test.j');
     var cmd = ["ojtest"].concat(tests.items());
     var cmdString = cmd.map(OS.enquote).join(" ");
-    var cmdString = "env OBJJ_INCLUDE_PATHS='.:../LocalDeploy/Frameworks/Debug:../LocalDeploy/Frameworks' " + cmdString;
+    var cmdString = "env OBJJ_INCLUDE_PATHS='.:../../LocalDeploy/Frameworks/Debug:../../LocalDeploy/Frameworks' " + cmdString;
 
     //print("will run `" + cmdString + "`");
     var code = OS.system(cmdString);

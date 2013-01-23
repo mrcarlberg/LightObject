@@ -10,7 +10,7 @@ CPLogRegister(CPLogPrint, "warn");
 
 //FIXME: assert KVO for mapping attributes as well!
 
-@implementation TestObjectStore : LOLocalDictionaryObjectStore {
+@implementation TestObjectStoreManyToMany : LOLocalDictionaryObjectStore {
 }
 
 - (id)init {
@@ -114,12 +114,12 @@ CPLogRegister(CPLogPrint, "warn");
     CPArray             notifications;
 }
 
-- (void)setUp()
+- (void)setUp
 {
     persons = nil;
     schools = nil;
 
-    objectStore = [[TestObjectStore alloc] init];
+    objectStore = [[TestObjectStoreManyToMany alloc] init];
 
     objectContext = [[LOObjectContext alloc] initWithDelegate:self];
     [objectContext setObjectStore:objectStore];
