@@ -8,6 +8,10 @@
 @import <Foundation/CPObject.j>
 @import <AppKit/CPArrayController.j>
 
+@class LOInsertEvent
+@class LODeleteEvent
+
+
 @implementation LOArrayController : CPArrayController
 {
     @outlet LOObjectContext objectContext;

@@ -21,12 +21,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+@import "LOError.j"
 @import "LightObjectClass.j"
-@import "LOObjectContext.j"
-@import "LOFetchSpecification.j"
 @import "LOArrayController.j"
+@import "LOFetchSpecification.j"
 @import "LOObjectStore.j"
 @import "LOSimpleJSONObjectStore.j"
 @import "LOFaultArray.j"
 @import "LOLocalDictionaryObjectStore.j"
-@import "LOError.j"
+@import "LOObjectContext.j"

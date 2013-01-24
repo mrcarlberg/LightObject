@@ -6,6 +6,7 @@
 @import <Foundation/CPObject.j>
 @import "LOObjectContext.j"
 @import "LOArrayController.j"
+@import "LOFaultArray.j"
 
 
 @implementation LOEvent : CPObject {
