@@ -40,6 +40,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
 - (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faultArray:(LOFaultArray)faultArray {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
+    if (fetchSpecification.requestPreProcessBlock) {
+        fetchSpecification.requestPreProcessBlock(request);
+    }
     var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faultArray:faultArray, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];

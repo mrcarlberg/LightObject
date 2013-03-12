@@ -14,6 +14,7 @@
     CPString        operator  @accessors; // This is user info for the object store. It can be used to add to the url path
     CPPredicate     qualifier  @accessors;
     id              userInfo  @accessors;
+    Function        requestPreProcessBlock @accessors; // This is a block that is called before the request is sent
 }
 
 + (LOFetchSpecification) fetchSpecificationForEntityNamed:(CPString) anEntityName {
