@@ -10,6 +10,7 @@
 @implementation LOFetchSpecification : CPObject
 {
     CPString        entityName  @accessors;
+    CPString        alias  @accessors; // This is user info for the object store. It can be used to fetch entityName from a function
     CPString        method  @accessors; // This is user info for the object store. It can be used to add to the url path
     CPString        operator  @accessors; // This is user info for the object store. It can be used to add to the url path
     CPPredicate     qualifier  @accessors;
