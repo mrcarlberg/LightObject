@@ -147,9 +147,9 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext {
+- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
-    [objectContext objectsReceived:objects withFetchSpecification:fetchSpecification];
+    [objectContext objectsReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
 }
 
 /*!
@@ -157,7 +157,7 @@
  */
 - (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
-    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock faultArray:faultArray];
+    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faultArray:faultArray];
 }
 
 /*!

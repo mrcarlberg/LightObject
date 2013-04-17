@@ -52,6 +52,10 @@ CPLogRegister(CPLogPrint, "warn");
     return [theObject valueForKey:@"key"];
 }
 
+- (id)primaryKeyForObject:(id) theObject {
+    return [self globalIdForObject:theObject];
+}
+
 - (CPString) typeOfObject:(id) theObject {
     if ([theObject isKindOfClass:[CPDictionary class]])
         return [theObject valueForKey:@"entity"];
@@ -118,6 +122,8 @@ CPLogRegister(CPLogPrint, "warn");
 {
     persons = nil;
     schools = nil;
+
+    notifications = [];
 
     objectStore = [[TestObjectStoreManyToMany alloc] init];
 
@@ -209,6 +215,7 @@ CPLogRegister(CPLogPrint, "warn");
     var achilles = persons[1];
     var school = schools[0];
     var mapping = [[PersonSchoolMapping alloc] init];
+    [mapping setKey:198723]; // fake temp key
 
     [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
 
@@ -227,7 +234,6 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (void)testInsertSendsKVONotifications {
-    var notifications = [];
     var achilles = persons[1];
     var school = schools[0];
     var mapping = [[PersonSchoolMapping alloc] init];
@@ -276,7 +282,6 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (void)testRevertInsertionSendsKVONotifications {
-    var notifications = [];
     var achilles = persons[1];
     var school = schools[0];
     var mapping = [[PersonSchoolMapping alloc] init];
@@ -324,7 +329,6 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (void)testDeleteSendsKVONotifications {
-    var notifications = [];
     var person = persons[0];
     var school = schools[0];
     var mapping = [[person persons_schools] objectAtIndex:0];
@@ -417,7 +421,6 @@ CPLogRegister(CPLogPrint, "warn");
 }
 
 - (void)testRevertDeletionSendsKVONotifications {
-    var notifications = [];
     var penelope = persons[2];
     var sparta = schools[1];
     var mappingPenelopeSparta = [[penelope persons_schools] objectAtIndex:1];
