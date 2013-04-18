@@ -4,6 +4,7 @@
  */
 
 @import <Foundation/CPObject.j>
+@import <Foundation/CPString.j>
 
 LOValidationErrorKeyString = @"LOValidationErrorKeyString";
 LOObjectValidationDomainString = @"LOObjectValidationDomainString";

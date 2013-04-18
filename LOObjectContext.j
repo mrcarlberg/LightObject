@@ -6,6 +6,7 @@
  */
 
 @import <Foundation/CPObject.j>
+@import <Foundation/CPNotificationCenter.j>
 @import "LOJSKeyedArchiver.j"
 @import "LOFetchSpecification.j"
 @import "LOObjectStore.j"

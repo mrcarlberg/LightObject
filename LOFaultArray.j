@@ -4,6 +4,7 @@
  */
 
 @import <Foundation/CPArray.j>
+@import <Foundation/CPPredicate.j>
 
 LOFaultDidFireNotification = @"LOFaultDidFireNotification";
 LOFaultDidPopulateNotification = @"LOFaultDidPopulateNotification";

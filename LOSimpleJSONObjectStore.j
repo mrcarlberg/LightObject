@@ -6,6 +6,8 @@
  */
 
 @import <Foundation/CPObject.j>
+@import <Foundation/CPURLConnection.j>
+@import <Foundation/CPURLRequest.j>
 @import "LOJSKeyedArchiver.j"
 @import "LOFetchSpecification.j"
 @import "LOObjectContext.j"
