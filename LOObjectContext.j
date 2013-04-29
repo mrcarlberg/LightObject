@@ -215,9 +215,9 @@ var LOObjectContext_classForType = 1 << 0,
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
-- (void)objectsReceived:(CPArray) objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
+- (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
-        [self registerObjects:objectList];
+        [self registerObjects:allReceivedObjects];
     }
     if (completionBlocks) {
         var size = [completionBlocks count];
