@@ -139,7 +139,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 if (row.hasOwnProperty(column)) {
                     var value = row[column];
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
-//                    CPLog.trace(@"tracing: " + column + @" value class: " + [value className]);
+//                    CPLog.trace(@"tracing: " + column + @": " + value + (value && value.isa ? @", value class: " + [value className] : ""));
                     if ([self isForeignKeyAttribute:column forType:type objectContext:objectContext]) {    // Handle to one relationship.
                         column = [self toOneRelationshipAttributeForForeignKeyAttribute:column forType:type objectContext:objectContext]; // Remove "_fk" at end
                         if (value) {
