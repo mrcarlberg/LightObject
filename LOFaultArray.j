@@ -26,15 +26,15 @@ CPArray         array @accessors;
  + (id)alloc {
  //CPLog.trace(@"tracing: LOFaultArray.alloc:");
  var array = [];
- 
+
  array.isa = self;
- 
+
  var ivars = class_copyIvarList(self),
  count = ivars.length;
- 
+
  while (count--)
  array[ivar_getName(ivars[count])] = nil;
- 
+
  return array;
  }
  */
@@ -77,7 +77,7 @@ CPArray         array @accessors;
  return self;
  }
  */
-- (id)initWithObjects:(id)objects count:(unsigned)aCount {
+- (id)initWithObjects:(CPArray)objects count:(CPUInteger)aCount {
     //    CPLog.trace(@"tracing: LOFaultArray.initWithObjects:count:");
     self = [self init];
     if (self) {
@@ -86,7 +86,7 @@ CPArray         array @accessors;
     return self;
 }
 
-- (id)initWithCapacity:(unsigned)aCapacity {
+- (id)initWithCapacity:(CPUInteger)aCapacity {
     //    CPLog.trace(@"tracing: LOFaultArray.initWithCapacity:");
     return [super initWithCapacity:aCapacity];
 }
@@ -101,12 +101,12 @@ CPArray         array @accessors;
     return copy;
 }
 
-- (int)count {
+- (CPUInteger)count {
     [self _requestFaultIfNecessary];
     return [array count];
 }
 
-- (id) objectAtIndex:(int) anIndex {
+- (id)objectAtIndex:(CPUInteger) anIndex {
     [self _requestFaultIfNecessary];
     return [array objectAtIndex:anIndex];
 }
@@ -116,12 +116,12 @@ CPArray         array @accessors;
     [array addObject:anObject];
 }
 
-- (void)insertObject:(id)anObject atIndex:(int)anIndex {
+- (void)insertObject:(id)anObject atIndex:(CPUInteger)anIndex {
     [self _requestFaultIfNecessary];
     [array insertObject:anObject atIndex:anIndex];
 }
 
-- (void)replaceObjectAtIndex:(int)anIndex withObject:(id)anObject {
+- (void)replaceObjectAtIndex:(CPUInteger)anIndex withObject:(id)anObject {
     [self _requestFaultIfNecessary];
     [array replaceObjectAtIndex:anIndex withObject:anObject];
 }
@@ -131,7 +131,7 @@ CPArray         array @accessors;
     [array removeLastObject];
 }
 
-- (void)removeObjectAtIndex:(int)anIndex {
+- (void)removeObjectAtIndex:(CPUInteger)anIndex {
     [self _requestFaultIfNecessary];
     [array removeObjectAtIndex:anIndex];
 }
@@ -145,7 +145,7 @@ CPArray         array @accessors;
     return (@"faultFired" === aKeyPath || @"faultPopulated" === aKeyPath)
 }
 
-- (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
+- (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(CPKeyValueObservingOptions)options context:(id)context {
     if ([self _handleObserverForKeyPath:aKeyPath]) {
         [[_CPKVOProxy proxyForObject:self] _addObserver:observer forKeyPath:aKeyPath options:options context:context]
     } else {
