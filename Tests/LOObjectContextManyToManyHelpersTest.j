@@ -52,7 +52,7 @@ CPLogRegister(CPLogPrint, "warn");
     return [theObject valueForKey:@"key"];
 }
 
-- (id)primaryKeyForObject:(id) theObject {
+- (CPString)primaryKeyForObject:(id) theObject {
     return [self globalIdForObject:theObject];
 }
 
