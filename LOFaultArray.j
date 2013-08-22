@@ -5,22 +5,16 @@
 
 @import <Foundation/CPArray.j>
 @import <Foundation/CPPredicate.j>
-
-LOFaultDidFireNotification = @"LOFaultDidFireNotification";
-LOFaultDidPopulateNotification = @"LOFaultDidPopulateNotification";
-
-LOFaultArrayKey = @"LOFaultArrayKey";
-LOFaultFetchSpecificationKey = @"LOFaultFetchSpecificationKey";
-LOFaultFetchRelationshipKey = @"LOFaultFetchRelationshipKey";
+@import "LOFault.j"
 
 
-@implementation LOFaultArray : CPMutableArray {
-LOObjectContext objectContext @accessors;
-id              masterObject @accessors;
-CPString        relationshipKey @accessors;
-BOOL            faultFired @accessors;
-BOOL            faultPopulated @accessors;
-CPArray         array @accessors;
+@implementation LOFaultArray : CPMutableArray <LOFault> {
+    LOObjectContext objectContext @accessors;
+    id              masterObject @accessors;
+    CPString        relationshipKey @accessors;
+    BOOL            faultFired @accessors;
+    BOOL            faultPopulated @accessors;
+    CPArray         array @accessors;
 }
 /*
  + (id)alloc {
@@ -217,14 +211,26 @@ CPArray         array @accessors;
                                                                    options:0];
         var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
         [objectContext requestFaultArray:self withFetchSpecification:fs withCompletionBlock:aCompletionBlock];
-        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultArrayKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
+        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
     } else if (aCompletionBlock) {
         if (faultPopulated) {
             aCompletionBlock(self);
         } else {
-            [objectStore addCompletionBlock:aCompletionBlock toTriggeredFaultArray:self];
+            [objectStore addCompletionBlock:aCompletionBlock toTriggeredFault:self];
         }
     }
+}
+
+- (id)faultReceivedWithObjects:(CPArray)objectList {
+    var anArray = [masterObject valueForKey:relationshipKey];
+
+    [objectContext registerObjects:objectList];
+    [masterObject willChangeValueForKey:relationshipKey];
+    [anArray addObjectsFromArray:objectList];
+    [masterObject didChangeValueForKey:relationshipKey];
+    [self setFaultPopulated:YES];
+
+    return anArray;
 }
 
 @end

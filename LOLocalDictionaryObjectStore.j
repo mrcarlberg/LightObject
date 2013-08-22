@@ -157,7 +157,7 @@
  */
 - (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
-    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faultArray:faultArray];
+    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil fault:faultArray];
 }
 
 /*!

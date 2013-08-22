@@ -13,6 +13,9 @@
 @import "LOSimpleJSONObjectStore.j"
 @import "LOEvent.j"
 @import "LOError.j"
+@import "LOFault.j"
+
+@class LOFaultObject
 
 LOObjectContextReceivedObjectNotification = @"LOObjectContextReceivedObjectNotification";
 LOObjectsKey = @"LOObjectsKey";
@@ -84,19 +87,19 @@ var LOObjectContext_classForType = 1 << 0,
  @class LOObjectContext
 
      LOObjectContext represents a single "object space" or document in an application. Its primary responsibility is managing a graph of objects. This object graph is a group of related business objects that represent an internally consistent view of one object store.
- 
+
      All objects fetched from an object store are registered in an LOObjectContext along with a global identifier (LOGlobalID)(LOGlobalID not yet implemented) that's used to uniquely identify each object to the object store. The LOObjectContext is responsible for watching for changes in its objects (using the CPKeyValueObserving protocol). A single object instance exists in one and only one LOObjectContext.
 
      The object context observes all changes of the object graph except toMany relations. The caller is responsible to use the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method to let the object context know about changes in tomany relations.
- 
+
      A LOArrayController can keep track of changes in tomany relations and make sure that the add:toRelationshipWithKey:forObject: or delete:withRelationshipWithKey:forObject: method is used appropriate.
- 
+
      The framework supports "fault" and "deep fetch" for tomany relations. The backend can send a fault or an array with type and primary key values for a deep fetch. In a "deep fetch" the rows corresponding to the tomany relationship should be sent together with the fetched objects (in the same list).
 
      When a fetch is requested with the requestObjectsWithFetchSpecification: method the answer is later sent with the delegate method objectContext:objectsReceived:withFetchSpecification: or sent as the notification LOObjectContextReceivedObjectNotification with the fetch specification as object and result in userInfo.
- 
+
      When a fault is triggered the notification LOFaultDidFireNotification is sent and when it is received the notification LOFaultDidPopulateNotification is sent.
-    
+
      Right now the global id is the same as the primary key. A primary key has to be unique for all objects in the object context.
 
  @delegate -(void)objectContext:(LOObjectContext)anObjectContext objectsReceived:(CPArray)objects withFetchSpecification:(LOFetchSpecification)aFetchSpecification;
@@ -155,7 +158,7 @@ var LOObjectContext_classForType = 1 << 0,
         return;
     delegate = aDelegate;
     implementedDelegateMethods = 0;
-    
+
     if ([delegate respondsToSelector:@selector(classForType:)])
         implementedDelegateMethods |= LOObjectContext_classForType;
     if ([delegate respondsToSelector:@selector(objectContext:objectsReceived:withFetchSpecification:)])
@@ -215,6 +218,10 @@ var LOObjectContext_classForType = 1 << 0,
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
+- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification) fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+    [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+}
+
 - (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:allReceivedObjects];
@@ -232,26 +239,19 @@ var LOObjectContext_classForType = 1 << 0,
     [defaultCenter postNotificationName:LOObjectContextReceivedObjectNotification object:fetchSpecification userInfo:[CPDictionary dictionaryWithObject:objectList forKey:LOObjectsKey]];
 }
 
-- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks faultArray:(LOFaultArray)faultArray {
-    [self registerObjects:objectList];
-    var masterObject = [faultArray masterObject];
-    var relationshipKey = [faultArray relationshipKey];
-    var array = [masterObject valueForKey:relationshipKey];
-//    print(_cmd + " masterObject: " + masterObject + " relationshipKey: " + relationshipKey);
-    [masterObject willChangeValueForKey:relationshipKey];
-    //    [array removeAllObjects];
-    //    [masterObject setValue:newArray forKey:relationshipKey];
-    [array addObjectsFromArray:objectList];
-    [masterObject didChangeValueForKey:relationshipKey];
-    [faultArray setFaultPopulated:YES];
+/*!
+ * This is called when the result from a triggered fault array is received
+ */
+- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(LOFault)fault {
+    var arrayOrObject = [fault faultReceivedWithObjects:objectList];
     if (completionBlocks) {
         var size = [completionBlocks count];
         for (var i = 0; i < size; i++) {
             var aCompletionBlock = [completionBlocks objectAtIndex:i];
-            aCompletionBlock(array);
+            aCompletionBlock(arrayOrObject);
         }
     }
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[faultArray masterObject] userInfo:[CPDictionary dictionaryWithObjects:[faultArray, fetchSpecification] forKeys:[LOFaultArrayKey, LOFaultFetchSpecificationKey]]];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[fault masterObject] userInfo:[CPDictionary dictionaryWithObjects:[fault, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]]];
 }
 
 - (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
@@ -294,8 +294,7 @@ var LOObjectContext_classForType = 1 << 0,
     var newGlobalId;
     var shouldSetForeignKey;       // We don't want to set a foreign key if the master object don't have a primary key.
     if (newValue) {
-        var primaryKey = [objectStore primaryKeyForObject:newValue];
-        if (primaryKey) {
+        if (![newValue isKindOfClass:LOFaultObject] && [objectStore primaryKeyForObject:newValue]) {
             shouldSetForeignKey = YES;
             newGlobalId = [self globalIdForObject:newValue];
         } else {
@@ -737,7 +736,7 @@ var LOObjectContext_classForType = 1 << 0,
             }
         }
     }
-	
+
     [objectStore saveChangesWithObjectContext:self];
 
     // Remove transaction
@@ -745,7 +744,7 @@ var LOObjectContext_classForType = 1 << 0,
     if (count) {
         [undoEvents removeObjectAtIndex:count - 1];
     }
-    
+
     // Remove modifiedObjects
     [self setModifiedObjects:[CPArray array]];
 }
@@ -852,11 +851,11 @@ var LOObjectContext_classForType = 1 << 0,
     [lastUndoEvents addObject:updateEvent];
 }
 
-- (void)triggerFault:(CPArray)faultArray withCompletionBlock:(Function)aCompletionBlock {
-    if ([faultArray isKindOfClass:[LOFaultArray class]]) {
-        [faultArray requestFaultWithCompletionBlock:aCompletionBlock];
+- (void)triggerFault:(LOFault)fault withCompletionBlock:(Function)aCompletionBlock {
+    if ([fault conformsToProtocol:@protocol(LOFault)]) {
+        [fault requestFaultWithCompletionBlock:aCompletionBlock];
     } else {
-        aCompletionBlock(faultArray);
+        aCompletionBlock(fault);
     }
 }
 
