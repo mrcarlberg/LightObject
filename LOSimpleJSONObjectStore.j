@@ -116,7 +116,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var fetchSpecification = connectionDictionary.fetchSpecification;
     var entityName = fetchSpecification.entityName;
     var possibleToOneFaultObjects =[CPMutableArray array];
-    var newArray = [CPArray array];
+    var newArray = [CPMutableArray array];
     var size = [jSONObjects count];
     [objectContext setDoNotObserveValues:YES];
     for (var i = 0; i < size; i++) {
@@ -125,7 +125,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
         var obj = [receivedObjects objectForKey:uuid];
         if (!obj) {
-            obj = [objectContext objectForGlobalId:uuid];
+            obj = [objectContext objectForGlobalId:uuid noFaults:connectionDictionary.fault];
             if (!obj) {
                 obj = [self newObjectForType:type objectContext:objectContext];
             }
@@ -194,19 +194,27 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
     }
-    [objectContext setDoNotObserveValues:NO];
     // Try again to find to one relationship objects. They might been registered now
     var size = [possibleToOneFaultObjects count];
+    var toOneFaults = [CPMutableDictionary dictionary];
     for (var i = 0; i < size; i++) {
         var possibleToOneFaultObject = [possibleToOneFaultObjects objectAtIndex:i];
         //var toOne = [objectContext objectForGlobalId:possibleToOneFaultObject.globalId];
-        var toOne = [receivedObjects objectForKey:possibleToOneFaultObject.globalId];
+        var globalId = possibleToOneFaultObject.globalId;
+        var toOne = [receivedObjects objectForKey:globalId];
         if (!toOne) {
-            toOne = [LOFaultObject faultObjectWithObjectContext:objectContext masterObject:possibleToOneFaultObject.object relationshipKey:possibleToOneFaultObject.relationshipKey primaryKey:possibleToOneFaultObject.globalId];
-            //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+            toOne = [toOneFaults objectForKey:globalId];
+            if (!toOne) {
+                // This is hard coded. Uses relationshipKey as entityName. We can change this when we have a full database model.
+                toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:possibleToOneFaultObject.relationshipKey primaryKey:globalId];
+                [objectContext _registerObject:toOne forGlobalId:globalId];
+                [toOneFaults setObject:toOne forKey:globalId];
+                //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+            }
         }
         [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
     }
+    [objectContext setDoNotObserveValues:NO];
     return newArray;
 }
 
@@ -420,23 +428,26 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     return modifyDict;
 }
 
-- (CPString) globalIdForObject:(id) theObject {
+- (CPString)globalIdForObject:(id)theObject {
+    //CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] theObject:" + [theObject description]);
     if ([theObject respondsToSelector:@selector(uuid)]) {
-        var uuid = [self primaryKeyForObject:theObject];
+        var objectType = [self typeOfObject:theObject];
+        var uuid = [self globalIdForObjectType:objectType andPrimaryKey:[self primaryKeyForObject:theObject]];
+
         if (!uuid) {    // If we don't have one from the backend, create a temporary until we get one.
-            uuid = [self typeOfObject:theObject] + theObject._UID;
+            uuid = objectType + theObject._UID;
         }
         return uuid;
     }
     return nil;
 }
 
-- (CPArray) relationshipKeysForObject:(id) theObject {
+- (CPArray)relationshipKeysForObject:(id)theObject {
     return [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
 }
 
 
-- (CPArray) attributeKeysForObject:(id) theObject {
+- (CPArray)attributeKeysForObject:(id)theObject {
     return [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
 }
 

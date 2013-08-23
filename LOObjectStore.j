@@ -8,7 +8,6 @@
 @import <Foundation/CPObject.j>
 @import "LOJSKeyedArchiver.j"
 @import "LOFetchSpecification.j"
-@import "LOObjectStore.j"
 
 @implementation LOObjectStore : CPObject {
 }
@@ -76,6 +75,15 @@
  */
 - (CPString)globalIdForObject:(id) theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Returns globalId for entity type and primary key. Should return nil if primaryKey is nil.
+ * Right now we only use the primary key as global id as we always has totaly unique primary keys.
+ * TODO: This framework does propably not yet support that the global id is different from primary key.
+ */
+- (CPString)globalIdForObjectType:(CPString)objectType andPrimaryKey:(CPString)primaryKey {
+    return primaryKey;
 }
 
 /*!
@@ -160,14 +168,14 @@
 /*!
  * Returns a new object for the type.
  */
-- (id) newObjectForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+- (id)newObjectForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     return [objectContext newObjectForType:aType];
 }
 
 /*!
  * Returns LOError for response and data if the backend has returned a error.
  */
-- (LOError) errorForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString {
+- (LOError)errorForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString {
     return nil;
 }
 

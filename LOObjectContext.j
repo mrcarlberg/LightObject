@@ -243,6 +243,8 @@ var LOObjectContext_classForType = 1 << 0,
  * This is called when the result from a triggered fault array is received
  */
 - (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(LOFault)fault {
+    var faultDidPopulateNodtificationObject = [fault faultDidPopulateNodtificationObject];
+    var faultDidPopulateNodtificationUserInfo = [fault faultDidPopulateNodtificationUserInfo];
     var arrayOrObject = [fault faultReceivedWithObjects:objectList];
     if (completionBlocks) {
         var size = [completionBlocks count];
@@ -251,7 +253,7 @@ var LOObjectContext_classForType = 1 << 0,
             aCompletionBlock(arrayOrObject);
         }
     }
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:[fault masterObject] userInfo:[CPDictionary dictionaryWithObjects:[fault, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]]];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNodtificationObject userInfo:faultDidPopulateNodtificationUserInfo];
 }
 
 - (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
@@ -338,12 +340,15 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void)registerObject:(id) theObject {
+- (void)registerObject:(id)theObject {
     // TODO: Check if theObject is already registrered
-    var globalId = [objectStore globalIdForObject:theObject];
-    var type = [self typeOfObject:theObject];
-    [objects setObject:theObject forKey:globalId];
+    [self _registerObject:theObject forGlobalId:[objectStore globalIdForObject:theObject]];
+    [self _observeAttributesForObject:theObject];
+}
+
+- (void)_observeAttributesForObject:(id)theObject {
     if (!readOnly) {
+        var type = [self typeOfObject:theObject];
         var attributeKeys = [objectStore attributeKeysForObject:theObject];
         var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
         var attributeSize = [attributeKeys count];
@@ -359,7 +364,11 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void)registerObjects:(CPArray) someObjects {
+- (void)_registerObject:(id)theObject forGlobalId:(CPString)globalId {
+    [objects setObject:theObject forKey:globalId];
+}
+
+- (void)registerObjects:(CPArray)someObjects {
     var size = [someObjects count];
     for (var i = 0; i < size; i++) {
         var object = [someObjects objectAtIndex:i];
@@ -376,7 +385,8 @@ var LOObjectContext_classForType = 1 << 0,
     var fromGlobalId = [self globalIdForObject:theObject];
     if (fromGlobalId) {
         [objects setObject:theObject forKey:toGlobalId];
-        [objects removeObjectForKey:fromGlobalId];
+        if (toGlobalId !== fromGlobalId)
+            [objects removeObjectForKey:fromGlobalId];
     }
 }
 
@@ -401,7 +411,15 @@ var LOObjectContext_classForType = 1 << 0,
     @return object to context
  */
 - (id)objectForGlobalId:(CPString) globalId {
-    return [objects objectForKey:globalId];
+    return [self objectForGlobalId:globalId noFaults:NO];
+}
+
+/*!
+    @return object to context
+ */
+- (id)objectForGlobalId:(CPString) globalId noFaults:(BOOL)noFaults {
+    var obj = [objects objectForKey:globalId];
+    return noFaults && [obj conformsToProtocol:@protocol(LOFault)] ? nil : obj;
 }
 
 /*!

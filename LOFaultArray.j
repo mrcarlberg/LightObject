@@ -15,6 +15,7 @@
     BOOL            faultFired @accessors;
     BOOL            faultPopulated @accessors;
     CPArray         array @accessors;
+    LOFetchSpecification fetchSpecification;
 }
 /*
  + (id)alloc {
@@ -92,6 +93,7 @@
     copy.relationshipKey = self.relationshipKey;
     copy.faultFired = self.faultFired;
     copy.array = [array copy];
+    copy.fetchSpecification = self.fetchSpecification;
     return copy;
 }
 
@@ -199,7 +201,7 @@
  */
 - (void) requestFaultWithCompletionBlock:(Function)aCompletionBlock {
     if (!faultFired) {
-        faultFired = YES;
+        [self setFaultFired:YES];
         faultPopulated = NO;
         var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
         var objectStore = [objectContext objectStore];
@@ -209,9 +211,9 @@
                                                                   modifier:CPDirectPredicateModifier
                                                                       type:CPEqualToPredicateOperatorType
                                                                    options:0];
-        var fs = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-        [objectContext requestFaultArray:self withFetchSpecification:fs withCompletionBlock:aCompletionBlock];
-        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fs, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
+        fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+        [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
+        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fetchSpecification, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
     } else if (aCompletionBlock) {
         if (faultPopulated) {
             aCompletionBlock(self);
@@ -231,6 +233,14 @@
     [self setFaultPopulated:YES];
 
     return anArray;
+}
+
+- (id)faultDidPopulateNodtificationObject {
+    return masterObject;
+}
+
+- (CPDictionary)faultDidPopulateNodtificationUserInfo {
+    return [CPDictionary dictionaryWithObjects:[self, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
 }
 
 @end
