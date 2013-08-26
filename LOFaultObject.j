@@ -44,26 +44,6 @@
     copy.fetchSpecification = self.fetchSpecification;
     return copy;
 }
-/*
-- (id)_handleObserverForKeyPath:(CPString)aKeyPath {
-    return (@"faultFired" === aKeyPath || @"faultPopulated" === aKeyPath)
-}
-
-- (void)addObserver:(id)observer forKeyPath:(CPString)aKeyPath options:(unsigned)options context:(id)context {
-    if ([self _handleObserverForKeyPath:aKeyPath]) {
-        [[_CPKVOProxy proxyForObject:self] _addObserver:observer forKeyPath:aKeyPath options:options context:context]
-    } else {
-        [array addObserver:observer forKeyPath:aKeyPath options:options context:context];
-    }
-}
-
-- (void)removeObserver:(id)observer forKeyPath:(CPString)aKeyPath {
-    if ([self _handleObserverForKeyPath:aKeyPath]) {
-        [[_CPKVOProxy proxyForObject:self] _removeObserver:observer forKeyPath:aKeyPath];
-    } else {
-        [array removeObserver:observer forKeyPath:aKeyPath];
-    }
-}*/
 
 - (void)setValue:(id)aValue forKey:(CPString)aKey {
     if (@"faultFired" === aKey) {
@@ -76,6 +56,7 @@
         [self didChangeValueForKey:aKey];
     } else {
         [self _requestFaultIfNecessary];
+
         // TODO: Save all the set values and maybe apply them later???
         [super setValue:aValue forKey:aKey];
     }
@@ -88,6 +69,7 @@
         return faultPopulated;
     }
     [self _requestFaultIfNecessary];
+
     // We do never have a valid value in the fault object so we just return nil
     return nil;
 }
@@ -129,12 +111,18 @@
 }
 
 - (id)faultReceivedWithObjects:(CPArray)objectList {
-    var anObject = objectList[0],
-        objectStore = [objectContext objectStore],
+    // Here we morph this fault object to the real object now when we are getting its data.
+    [self morphObjectTo:objectList[0]];
+}
+
+- (id)morphObjectTo:(id)anObject {
+    var objectStore = [objectContext objectStore],
         allAttributes = [objectStore attributeKeysForObject:anObject],
         attributes = [];
 
-    CPLog.trace([self className] + " " + _cmd + " Fire reseived: '" + [anObject description]);
+    //CPLog.trace([self className] + " " + _cmd + " Morph to object: '" + [anObject description]);
+
+    // All to one relationsships need to be translated from foreign key attribute.
     for (var i = 0, size = allAttributes.length; i < size; i++) {
         var attributeKey = allAttributes[i];
         if ([objectStore isForeignKeyAttribute:attributeKey forType:entityName objectContext:objectContext])    // Handle to one relationship.
@@ -143,44 +131,52 @@
             attributes.push(attributeKey);
     }
 
+    // Add to many relationships
     attributes = [attributes arrayByAddingObjectsFromArray:[objectStore relationshipKeysForObject:anObject]];
 
     // Here we set this a little early, but we can't do it later as the object will morph to another type after this
     [self setFaultPopulated:YES];
+
+    // Make sure the object context does not record any of these changes. Should not be needed but so we can remove this.
     [objectContext setDoNotObserveValues:YES];
 
-    // Start morph before willChangeValueForKey: to fool KVO.
+    // Start morph.
     self.isa = anObject.isa;
     self._UID = anObject._UID;
 
-    // Get old Proxy
+    // If we have a proxy someone is observing this object. Copy over the observing stuff
     var oldProxy = self.$KVOPROXY;
-    delete self.$KVOPROXY;
-    var newProxy = [_CPKVOProxy proxyForObject:self];
+    if (oldProxy) {
+        delete self.$KVOPROXY;
+        var newProxy = [_CPKVOProxy proxyForObject:self];
 
-    // Move observers to new Proxy
-    newProxy._observersForKey = oldProxy._observersForKey;
-    newProxy._observersForKeyLength = oldProxy._observersForKeyLength;
+        // Move observers to new Proxy
+        newProxy._observersForKey = oldProxy._observersForKey;
+        newProxy._observersForKeyLength = oldProxy._observersForKeyLength;
 
-    // Move and create replaced keys.
-    var replacedKeys = [oldProxy._replacedKeys allObjects];
-    for (var i = 0, size = replacedKeys.length; i < size; i++) {
-        [newProxy _replaceModifiersForKey:replacedKeys[i]];
+        // Move and create replaced keys.
+        var replacedKeys = [oldProxy._replacedKeys allObjects];
+        for (var i = 0, size = replacedKeys.length; i < size; i++) {
+            [newProxy _replaceModifiersForKey:replacedKeys[i]];
+        }
     }
 
+    // Do willChange for all attributes in object
     for (var i = 0, size = attributes.length; i < size; i++) {
         [self willChangeValueForKey:attributes[i]];
     }
 
-    morphToObject(self, anObject);
+    // Remove current ivars and copy new ivars from anObject
+    copyIvars(self, anObject);
 
+    // Do didChange for all attributes in object
     for (var i = 0, size = attributes.length; i < size; i++) {
-        //if (attributes[i] === "firstname") debugger;
         [self didChangeValueForKey:attributes[i]];
     }
 
     [objectContext setDoNotObserveValues:NO];
 
+    // Return the morphed object.
     return self;
 }
 
@@ -195,7 +191,7 @@
 @end
 
 
-var morphToObject = function(anObject, toObject) {
+var copyIvars = function(anObject, toObject) {
     var ivars = ivarsForClass(anObject.isa);
     for (var i = 0, size = ivars.length; i < size; i++)
         delete ivars[i];
