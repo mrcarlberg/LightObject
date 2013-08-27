@@ -123,11 +123,17 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var row = jSONObjects[i];
         var type = [self typeForRawRow:row objectContext:objectContext];
         var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
+        var objectFromObjectContext;    // Keep track if the object is already in the objectContext
         var obj = [receivedObjects objectForKey:uuid];
-        if (!obj) {
+        if (obj) {
+            objectFromObjectContext = [objectContext objectForGlobalId:uuid noFaults:connectionDictionary.fault];
+        } else {
             obj = [objectContext objectForGlobalId:uuid noFaults:connectionDictionary.fault];
-            if (!obj) {
+            if (obj) {
+                objectFromObjectContext = YES;
+            } else {
                 obj = [self newObjectForType:type objectContext:objectContext];
+                objectFromObjectContext = NO;
             }
             if (obj) {
                 [receivedObjects setObject:obj forKey:uuid];
@@ -142,8 +148,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
             for (var j = 0; j < columnSize; j++) {
                 var column = [columns objectAtIndex:j];
-                if (row.hasOwnProperty(column)) {
-                    var value = row[column];
+
+                if (row.hasOwnProperty(column) || objectFromObjectContext) {
+                    var value = row[column] || nil;
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
 //                    CPLog.trace(@"tracing: " + column + @": " + value + (value && value.isa ? @", value class: " + [value className] : ""));
                     if ([self isForeignKeyAttribute:column forType:type objectContext:objectContext]) {    // Handle to one relationship.
@@ -158,9 +165,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                                 value = nil;//[[LOFaultObject alloc] init];
                             }
                         }
-                    } else if (Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
+                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
-                    } else if ([relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
+                    } else if (value && [relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         // The array contains only type and primaryKey for the relationship objects.
                         // The complete relationship objects can be sent before or later in the list of all objects.
                         var relations = value;
