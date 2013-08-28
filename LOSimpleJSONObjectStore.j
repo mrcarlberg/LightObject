@@ -125,18 +125,31 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
         var objectFromObjectContext;    // Keep track if the object is already in the objectContext
         var obj = [receivedObjects objectForKey:uuid];
+        var fault = nil;
         if (obj) {
             objectFromObjectContext = [objectContext objectForGlobalId:uuid noFaults:connectionDictionary.fault];
         } else {
-            obj = [objectContext objectForGlobalId:uuid noFaults:connectionDictionary.fault];
-            if (obj) {
-                objectFromObjectContext = YES;
-            } else {
-                obj = [self newObjectForType:type objectContext:objectContext];
+            obj = [objectContext objectForGlobalId:uuid];
+            var isFault = [obj conformsToProtocol:@protocol(LOFault)];
+            // If this is a fetch for a fault we want a new object. Also if we didn't find any in the object context
+            if ((connectionDictionary.fault && isFault) || !obj) {
+                obj = nil;
                 objectFromObjectContext = NO;
+            } else {
+                // Now we have an object but if it is a fault we should first create a new object and then morph the fault to this object.
+                objectFromObjectContext = YES;
+                if (isFault)
+                    fault = obj;
             }
+
+            // Create a new object if we don't have it or the one we found is a fault that we should later morph to.
+            if(!obj || fault) {
+                obj = [self newObjectForType:type objectContext:objectContext];
+            }
+
+            // Put the object or the fault that we should morph to in the receivedObjects dictionary
             if (obj) {
-                [receivedObjects setObject:obj forKey:uuid];
+                [receivedObjects setObject:fault || obj forKey:uuid];
             }
         }
         if (obj) {
@@ -196,8 +209,14 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     }
                 }
             }
+
+            // If we already has the fault registered in the object context morph it to the received object
+            if (fault)
+                [fault morphObjectTo:obj];
+
             if (type === entityName) {
-                [newArray addObject:obj];
+                // Add the morphed fault or the new received object to the list of received objects
+                [newArray addObject:fault || obj];
             }
         }
     }
