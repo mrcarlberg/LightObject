@@ -99,8 +99,7 @@
         fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
         [objectContext requestFaultObject:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
         [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:self userInfo:[CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]]];
-        CPLog.trace([self className] + " " + _cmd + " Fire fault: '" + entityName + "' q: " + [qualifier description]);
-        debugger;
+        //CPLog.trace([self className] + " " + _cmd + " Fire fault: '" + entityName + "' q: " + [qualifier description]);
     } else if (aCompletionBlock) {
         if (faultPopulated) {
             aCompletionBlock(self);
