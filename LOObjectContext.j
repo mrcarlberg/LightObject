@@ -243,8 +243,12 @@ var LOObjectContext_classForType = 1 << 0,
  * This is called when the result from a triggered fault array is received
  */
 - (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(LOFault)fault {
-    var faultDidPopulateNodtificationObject = [fault faultDidPopulateNodtificationObject];
-    var faultDidPopulateNodtificationUserInfo = [fault faultDidPopulateNodtificationUserInfo];
+    if (![fault conformsToProtocol:@protocol(LOFault)]) {
+        debugger;
+        return;
+    }
+    var faultDidPopulateNotificationObject = [fault faultDidPopulateNotificationObject];
+    var faultDidPopulateNotificationUserInfo = [fault faultDidPopulateNotificationUserInfo];
     var arrayOrObject = [fault faultReceivedWithObjects:objectList];
     if (completionBlocks) {
         var size = [completionBlocks count];
