@@ -18,7 +18,7 @@ LOFaultFetchRelationshipKey = @"LOFaultFetchRelationshipKey";
 // Returns all the objects in a to many relationship or just one object if it is a to one relation
 - (id)faultReceivedWithObjects:(CPArray)objectList;
 
-- (id)faultDidPopulateNodtificationObject;
-- (CPDictionary)faultDidPopulateNodtificationUserInfo;
+- (id)faultDidPopulateNotificationObject;
+- (CPDictionary)faultDidPopulateNotificationUserInfo;
 
 @end

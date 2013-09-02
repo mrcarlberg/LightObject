@@ -180,11 +180,11 @@
     return self;
 }
 
-- (id)faultDidPopulateNodtificationObject {
+- (id)faultDidPopulateNotificationObject {
     return self;
 }
 
-- (CPDictionary)faultDidPopulateNodtificationUserInfo {
+- (CPDictionary)faultDidPopulateNotificationUserInfo {
     return [CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
 }
 

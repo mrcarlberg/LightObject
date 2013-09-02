@@ -253,7 +253,7 @@ var LOObjectContext_classForType = 1 << 0,
             aCompletionBlock(arrayOrObject);
         }
     }
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNodtificationObject userInfo:faultDidPopulateNodtificationUserInfo];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNotificationObject userInfo:faultDidPopulateNotificationUserInfo];
 }
 
 - (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {

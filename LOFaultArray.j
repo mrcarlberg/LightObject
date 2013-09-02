@@ -235,11 +235,11 @@
     return anArray;
 }
 
-- (id)faultDidPopulateNodtificationObject {
+- (id)faultDidPopulateNotificationObject {
     return masterObject;
 }
 
-- (CPDictionary)faultDidPopulateNodtificationUserInfo {
+- (CPDictionary)faultDidPopulateNotificationUserInfo {
     return [CPDictionary dictionaryWithObjects:[self, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
 }
 
