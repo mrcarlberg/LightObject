@@ -109,9 +109,18 @@
     }
 }
 
-- (id)faultReceivedWithObjects:(CPArray)objectList {
+- (void)faultReceivedWithObjects:(CPArray)objectList withCompletionBlocks:(CPArray)completionBlocks {
     // Here we morph this fault object to the real object now when we are getting its data.
-    [self morphObjectTo:objectList[0]];
+    var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
+    var object = objectList[0];
+    [self morphObjectTo:object callCompletionBlocks:completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+}
+
+- (void)morphObjectTo:(id)object callCompletionBlocks:(CPArray)completionBlocks postNotificationWithObject:(id)notificationObject andUserInfo:(CPDictionary)notificationUserInfo {
+    [self morphObjectTo:object];
+    [objectContext callCompletionBlocks:completionBlocks withObject:self];
+
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:notificationObject userInfo:notificationUserInfo];
 }
 
 - (id)morphObjectTo:(id)anObject {
@@ -177,14 +186,6 @@
 
     // Return the morphed object.
     return self;
-}
-
-- (id)faultDidPopulateNotificationObject {
-    return self;
-}
-
-- (CPDictionary)faultDidPopulateNotificationUserInfo {
-    return [CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
 }
 
 @end

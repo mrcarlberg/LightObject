@@ -186,6 +186,16 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
+- (void)callCompletionBlocks:(CPArray)completionBlocks withObject:(id)arrayOrObject {
+    if (completionBlocks) {
+        var size = [completionBlocks count];
+        for (var i = 0; i < size; i++) {
+            var aCompletionBlock = [completionBlocks objectAtIndex:i];
+            aCompletionBlock(arrayOrObject);
+        }
+    }
+}
+
 /*!
  This method will create a new object. Always use this method to create a object for a object context
  */
@@ -227,11 +237,7 @@ var LOObjectContext_classForType = 1 << 0,
         [self registerObjects:allReceivedObjects];
     }
     if (completionBlocks) {
-        var size = [completionBlocks count];
-        for (var i = 0; i < size; i++) {
-            var aCompletionBlock = [completionBlocks objectAtIndex:i];
-            aCompletionBlock(objectList);
-        }
+        [self callCompletionBlocks:completionBlocks withObject:objectList];
     } else if (implementedDelegateMethods & LOObjectContext_objectContext_objectsReceived_withFetchSpecification) {
         [delegate objectContext:self objectsReceived:objectList withFetchSpecification:fetchSpecification];
     }
@@ -247,17 +253,7 @@ var LOObjectContext_classForType = 1 << 0,
         debugger;
         return;
     }
-    var faultDidPopulateNotificationObject = [fault faultDidPopulateNotificationObject];
-    var faultDidPopulateNotificationUserInfo = [fault faultDidPopulateNotificationUserInfo];
-    var arrayOrObject = [fault faultReceivedWithObjects:objectList];
-    if (completionBlocks) {
-        var size = [completionBlocks count];
-        for (var i = 0; i < size; i++) {
-            var aCompletionBlock = [completionBlocks objectAtIndex:i];
-            aCompletionBlock(arrayOrObject);
-        }
-    }
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNotificationObject userInfo:faultDidPopulateNotificationUserInfo];
+    [fault faultReceivedWithObjects:objectList withCompletionBlocks:completionBlocks];
 }
 
 - (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {

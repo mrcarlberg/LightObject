@@ -223,7 +223,9 @@
     }
 }
 
-- (id)faultReceivedWithObjects:(CPArray)objectList {
+- (void)faultReceivedWithObjects:(CPArray)objectList withCompletionBlocks:(CPArray)completionBlocks {
+    var faultDidPopulateNotificationObject = masterObject;
+    var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[self, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
     var anArray = [masterObject valueForKey:relationshipKey];
 
     [objectContext registerObjects:objectList];
@@ -232,15 +234,9 @@
     [masterObject didChangeValueForKey:relationshipKey];
     [self setFaultPopulated:YES];
 
-    return anArray;
-}
+    [objectContext callCompletionBlocks:completionBlocks withObject:self];
 
-- (id)faultDidPopulateNotificationObject {
-    return masterObject;
-}
-
-- (CPDictionary)faultDidPopulateNotificationUserInfo {
-    return [CPDictionary dictionaryWithObjects:[self, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNotificationObject userInfo:faultDidPopulateNotificationUserInfo];
 }
 
 @end

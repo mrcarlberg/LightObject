@@ -95,11 +95,20 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     CPLog.error(@"CPURLConnection didFailWithError: " + error);
 }
 
-- (id) connectionDictionaryForConnection:(CPURLConnection) connection {
-    var size = [connections count];
-    for (var i = 0; i < size; i++) {
+- (id)connectionDictionaryForConnection:(CPURLConnection)connection {
+    for (var i = 0, size = [connections count]; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];
         if (connection === connectionDictionary.connection) {
+            return connectionDictionary;
+        }
+    }
+    return nil;
+}
+
+- (id)connectionDictionaryForFault:(id <LOFault>)fault {
+    for (var i = 0, size = [connections count]; i < size; i++) {
+        var connectionDictionary = [connections objectAtIndex:i];
+        if (fault === connectionDictionary.fault) {
             return connectionDictionary;
         }
     }
@@ -109,7 +118,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 /*!
  Creates objects from JSON. If there is a relationship it is up to this method to create a LOFaultArray, LOFaultObject or the actual object.
  */
-- (CPArray) _objectsFromJSON:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary)receivedObjects {
+- (CPArray)_objectsFromJSON:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary)receivedObjects {
     if (!jSONObjects.isa || ![jSONObjects isKindOfClass:CPArray])
         return jSONObjects;
     var objectContext = connectionDictionary.objectContext;
@@ -137,6 +146,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 objectFromObjectContext = NO;
             } else {
                 // Now we have an object but if it is a fault we should first create a new object and then morph the fault to this object.
+                // If the object already exists in the object context we set objectFromObjectContext so attributes that are not included in the
+                // answer can be set to nil below.
                 objectFromObjectContext = YES;
                 if (isFault)
                     fault = obj;
@@ -147,7 +158,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 obj = [self newObjectForType:type objectContext:objectContext];
             }
 
-            // Put the object or the fault that we should morph to in the receivedObjects dictionary
+            // Put the object or the fault that we should morph in the receivedObjects dictionary
             if (obj) {
                 [receivedObjects setObject:fault || obj forKey:uuid];
             }
@@ -210,9 +221,21 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 }
             }
 
-            // If we already has the fault registered in the object context morph it to the received object
-            if (fault)
-                [fault morphObjectTo:obj];
+            // If we already has the fault registered in the object context, morph it to the received object
+            if (fault) {
+                // If there is a fetch outstanding for the fault we have to take care of it.
+                if (fault.faultFired && !fault.faultPopulated) {
+                    var connectionDictionary = [self connectionDictionaryForFault:fault];
+                    if (connectionDictionary) {
+                        var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[connectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
+                        [self morphObjectTo:obj callCompletionBlocks:connectionDictionary.completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+                        // Delete the fault in the connection dictionary so when this request complets it will be treated as a regular reqest and not a fault request
+                        delete connectionDictionary.fault;
+                    }
+                } else {
+                    [fault morphObjectTo:obj];
+                }
+            }
 
             if (type === entityName) {
                 // Add the morphed fault or the new received object to the list of received objects
