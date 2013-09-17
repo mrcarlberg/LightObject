@@ -393,14 +393,17 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
+// TODO: Investigate why this method is implemented 2 times
 /*!
     @return YES if theObject is stored by the object store and is registered in the context
     If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
+ /*
 - (BOOL)isObjectStored:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
+*/
 
 /*!
     @return YES if theObject is registered in the context
@@ -695,13 +698,16 @@ var LOObjectContext_classForType = 1 << 0,
     return index;
 }
 
+// TODO: Investigate why this method is implemented 2 times
 /*!
    Returns true if the object is already stored on the server side.
  * It does not matter if the object has changes or is deleted in the object context
+ *
  */
 - (BOOL)isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
+
 
 /*!
    Returns true if the object has unsaved changes in the object context.
