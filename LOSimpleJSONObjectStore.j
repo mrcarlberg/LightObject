@@ -83,7 +83,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     } else if (receivedData && [receivedData length] > 0) {
         var jSON = [receivedData objectFromJSON];
 	    // DEBUG: Uncomment to see recieved data
-        // CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + jSON.length + ") " + receivedData);
+        var objectContext = connectionDictionary.objectContext;
+        if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + jSON.length + ") " + receivedData);
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
     }
     [connections removeObject:connectionDictionary];
@@ -355,7 +356,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
 	    // DEBUG: Uncoment to see posted data
-        // CPLog.trace(@"POST Data: " + jsonText);
+        if (objectContext.debugMode) CPLog.trace(@"POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];

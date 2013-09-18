@@ -128,6 +128,8 @@ var LOObjectContext_classForType = 1 << 0,
     BOOL                autoCommit @accessors;          // True if the context should directly save changes to object store.
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
     BOOL                readOnly;            // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
+
+    BOOL                debugMode @accessors;
 }
 
 - (id)init {
@@ -141,6 +143,7 @@ var LOObjectContext_classForType = 1 << 0,
         undoEvents = [CPArray array];
         doNotObserveValues = NO;
         readOnly = NO;
+        debugMode = NO;
     }
     return self;
 }
@@ -273,7 +276,7 @@ var LOObjectContext_classForType = 1 << 0,
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
 	[updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
 	// DEBUG: Uncomment to see observed updates
-    //CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+	if (debugMode) CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
 	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
@@ -390,14 +393,17 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
+// TODO: Investigate why this method is implemented 2 times
 /*!
     @return YES if theObject is stored by the object store and is registered in the context
     If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
+ /*
 - (BOOL)isObjectStored:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
+*/
 
 /*!
     @return YES if theObject is registered in the context
@@ -692,13 +698,16 @@ var LOObjectContext_classForType = 1 << 0,
     return index;
 }
 
+// TODO: Investigate why this method is implemented 2 times
 /*!
    Returns true if the object is already stored on the server side.
  * It does not matter if the object has changes or is deleted in the object context
+ *
  */
 - (BOOL)isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
+
 
 /*!
    Returns true if the object has unsaved changes in the object context.
