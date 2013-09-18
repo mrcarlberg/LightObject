@@ -124,6 +124,11 @@
 }
 
 - (id)morphObjectTo:(id)anObject {
+    if (!anObject) {
+        // If the fetch didn't find an object leave this fault alone. It will ne never fire again and it will return nil on all keys for 'valueForKey:'
+        return self;
+    }
+
     var objectStore = [objectContext objectStore],
         allAttributes = [objectStore attributeKeysForObject:anObject],
         attributes = [];
