@@ -190,11 +190,15 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (void)callCompletionBlocks:(CPArray)completionBlocks withObject:(id)arrayOrObject {
+    [self callCompletionBlocks:completionBlocks withObject:arrayOrObject andStatus:nil];
+}
+
+- (void)callCompletionBlocks:(CPArray)completionBlocks withObject:(id)arrayOrObject andStatus:(int)statusCode {
     if (completionBlocks) {
         var size = [completionBlocks count];
         for (var i = 0; i < size; i++) {
             var aCompletionBlock = [completionBlocks objectAtIndex:i];
-            aCompletionBlock(arrayOrObject);
+            aCompletionBlock(arrayOrObject, statusCode);
         }
     }
 }
@@ -805,7 +809,7 @@ var LOObjectContext_classForType = 1 << 0,
     Should be called by the objectStore when the saveChanges are done
  */
 - (void)didSaveChangesWithResult:(id)result andStatus:(int)statusCode withCompletionBlocks:(CPArray)completionBlocks {
-    [self callCompletionBlocks:completionBlocks withObject:statusCode];
+    [self callCompletionBlocks:completionBlocks withObject:result andStatus:statusCode];
     if (implementedDelegateMethods & LOObjectContext_objectContext_didSaveChangesWithResultAndStatus) {
         [delegate objectContext:self didSaveChangesWithResult:result andStatus:statusCode];
     }
