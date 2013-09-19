@@ -44,14 +44,14 @@
  * This method should save all changes to the backend.
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  */
-- (void)saveChangesWithObjectContext:(LOObjectContext) objectContext {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
 }
 
 /*!
  * Must return an array with keys for all attributes for this object
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray)attributeKeysForObject:(id) theObject {
+- (CPArray)attributeKeysForObject:(id)theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
@@ -59,21 +59,21 @@
  * Must return an array with keys for all to many relationship attributes for this object
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray)relationshipKeysForObject:(id) theObject {
+- (CPArray)relationshipKeysForObject:(id)theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
  * Returns the type of the object
  */
-- (CPString)typeOfObject:(id) theObject {
+- (CPString)typeOfObject:(id)theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
  * Returns a unique id for the object
  */
-- (CPString)globalIdForObject:(id) theObject {
+- (CPString)globalIdForObject:(id)theObject {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 

@@ -1,6 +1,6 @@
 /*
  * Created by Martin Carlberg on Juli 18, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>
@@ -165,7 +165,7 @@
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  * Must call [objectContext saveChangesDidComplete] when done
  */
-- (void) saveChangesWithObjectContext:(LOObjectContext) objectContext {
+- (void) saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     [objectContext saveChangesDidComplete];
 }
 

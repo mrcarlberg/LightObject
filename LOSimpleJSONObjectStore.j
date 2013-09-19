@@ -2,7 +2,7 @@
  * LOSimpleJSONObjectStore.j
  *
  * Created by Martin Carlberg on Mars 5, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>
@@ -80,8 +80,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (error) {
         var objectContext = connectionDictionary.objectContext;
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
-    } else if (receivedData && [receivedData length] > 0) {
-        var jSON = [receivedData objectFromJSON];
+    } else {
+        var jSON = receivedData ? [receivedData objectFromJSON] : nil;
 	    // DEBUG: Uncomment to see recieved data
         var objectContext = connectionDictionary.objectContext;
         if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + jSON.length + ") " + receivedData);
@@ -174,6 +174,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             for (var j = 0; j < columnSize; j++) {
                 var column = [columns objectAtIndex:j];
 
+                // Does the fetched row has this column or does the object already exists in the object context. The later to nil out the value if it already exists.
                 if (row.hasOwnProperty(column) || objectFromObjectContext) {
                     var value = row[column] || nil;
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
@@ -187,7 +188,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             } else {
                                 // Add it to a list and try again after we have registered all objects.
                                 [possibleToOneFaultObjects addObject:{@"object":obj, @"relationshipKey":column, @"globalId":value}];
-                                value = nil;//[[LOFaultObject alloc] init];
+                                value = nil;
                             }
                         }
                     } else if (value && Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
@@ -328,12 +329,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     return result;
 }
 
-- (void) updateStatusReceived:(CPArray) jSONObjects withConnectionDictionary:(id)connectionDictionary {
+- (void)updateStatusReceived:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary {
     //CPLog.trace(@"tracing: LOF update Status: " + [CPString JSONFromObject:jSONObjects]);
     var objectContext = connectionDictionary.objectContext;
     var modifiedObjects = connectionDictionary.modifiedObjects;
     var size = [modifiedObjects count];
-    if (jSONObjects.insertedIds) {  // Update objects temp id to real uuid if server return these.
+    if (jSONObjects && jSONObjects.insertedIds) {  // Update objects temp id to real uuid if server return these.
         for (var i = 0; i < size; i++) {
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
@@ -346,10 +347,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
         }
     }
-    [objectContext didSaveChangesWithResult:jSONObjects andStatus:[connectionDictionary.response statusCode]];
+    var completionBlocks = connectionDictionary.completionBlocks;
+    [objectContext didSaveChangesWithResult:jSONObjects andStatus:[connectionDictionary.response statusCode] withCompletionBlocks:completionBlocks];
 }
 
-- (void) saveChangesWithObjectContext:(LOObjectContext) objectContext {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     var modifyDict = [self _jsonDictionaryForModifiedObjectsWithObjectContext:objectContext];
     if ([modifyDict count] > 0) {       // Only save if thera are changes
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
@@ -362,12 +364,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         [request setHTTPBody:jsonText];
         var connection = [CPURLConnection connectionWithRequest:request delegate:self];
         var modifiedObjects = [objectContext modifiedObjects];
-        [connections addObject:{connection: connection, objectContext: objectContext, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector}];
+        [connections addObject:{connection: connection, objectContext: objectContext, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
     }
-    [super saveChangesWithObjectContext:objectContext];
+    [super saveChangesWithObjectContext:objectContext withCompletionBlock:aCompletionBlock];
 }
 
-- (CPMutableDictionary) _jsonDictionaryForModifiedObjectsWithObjectContext:(LOObjectContext) objectContext {
+- (CPMutableDictionary)_jsonDictionaryForModifiedObjectsWithObjectContext:(LOObjectContext)objectContext {
     var modifyDict = [CPMutableDictionary dictionary];
     var modifiedObjects = [objectContext modifiedObjects];
     var size = [modifiedObjects count];
