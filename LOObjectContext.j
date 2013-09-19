@@ -2,7 +2,7 @@
    LOObjectContext.j
  *
  * Created by Martin Carlberg on Feb 23, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>
@@ -236,8 +236,10 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
+    // FIXME: Maybe check if it is an array instead of if it responds to 'count'
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
         [self registerObjects:allReceivedObjects];
+        [self awakeFromFetchForObjects:allReceivedObjects];
     }
     if (completionBlocks) {
         [self callCompletionBlocks:completionBlocks withObject:objectList];
@@ -249,13 +251,30 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 /*!
- * This is called when the result from a triggered fault array is received
+ * This is called when some objects are reeived from a fetch
  */
-- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(LOFault)fault {
-    if (![fault conformsToProtocol:@protocol(LOFault)]) {
-        debugger;
-        return;
+- (void)awakeFromFetchForObjects:(CPArray)objects {
+    for (var i = 0, size = objects.length; i < size; i++) {
+        var object = objects[i];
+        if ([object respondsToSelector:@selector(awakeFromFetch:)]) {
+            [object awakeFromFetch:self];
+        }
     }
+}
+
+/*!
+ * This is called when an object is inserted into the object context
+ */
+- (void)awakeFromInsertionForObject:(id <LOObject>)object {
+    if ([object respondsToSelector:@selector(awakeFromInsertion:)]) {
+        [object awakeFromInsertion:self];
+    }
+}
+
+/*!
+ * This is called when the result from a triggered fault is received
+ */
+- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(id <LOFault>)fault {
     [fault faultReceivedWithObjects:objectList withCompletionBlocks:completionBlocks];
 }
 
@@ -463,6 +482,8 @@ var LOObjectContext_classForType = 1 << 0,
 
 - (void)_insertObject:(id) theObject {
     var type = [self typeOfObject:theObject];
+
+    [self awakeFromInsertionForObject:theObject];
     // Just need to create the dict to mark it for insert
     [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
 
@@ -744,6 +765,10 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (void)saveChanges {
+    [self saveChangesWithCompletionBlock:nil];
+}
+
+- (void)saveChangesWithCompletionBlock:(Function)aCompletionBlock {
     if (implementedDelegateMethods & LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted) {
         var shouldSave = YES;
         var size = [modifiedObjects count];
@@ -764,7 +789,7 @@ var LOObjectContext_classForType = 1 << 0,
         }
     }
 
-    [objectStore saveChangesWithObjectContext:self];
+    [objectStore saveChangesWithObjectContext:self withCompletionBlock:aCompletionBlock];
 
     // Remove transaction
     var count = [undoEvents count];
@@ -779,7 +804,8 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
     Should be called by the objectStore when the saveChanges are done
  */
-- (void)didSaveChangesWithResult:(id)result andStatus:(int)statusCode {
+- (void)didSaveChangesWithResult:(id)result andStatus:(int)statusCode withCompletionBlocks:(CPArray)completionBlocks {
+    [self callCompletionBlocks:completionBlocks withObject:statusCode];
     if (implementedDelegateMethods & LOObjectContext_objectContext_didSaveChangesWithResultAndStatus) {
         [delegate objectContext:self didSaveChangesWithResult:result andStatus:statusCode];
     }

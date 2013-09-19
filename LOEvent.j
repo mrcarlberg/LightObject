@@ -1,6 +1,6 @@
 /*
  * Created by Martin Carlberg on Jun 14, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>
@@ -30,7 +30,7 @@
     return self;
 }
 
-// I send in objectContext but I plan to remove it in this method. But first I have to refactor and use the LOEvents instead of LOModifyRecords 
+// I send in objectContext but I plan to remove it in this method. But first I have to refactor and use the LOEvents instead of LOModifyRecords
 - (void) undoForContext:(LOObjectContext)objectContext {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }

@@ -1,6 +1,6 @@
 /*
  * Created by Martin Carlberg on August 22, 2013.
- * Copyright 2013, Your Company All rights reserved.
+ * Copyright 2013, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>

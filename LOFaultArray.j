@@ -1,6 +1,6 @@
 /*
  * Created by Martin Carlberg on Mars 5, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPArray.j>
@@ -229,6 +229,7 @@
     var anArray = [masterObject valueForKey:relationshipKey];
 
     [objectContext registerObjects:objectList];
+    [objectContext awakeFromFetchForObjects:objectList];
     [masterObject willChangeValueForKey:relationshipKey];
     [anArray addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];

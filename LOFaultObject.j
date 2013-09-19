@@ -1,6 +1,6 @@
 /*
  * Created by Martin Carlberg on July 8, 2013.
- * Copyright 2013, Your Company All rights reserved.
+ * Copyright 2013, All rights reserved.
  */
 
 @import <Foundation/CPArray.j>
@@ -118,6 +118,7 @@
 
 - (void)morphObjectTo:(id)object callCompletionBlocks:(CPArray)completionBlocks postNotificationWithObject:(id)notificationObject andUserInfo:(CPDictionary)notificationUserInfo {
     [self morphObjectTo:object];
+    [objectContext awakeFromFetchForObjects:[object]];
     [objectContext callCompletionBlocks:completionBlocks withObject:self];
 
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:notificationObject userInfo:notificationUserInfo];

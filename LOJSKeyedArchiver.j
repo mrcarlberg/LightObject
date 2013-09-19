@@ -2,7 +2,7 @@
  * LOJSKeyedArchiver.j
  *
  * Created by Martin Carlberg on Feb 29, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPCoder.j>
@@ -16,7 +16,7 @@ var LOJSKeyedArchiverClassKey = @"_type";
 + (id)archivedDataWithRootObject:(id)rootObject {
     var js = {};
     var archiver = [[self alloc] initForWritingWithMutableData:js];
-    
+
     return [archiver _encodeObject:rootObject];
 }
 
@@ -59,7 +59,7 @@ var LOJSKeyedArchiverClassKey = @"_type";
     } else {
         encodedJS = [objectToEncode jsonWithCoder:self];
 //        var archiver = [[[self class] alloc] initForWritingWithMutableData:encodedJS];
-        
+
 //        encodedJS[LOJSKeyedArchiverClassKey] = [objectToEncode loObjectType];
 //        [objectToEncode encodeWithCoder:archiver];
     }
@@ -81,13 +81,13 @@ var LOJSKeyedArchiverClassKey = @"_type";
 
 - (id)_encodeDictionaryOfObjects:(CPDictionary)dictionaryToEncode forKey:(CPString)aKey {
     var encodedDictionary = {};
-    
+
     var keys = [dictionaryToEncode allKeys];
     for (var i = 0; i < [keys count]; i++)
     {
         encodedDictionary[keys[i]] = [self _encodeObject:[dictionaryToEncode objectForKey:keys[i]]];
     }
-    
+
     _js[aKey] = encodedDictionary;
 }
 

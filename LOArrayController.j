@@ -2,7 +2,7 @@
  * LOArrayController.j
  *
  * Created by Martin Carlberg on Feb 27, 2012.
- * Copyright 2012, Your Company All rights reserved.
+ * Copyright 2012, All rights reserved.
  */
 
 @import <Foundation/CPObject.j>
@@ -37,7 +37,7 @@
 - (@action)insert:(id)sender {
     if (![self canInsert])
         return;
-    
+
     var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
     [self insertObject:newObject];
 }
