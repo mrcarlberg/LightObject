@@ -119,7 +119,8 @@
 - (void)morphObjectTo:(id)object callCompletionBlocks:(CPArray)completionBlocks postNotificationWithObject:(id)notificationObject andUserInfo:(CPDictionary)notificationUserInfo {
     [self morphObjectTo:object];
     [objectContext awakeFromFetchForObjects:[object]];
-    [objectContext callCompletionBlocks:completionBlocks withObject:self];
+    // FIXME: Here we hardcode the status code to 200. Should be passed by caller
+    [objectContext callCompletionBlocks:completionBlocks withObject:self andStatus:200];
 
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:notificationObject userInfo:notificationUserInfo];
 }

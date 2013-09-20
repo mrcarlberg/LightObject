@@ -76,14 +76,12 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var response = connectionDictionary.response;
     var receivedData = connectionDictionary.receivedData;
     var error = [self errorForResponse:response andData:receivedData fromURL:connectionDictionary.url];
+    var objectContext = connectionDictionary.objectContext;
+    var jSON = receivedData ? [receivedData objectFromJSON] : nil;
 
     if (error) {
-        var objectContext = connectionDictionary.objectContext;
-        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification];
+        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
     } else {
-        var jSON = receivedData ? [receivedData objectFromJSON] : nil;
-	    // DEBUG: Uncomment to see recieved data
-        var objectContext = connectionDictionary.objectContext;
         if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + jSON.length + ") " + receivedData);
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
     }

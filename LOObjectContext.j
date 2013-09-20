@@ -189,10 +189,6 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-- (void)callCompletionBlocks:(CPArray)completionBlocks withObject:(id)arrayOrObject {
-    [self callCompletionBlocks:completionBlocks withObject:arrayOrObject andStatus:nil];
-}
-
 - (void)callCompletionBlocks:(CPArray)completionBlocks withObject:(id)arrayOrObject andStatus:(int)statusCode {
     if (completionBlocks) {
         var size = [completionBlocks count];
@@ -246,7 +242,8 @@ var LOObjectContext_classForType = 1 << 0,
         [self awakeFromFetchForObjects:allReceivedObjects];
     }
     if (completionBlocks) {
-        [self callCompletionBlocks:completionBlocks withObject:objectList];
+        // FIXME: Here we hardcode the status code 200. Should be passed by the caller
+        [self callCompletionBlocks:completionBlocks withObject:objectList andStatus:200];
     } else if (implementedDelegateMethods & LOObjectContext_objectContext_objectsReceived_withFetchSpecification) {
         [delegate objectContext:self objectsReceived:objectList withFetchSpecification:fetchSpecification];
     }
@@ -282,7 +279,9 @@ var LOObjectContext_classForType = 1 << 0,
     [fault faultReceivedWithObjects:objectList withCompletionBlocks:completionBlocks];
 }
 
-- (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification {
+- (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification result:(JSON)result statusCode:(int)statusCode completionBlocks:(CPArray)completionBlocks {
+    if (completionBlocks)
+        [self callCompletionBlocks:completionBlocks withObject:result andStatus:statusCode];
     if (implementedDelegateMethods & LOObjectContext_objectContext_errorReceived_withFetchSpecification) {
         [delegate objectContext:self errorReceived:error withFetchSpecification:fetchSpecification];
     }
@@ -768,6 +767,13 @@ var LOObjectContext_classForType = 1 << 0,
     [undoEvents addObject:[]];
 }
 
+/*!
+    Saves the changes in the Object Context.
+    It will ask the delegate 'objectContext:shouldSaveChanges:withObject:inserted:' and if
+    it returns true it will tell the object store to save the changes.
+    A completion block can be provided that is called with the result and statuc code when
+    the response is returned.
+*/
 - (void)saveChanges {
     [self saveChangesWithCompletionBlock:nil];
 }

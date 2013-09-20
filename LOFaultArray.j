@@ -235,7 +235,8 @@
     [masterObject didChangeValueForKey:relationshipKey];
     [self setFaultPopulated:YES];
 
-    [objectContext callCompletionBlocks:completionBlocks withObject:self];
+    // FIXME: Here we have hardcoded the status code. Should be passed from caller
+    [objectContext callCompletionBlocks:completionBlocks withObject:self andStatus:200];
 
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNotificationObject userInfo:faultDidPopulateNotificationUserInfo];
 }
