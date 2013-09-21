@@ -254,9 +254,9 @@ var LOObjectContext_classForType = 1 << 0,
 /*!
  * This is called when some objects are reeived from a fetch
  */
-- (void)awakeFromFetchForObjects:(CPArray)objects {
-    for (var i = 0, size = objects.length; i < size; i++) {
-        var object = objects[i];
+- (void)awakeFromFetchForObjects:(CPArray)objectArray {
+    for (var i = 0, size = objectArray.length; i < size; i++) {
+        var object = objectArray[i];
         if ([object respondsToSelector:@selector(awakeFromFetch:)]) {
             [object awakeFromFetch:self];
         }
