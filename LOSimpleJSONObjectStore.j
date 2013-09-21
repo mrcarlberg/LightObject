@@ -82,7 +82,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (error) {
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
     } else {
-        if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + jSON.length + ") " + receivedData);
+        if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + (jSON ? jSON.length : 0) + ") " + receivedData);
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
     }
     [connections removeObject:connectionDictionary];
