@@ -127,9 +127,9 @@ var LOObjectContext_classForType = 1 << 0,
     CPInteger           implementedDelegateMethods;
     BOOL                autoCommit @accessors;          // True if the context should directly save changes to object store.
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
-    BOOL                readOnly;            // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
+    BOOL                readOnly;                       // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
 
-    BOOL                debugMode @accessors;
+    BOOL                debugMode @accessors;           // True if object context should do a CPLog.trace() with the JSON data sent and received. Nice for debugging.
 }
 
 - (id)init {
