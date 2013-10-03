@@ -677,7 +677,7 @@ var LOObjectContext_classForType = 1 << 0,
     [self registerEvent:deleteEvent];
 
     [self unregisterObject:aMapping];
-    var deleteDict = [self createSubDictionaryForKey:@"deleteDict" forModifyObjectDictionaryForObject:aMapping];
+    [self _deleteObject:aMapping];
 
     if (autoCommit) [self saveChanges];
 }
@@ -694,6 +694,9 @@ var LOObjectContext_classForType = 1 << 0,
     } else if ([array isKindOfClass:[CPArray class]] && [array faultPopulated]) {
         [CPException raise:CPRangeException reason:"Can't find index of " + anObject];
     }
+
+    [self _unAdd:anObject toRelationshipWithKey:aRelationshipKey forObject:theParent];
+
     return index;
 }
 
@@ -717,6 +720,9 @@ var LOObjectContext_classForType = 1 << 0,
     [theParent willChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
     [array insertObject:anObject atIndex:index];
     [theParent didChange:CPKeyValueChangeInsertion valuesAtIndexes:indexSet forKey:aRelationshipKey];
+
+    [self _add:anObject toRelationshipWithKey:aRelationshipKey forObject:theParent];
+
     return index;
 }
 
