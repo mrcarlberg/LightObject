@@ -415,17 +415,15 @@ var LOObjectContext_classForType = 1 << 0,
     }
 }
 
-// TODO: Investigate why this method is implemented 2 times
+// TODO: Investigate why this method is implemented 2 times. (note 2013-09-30: according to commit logs this version is the latest. /malte).
 /*!
     @return YES if theObject is stored by the object store and is registered in the context
     If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
- /*
 - (BOOL)isObjectStored:(id) theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
-*/
 
 /*!
     @return YES if theObject is registered in the context
@@ -728,10 +726,11 @@ var LOObjectContext_classForType = 1 << 0,
  * It does not matter if the object has changes or is deleted in the object context
  *
  */
+/*
 - (BOOL)isObjectStored:(id)theObject {
     return ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
-
+/
 
 /*!
    Returns true if the object has unsaved changes in the object context.
