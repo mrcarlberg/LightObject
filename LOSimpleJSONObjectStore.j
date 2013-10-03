@@ -228,7 +228,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     var connectionDictionary = [self connectionDictionaryForFault:fault];
                     if (connectionDictionary) {
                         var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[connectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
-                        [self morphObjectTo:obj callCompletionBlocks:connectionDictionary.completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+                        [fault morphObjectTo:obj callCompletionBlocks:connectionDictionary.completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
                         // Delete the fault in the connection dictionary so when this request complets it will be treated as a regular reqest and not a fault request
                         delete connectionDictionary.fault;
                     }
