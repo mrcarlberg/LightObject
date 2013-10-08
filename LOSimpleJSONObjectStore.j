@@ -174,7 +174,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
                 // Does the fetched row has this column or does the object already exists in the object context. The later to nil out the value if it already exists.
                 if (row.hasOwnProperty(column) || objectFromObjectContext) {
-                    var value = row[column] || nil;
+                    var value = row[column];
+                    if (value == null) {
+                        /* Force nil if either null (which is same as nil, ugh!) or undefined. */
+                        value = nil;
+                    }
 //                    CPLog.trace(@"tracing: " + column + @" value: " + value);
 //                    CPLog.trace(@"tracing: " + column + @": " + value + (value && value.isa ? @", value class: " + [value className] : ""));
                     if ([self isForeignKeyAttribute:column forType:type objectContext:objectContext]) {    // Handle to one relationship.
