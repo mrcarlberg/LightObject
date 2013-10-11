@@ -193,7 +193,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                                 value = nil;
                             }
                         }
-                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]') { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
+                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
                         value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
                     } else if (value && [relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         // The array contains only type and primaryKey for the relationship objects.
