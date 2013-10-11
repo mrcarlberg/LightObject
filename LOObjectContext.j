@@ -116,6 +116,13 @@ var LOObjectContext_classForType = 1 << 0,
 
  //TODO: Add more delegate methods to this documentation
  */
+
+// Debug modes. Set the 'dubugMode' instance variable to receive useful debug information.
+LOObjectContextDebugModeFetch = 1 << 0;
+LOObjectContextDebugModeSaveChanges = 1 << 1;
+LOObjectContextDebugModeReceiveData = 1 << 2;
+LOObjectContextDebugModeObserveValue = 1 << 3;
+
 @implementation LOObjectContext : CPObject {
     LOToOneProxyObject  toOneProxyObject;               // Extra observer proxy for to one relation attributes
     CPDictionary        objects;                        // List of all objects in context with globalId as key
@@ -129,7 +136,7 @@ var LOObjectContext_classForType = 1 << 0,
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
     BOOL                readOnly;                       // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
 
-    BOOL                debugMode @accessors;           // True if object context should do a CPLog.trace() with the JSON data sent and received. Nice for debugging.
+    int                 debugMode @accessors;           // None zero if object context should do a CPLog.trace() with the JSON data sent and received. Nice for debugging. Look at the debug mode constants
 }
 
 - (id)init {
@@ -143,7 +150,7 @@ var LOObjectContext_classForType = 1 << 0,
         undoEvents = [CPArray array];
         doNotObserveValues = NO;
         readOnly = NO;
-        debugMode = NO;
+        debugMode = 0;
     }
     return self;
 }
@@ -297,8 +304,8 @@ var LOObjectContext_classForType = 1 << 0,
     [self registerEvent:updateEvent];
     var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
 	[updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
-	// DEBUG: Uncomment to see observed updates
-	if (debugMode) CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+
+	if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
 
 	// Simple validation handling
 	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
@@ -341,7 +348,9 @@ var LOObjectContext_classForType = 1 << 0,
     if (shouldSetForeignKey) {
         [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
     }
-    //CPLog.trace(@"%@", _cmd + " " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+
+    if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+
     if (autoCommit) [self saveChanges];
 }
 

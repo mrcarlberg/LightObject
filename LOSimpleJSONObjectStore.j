@@ -53,7 +53,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, fault:fault, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
-    //CPLog.trace(@"tracing: requestObjectsWithFetchSpecification: " + [fetchSpecification entityName] + @", url: " + url);
+    if (objectContext.debugMode & LOObjectContextDebugModeFetch) CPLog.trace(@"LOObjectContextDebugModeFetch: Entity: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
@@ -82,7 +82,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (error) {
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
     } else {
-        if (objectContext.debugMode) CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] " + connectionDictionary.url + @", data: (" + (jSON ? jSON.length : 0) + ") " + receivedData);
+        if (objectContext.debugMode & LOObjectContextDebugModeReceiveData) CPLog.trace(@"LOObjectContextDebugModeReceiveData: Url: " + connectionDictionary.url + @", data: (" + (jSON ? jSON.length : 0) + ") " + receivedData);
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
     }
     [connections removeObject:connectionDictionary];
@@ -360,7 +360,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var url = [self urlForSaveChangesWithData:json];
         var jsonText = [CPString JSONFromObject:json];
 	    // DEBUG: Uncoment to see posted data
-        if (objectContext.debugMode) CPLog.trace(@"POST Data: " + jsonText);
+        if (objectContext.debugMode & LOObjectContextDebugModeSaveChanges) CPLog.trace(@"Save Changes POST Data: " + jsonText);
         var request = [CPURLRequest requestWithURL:url];
         [request setHTTPMethod:@"POST"];
         [request setHTTPBody:jsonText];
