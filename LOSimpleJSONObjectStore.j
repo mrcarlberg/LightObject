@@ -22,6 +22,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
+    CPDictionary    faultObjectRequests;
 }
 
 - (id)init {
@@ -29,6 +30,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
+        faultObjectRequests = [CPMutableDictionary dictionary];
     }
     return self;
 }
@@ -45,14 +47,32 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock fault:faultObject];
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock fault:(id)fault {
+- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionBlock:(Function)aCompletionBlock {
+    var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:aFaultObject.entityName];
+    if (!faultObjectRequestsForEntity) {
+        faultObjectRequestsForEntity = [];
+        [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:aFaultObject.entityName];
+    }
+    var objectStore = [objectContext objectStore];
+    var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:aFaultObject.entityName objectContext:objectContext];
+    var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
+                                                       rightExpression:[CPExpression expressionForConstantValue:aFaultObject.primaryKey]
+                                                              modifier:CPDirectPredicateModifier
+                                                                  type:CPEqualToPredicateOperatorType
+                                                               options:0];
+    fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:aFaultObject.entityName qualifier:qualifier];
+    [objectContext requestFaultObject:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:[CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]]];
+
+}
+- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faults:(id)faults {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     if (fetchSpecification.requestPreProcessBlock) {
         fetchSpecification.requestPreProcessBlock(request);
     }
     var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, fault:fault, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
+    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faults:faults, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
     if (objectContext.debugMode & LOObjectContextDebugModeFetch) CPLog.trace(@"LOObjectContextDebugModeFetch: Entity: " + [fetchSpecification entityName] + @", url: " + url);
 }
 
@@ -107,7 +127,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 - (id)connectionDictionaryForFault:(id <LOFault>)fault {
     for (var i = 0, size = [connections count]; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];
-        if (fault === connectionDictionary.fault) {
+        if ([connectionDictionary.faults containsObject:fault]) {
             return connectionDictionary;
         }
     }
@@ -140,7 +160,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             obj = [objectContext objectForGlobalId:uuid];
             var isFault = [obj conformsToProtocol:@protocol(LOFault)];
             // If this is a fetch for a fault we want a new object. Also if we didn't find any in the object context
-            if ((connectionDictionary.fault && isFault) || !obj) {
+            if ((connectionDictionary.faults && isFault) || !obj) {
                 obj = nil;
                 objectFromObjectContext = NO;
             } else {
@@ -232,9 +252,11 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                     var connectionDictionary = [self connectionDictionaryForFault:fault];
                     if (connectionDictionary) {
                         var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[connectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
-                        [fault morphObjectTo:obj callCompletionBlocks:connectionDictionary.completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+                        [fault morphObjectTo:obj callCompletionBlocks:/*connectionDictionary.completionBlocks*/nil postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
                         // Delete the fault in the connection dictionary so when this request complets it will be treated as a regular reqest and not a fault request
-                        delete connectionDictionary.fault;
+                        [connectionDictionary.faults removeObject:fault];
+                        if([connectionDictionary.faults count] === 0)
+                            delete connectionDictionary.faults;
                     }
                 } else {
                     [fault morphObjectTo:obj];
@@ -308,9 +330,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (newArray.isa && [newArray isKindOfClass:CPArray]) {
         newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
     }
-*/    var fault = connectionDictionary.fault;
-    if (fault) {
-        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks fault:fault];
+*/    var faults = connectionDictionary.faults;
+    if (faults) {
+        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks faults:faults];
     } else {
         [objectContext objectsReceived:newArray allReceivedObjects:[receivedObjects allValues] withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks];
     }
@@ -524,7 +546,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var size = [connections count];
     for (var i = 0; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];
-        if (connectionDictionary.fault === aFault) {
+        if ([connectionDictionary.faults containsObject:aFault]) {
             [connectionDictionary.completionBlocks addObject:aCompletionBlock];
         }
     }

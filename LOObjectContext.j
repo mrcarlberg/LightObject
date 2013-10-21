@@ -234,11 +234,11 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification) fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
@@ -282,8 +282,26 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 /*!
  * This is called when the result from a triggered fault is received
  */
-- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks fault:(id <LOFault>)fault {
-    [fault faultReceivedWithObjects:objectList withCompletionBlocks:completionBlocks];
+- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks faults:(id <LOFault>)fault {
+    var faultDidPopulateNotificationUserInfos = [];
+    for (var i = 0, size = [faults count]; i < size; i++) {
+        var fault = [faults objectAtIndex:i];
+        var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[fault, fault.fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
+
+        [faultDidPopulateNotificationUserInfos addObject:faultDidPopulateNotificationUserInfo];
+        [fault faultReceivedWithObjects:objectList];
+    }
+
+    // FIXME: Here we have hardcoded the status code. Should be passed from caller but it is always 200
+    // FIXME: Here we pass the whole list of objects for object faults. It should be nicer if we just passed the corresponding object for each completion block. Right now we just keep a list of completion blocks and has no info about what fault it correspond to
+    [objectContext callCompletionBlocks:completionBlocks withObject:objectList andStatus:200];
+
+    for (var i = 0, size = [faults count]; i < size; i++) {
+        var fault = [faults objectAtIndex:i];
+        var faultDidPopulateNotificationUserInfo = [faultDidPopulateNotificationUserInfos objectAtIndex:i];
+
+        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:fault userInfo:faultDidPopulateNotificationUserInfo];
+    }
 }
 
 - (void)errorReceived:(LOError)error withFetchSpecification:(LOFetchSpecification)fetchSpecification result:(JSON)result statusCode:(int)statusCode completionBlocks:(CPArray)completionBlocks {

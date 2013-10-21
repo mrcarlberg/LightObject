@@ -89,16 +89,7 @@
         [self setFaultFired:YES];
         faultFired = YES;
         faultPopulated = NO;
-        var objectStore = [objectContext objectStore];
-        var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:objectContext];
-        var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
-                                                           rightExpression:[CPExpression expressionForConstantValue:primaryKey]
-                                                                  modifier:CPDirectPredicateModifier
-                                                                      type:CPEqualToPredicateOperatorType
-                                                                   options:0];
-        fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-        [objectContext requestFaultObject:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
-        [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:self userInfo:[CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]]];
+        [objectContext requestFaultObject:self withCompletionBlock:aCompletionBlock];
         //CPLog.trace([self className] + " " + _cmd + " Fire fault: '" + entityName + "' q: " + [qualifier description]);
     } else if (aCompletionBlock) {
         if (faultPopulated) {
@@ -109,20 +100,24 @@
     }
 }
 
-- (void)faultReceivedWithObjects:(CPArray)objectList withCompletionBlocks:(CPArray)completionBlocks {
+- (void)faultReceivedWithObjects:(CPArray)objectList {
     // Here we morph this fault object to the real object now when we are getting its data.
     var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
-    var object = objectList[0];
-    [self morphObjectTo:object callCompletionBlocks:completionBlocks postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+    var object;
+    for (var i = 0, size = [objectList count]; i < size; i++) {
+        var anObject = [objectList objectAtIndex:i];
+        if (primaryKey === [anObject primaryKey]) {
+            object = anObject;
+            break;
+        }
+    }
+    if (object)
+        [self morphObjectToX:object];
 }
 
-- (void)morphObjectTo:(id)object callCompletionBlocks:(CPArray)completionBlocks postNotificationWithObject:(id)notificationObject andUserInfo:(CPDictionary)notificationUserInfo {
+- (void)morphObjectToX:(id)object {
     [self morphObjectTo:object];
     [objectContext awakeFromFetchForObjects:[object]];
-    // FIXME: Here we hardcode the status code to 200. Should be passed by caller
-    [objectContext callCompletionBlocks:completionBlocks withObject:self andStatus:200];
-
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:notificationObject userInfo:notificationUserInfo];
 }
 
 - (id)morphObjectTo:(id)anObject {

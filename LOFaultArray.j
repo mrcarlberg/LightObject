@@ -223,9 +223,8 @@
     }
 }
 
-- (void)faultReceivedWithObjects:(CPArray)objectList withCompletionBlocks:(CPArray)completionBlocks {
+- (void)faultReceivedWithObjects:(CPArray)objectList {
     var faultDidPopulateNotificationObject = masterObject;
-    var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[self, fetchSpecification] forKeys:[LOFaultKey, LOFaultFetchSpecificationKey]];
     var anArray = [masterObject valueForKey:relationshipKey];
 
     [objectContext registerObjects:objectList];
@@ -234,11 +233,6 @@
     [anArray addObjectsFromArray:objectList];
     [masterObject didChangeValueForKey:relationshipKey];
     [self setFaultPopulated:YES];
-
-    // FIXME: Here we have hardcoded the status code. Should be passed from caller
-    [objectContext callCompletionBlocks:completionBlocks withObject:self andStatus:200];
-
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidPopulateNotification object:faultDidPopulateNotificationObject userInfo:faultDidPopulateNotificationUserInfo];
 }
 
 @end
