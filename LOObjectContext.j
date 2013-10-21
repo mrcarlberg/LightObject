@@ -136,6 +136,8 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
     BOOL                readOnly;                       // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
 
+    CPMutableDictionary faultObjectRequests;
+
     int                 debugMode @accessors;           // None zero if object context should do a CPLog.trace() with the JSON data sent and received. Nice for debugging. Look at the debug mode constants
 }
 
@@ -151,6 +153,7 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
         doNotObserveValues = NO;
         readOnly = NO;
         debugMode = 0;
+        faultObjectRequests = [CPMutableDictionary dictionary];
     }
     return self;
 }
@@ -237,11 +240,33 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 - (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
-
+/*
 - (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
-}
+}*/
 
+- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionBlock:(Function)aCompletionBlock {
+    var entityName = aFaultObject.entityName;
+    var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
+    if (!faultObjectRequestsForEntity) {
+        faultObjectRequestsForEntity = [];
+        [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:entityName];
+        [self performBlock:function() {
+            var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:self];
+            var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
+            var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
+                                                               rightExpression:[CPExpression expressionForConstantValue:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]]
+                                                                      modifier:CPDirectPredicateModifier
+                                                                          type:CPInPredicateOperatorType
+                                                                       options:0];
+            var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+            [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+            [faultObjectRequests removeObjectForKey:entityName];
+        } afterDelay:0];
+    }
+    [faultObjectRequestsForEntity addObject:aFaultObject];
+    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:nil];
+}
 - (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
     // FIXME: Maybe check if it is an array instead of if it responds to 'count'
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
@@ -282,7 +307,7 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 /*!
  * This is called when the result from a triggered fault is received
  */
-- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks faults:(id <LOFault>)fault {
+- (void)faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks faults:(id <LOFault>)faults {
     var faultDidPopulateNotificationUserInfos = [];
     for (var i = 0, size = [faults count]; i < size; i++) {
         var fault = [faults objectAtIndex:i];
@@ -294,7 +319,7 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 
     // FIXME: Here we have hardcoded the status code. Should be passed from caller but it is always 200
     // FIXME: Here we pass the whole list of objects for object faults. It should be nicer if we just passed the corresponding object for each completion block. Right now we just keep a list of completion blocks and has no info about what fault it correspond to
-    [objectContext callCompletionBlocks:completionBlocks withObject:objectList andStatus:200];
+    [self callCompletionBlocks:completionBlocks withObject:objectList andStatus:200];
 
     for (var i = 0, size = [faults count]; i < size; i++) {
         var fault = [faults objectAtIndex:i];

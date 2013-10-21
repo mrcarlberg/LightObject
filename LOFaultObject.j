@@ -16,7 +16,6 @@
     CPString        primaryKey @accessors;
     BOOL            faultFired @accessors;
     BOOL            faultPopulated @accessors;
-    LOFetchSpecification fetchSpecification;
 }
 
 + (LOFaultObject)faultObjectWithObjectContext:(CPObjectContext)anObjectContext entityName:(CPString)anEntityName primaryKey:(CPString)aPrimaryKey {
@@ -41,7 +40,6 @@
     copy.primaryKey = self.primaryKey;
     copy.faultFired = self.faultFired;
     copy.faultPopulated = self.faultPopulated;
-    copy.fetchSpecification = self.fetchSpecification;
     return copy;
 }
 
@@ -63,11 +61,17 @@
 }
 
 - (id)valueForKey:(CPString)aKey {
-    if (@"faultFired" === aKey) {
+    switch (aKey) {
+        case @"faultFired":
         return faultFired;
-    } else if (@"faultPopulated" === aKey) {
+
+        case @"faultPopulated":
         return faultPopulated;
+
+        case @"primaryKey":
+        return primaryKey;
     }
+
     [self _requestFaultIfNecessary];
 
     // We do never have a valid value in the fault object so we just return nil
@@ -95,14 +99,13 @@
         if (faultPopulated) {
             aCompletionBlock(self);
         } else {
-            [objectStore addCompletionBlock:aCompletionBlock toTriggeredFault:self];
+            [[objectContext objectStore] addCompletionBlock:aCompletionBlock toTriggeredFault:self];
         }
     }
 }
 
 - (void)faultReceivedWithObjects:(CPArray)objectList {
     // Here we morph this fault object to the real object now when we are getting its data.
-    var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
     var object;
     for (var i = 0, size = [objectList count]; i < size; i++) {
         var anObject = [objectList objectAtIndex:i];
@@ -122,7 +125,7 @@
 
 - (id)morphObjectTo:(id)anObject {
     if (!anObject) {
-        // If the fetch didn't find an object leave this fault alone. It will ne never fire again and it will return nil on all keys for 'valueForKey:'
+        // If the fetch didn't find an object leave this fault alone. It will never fire again and it will return nil on all keys for 'valueForKey:'
         return self;
     }
 

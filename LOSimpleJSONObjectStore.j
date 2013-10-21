@@ -22,7 +22,6 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
     CPDictionary    attributeKeysForObjectClassName;
     CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
-    CPDictionary    faultObjectRequests;
 }
 
 - (id)init {
@@ -30,41 +29,22 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
-        faultObjectRequests = [CPMutableDictionary dictionary];
     }
     return self;
 }
 
 - (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock fault:nil];
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:nil];
 }
 
 - (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock fault:faultArray];
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:[faultArray]];
 }
 
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock fault:faultObject];
+- (CPArray)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:faultObjects];
 }
 
-- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionBlock:(Function)aCompletionBlock {
-    var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:aFaultObject.entityName];
-    if (!faultObjectRequestsForEntity) {
-        faultObjectRequestsForEntity = [];
-        [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:aFaultObject.entityName];
-    }
-    var objectStore = [objectContext objectStore];
-    var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:aFaultObject.entityName objectContext:objectContext];
-    var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
-                                                       rightExpression:[CPExpression expressionForConstantValue:aFaultObject.primaryKey]
-                                                              modifier:CPDirectPredicateModifier
-                                                                  type:CPEqualToPredicateOperatorType
-                                                               options:0];
-    fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:aFaultObject.entityName qualifier:qualifier];
-    [objectContext requestFaultObject:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
-    [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:[CPDictionary dictionaryWithObjects:[fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]]];
-
-}
 - (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faults:(id)faults {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     if (fetchSpecification.requestPreProcessBlock) {
