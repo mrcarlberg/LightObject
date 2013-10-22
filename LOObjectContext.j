@@ -53,7 +53,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (CPString)description {
-    return [CPString stringWithFormat:@"<LOModifyRecord insertDict: %@ updateDict: %@ deleteDict: %@>", insertDict, updateDict, deleteDict];
+    return [CPString stringWithFormat:@"<LOModifyRecord insertDict: %@ updateDict: %@ deleteDict: %@ object: %@>", insertDict, updateDict, deleteDict, object];
 }
 
 @end
