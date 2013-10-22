@@ -748,12 +748,39 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 /
 
 /*!
+   Returns true if the object has unsaved changes for an attrbiute in the object context.
+   If the object is deleted all attributes counts as changed.
+ */
+- (BOOL)isObjectModified:(id)theObject forAttributeKey:(CPString)attributeKey {
+    var objDict = [self modifyObjectDictionaryForObject:theObject];
+    if (objDict) {
+        if ([objDict valueForKey:@"deleteDict"] != nil)
+            return YES;
+        var updateDict = [objDict valueForKey:@"updateDict"];
+        if (updateDict != nil && [updateDict objectForKey:attributeKey] != nil) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
+/*!
    Returns true if the object has unsaved changes in the object context.
  */
 - (BOOL) isObjectModified:(id)theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (objDict) {
         return [objDict valueForKey:@"updateDict"] || [objDict valueForKey:@"insertDict"] || [objDict valueForKey:@"deleteDict"];
+}
+
+/*!
+   Returns true if the object is deleted in the object context.
+ */
+- (BOOL)isObjectDeleted:(id)theObject {
+    var objDict = [self modifyObjectDictionaryForObject:theObject];
+    if (objDict) {
+        return [objDict valueForKey:@"deleteDict"] != nil;
     }
 
     return NO;
