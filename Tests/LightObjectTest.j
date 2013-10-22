@@ -82,8 +82,8 @@
     } else if (fetchSpecification.entityName === @"school") {
         schools = objects;
     }
-}    
-    
+}
+
 - (void)testBasicInitialSetup
 {
     [self assertNotNull:objectContext];
@@ -111,7 +111,11 @@
     [self assert:1 equals:[persons count]];
     var kalle = [persons objectAtIndex:0];
     [self assert:6 equals:[kalle objectForKey:@"age"]];
+    [self assert:NO equals:[objectContext isObjectModified:kalle]];
+    [self assert:NO equals:[objectContext isObjectModified:kalle forAttributeKey:@"age"]];
     [kalle setObject:7 forKey:@"age"];
+    [self assert:YES equals:[objectContext isObjectModified:kalle]];
+    [self assert:YES equals:[objectContext isObjectModified:kalle forAttributeKey:@"age"]];
     [kalle setObject:@"Kalle Jr" forKey:@"name"];
     [self assert:7 equals:[kalle objectForKey:@"age"]];
     [self assert:@"Kalle Jr" equals:[kalle objectForKey:@"name"]];
@@ -146,7 +150,7 @@
 {
     var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:@"school"];
     [objectContext requestObjectsWithFetchSpecification:fetchSpecification];
-    
+
     // We don't have an intelligent ObjectStore that will handle to many relationships. Lets fake and add a fault attribute for each school object.
 
     for (var i = 0; i < [schools count]; i++) {
