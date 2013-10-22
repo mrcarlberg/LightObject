@@ -768,10 +768,13 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 /*!
    Returns true if the object has unsaved changes in the object context.
  */
-- (BOOL) isObjectModified:(id)theObject {
+- (BOOL)isObjectModified:(id)theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (objDict) {
-        return [objDict valueForKey:@"updateDict"] || [objDict valueForKey:@"insertDict"] || [objDict valueForKey:@"deleteDict"];
+        return [objDict valueForKey:@"updateDict"] != nil || [objDict valueForKey:@"insertDict"] != nil || [objDict valueForKey:@"deleteDict"] != nil;
+    }
+
+    return NO;
 }
 
 /*!
@@ -880,6 +883,9 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     }
 }
 
+/*!
+    Private method to get LOModifyRecord for an object
+ */
 - (id)modifyObjectDictionaryForObject:(id) theObject {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
@@ -893,6 +899,9 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     return nil;
 }
 
+/*!
+    Private method to remove the LOModifyRecord for an object
+ */
 - (void)removeModifyObjectDictionaryForObject:(id) theObject {
     var size = [modifiedObjects count];
     for (var i = 0; i < size; i++) {
@@ -906,6 +915,9 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     }
 }
 
+/*!
+    Private method to set sub dictionary on LOModifyRecord for an object
+ */
 - (void)setSubDictionary:(CPDictionary)subDict forKey:(CPString) key forObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (!objDict) {
@@ -919,7 +931,10 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     }
 }
 
-- (CPDictionary)subDictionaryForKey:(CPString) key forObject:(id) theObject {
+/*!
+    Private method to get sub dictionary on LOModifyRecord for an object
+ */
+- (CPDictionary)subDictionaryForKey:(CPString)key forObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (objDict) {
         var subDict = [objDict valueForKey:key];
@@ -930,6 +945,10 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     return null;
 }
 
+/*!
+    Private method to get and create sub dictionary on LOModifyRecord for an object.
+    This will also create the LOModifiyRecord if it doesn't exists
+ */
 - (CPDictionary)createSubDictionaryForKey:(CPString) key forModifyObjectDictionaryForObject:(id) theObject {
     var objDict = [self modifyObjectDictionaryForObject:theObject];
     if (!objDict) {
@@ -944,6 +963,9 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     return subDict;
 }
 
+/*!
+    Private method to register event. Event is used to undo and rollback changes
+ */
 - (void)registerEvent:(LOUpdateEvent)updateEvent {
     var lastUndoEvents = [undoEvents lastObject];
 
@@ -955,6 +977,11 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
     [lastUndoEvents addObject:updateEvent];
 }
 
+/*!
+    If fault is not triggered it will trigger it and call the completion block when result is received.
+    If fault is already triggered it will call the completion block directly.
+    This is a handy utility when you want to do something on a object. You know that it might be a fault but you don't know if it has triggered.
+ */
 - (void)triggerFault:(LOFault)fault withCompletionBlock:(Function)aCompletionBlock {
     if ([fault conformsToProtocol:@protocol(LOFault)]) {
         [fault requestFaultWithCompletionBlock:aCompletionBlock];
