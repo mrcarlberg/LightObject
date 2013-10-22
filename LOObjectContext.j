@@ -253,7 +253,7 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
         [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:entityName];
         [self performBlock:function() {
             var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:self];
-            var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
+            //var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
             var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
                                                                rightExpression:[CPExpression expressionForConstantValue:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]]
                                                                       modifier:CPDirectPredicateModifier
