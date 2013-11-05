@@ -16,6 +16,7 @@
     CPString        primaryKey @accessors;
     BOOL            faultFired @accessors;
     BOOL            faultPopulated @accessors;
+    id              forwardingTarget;
 }
 
 + (LOFaultObject)faultObjectWithObjectContext:(CPObjectContext)anObjectContext entityName:(CPString)anEntityName primaryKey:(CPString)aPrimaryKey {
@@ -29,6 +30,9 @@
         objectContext = anObjectContext;
         entityName = anEntityName;
         primaryKey = aPrimaryKey;
+        forwardingTarget = [anObjectContext createNewObjectForType:anEntityName];
+        if (forwardingTarget == nil)
+            return nil;
     }
     return self;
 }
@@ -41,6 +45,11 @@
     copy.faultFired = self.faultFired;
     copy.faultPopulated = self.faultPopulated;
     return copy;
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector
+{
+    return forwardingTarget;
 }
 
 - (void)setValue:(id)aValue forKey:(CPString)aKey {
