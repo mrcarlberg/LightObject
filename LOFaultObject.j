@@ -17,6 +17,7 @@
     BOOL            faultFired @accessors;
     BOOL            faultPopulated @accessors;
     LOFetchSpecification fetchSpecification;
+    id              forwardingTarget;
 }
 
 + (LOFaultObject)faultObjectWithObjectContext:(CPObjectContext)anObjectContext entityName:(CPString)anEntityName primaryKey:(CPString)aPrimaryKey {
@@ -30,6 +31,9 @@
         objectContext = anObjectContext;
         entityName = anEntityName;
         primaryKey = aPrimaryKey;
+        forwardingTarget = [anObjectContext createNewObjectForType:anEntityName];
+        if (forwardingTarget == nil)
+            return nil;
     }
     return self;
 }
@@ -43,6 +47,11 @@
     copy.faultPopulated = self.faultPopulated;
     copy.fetchSpecification = self.fetchSpecification;
     return copy;
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector
+{
+    return forwardingTarget;
 }
 
 - (void)setValue:(id)aValue forKey:(CPString)aKey {

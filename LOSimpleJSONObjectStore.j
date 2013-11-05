@@ -259,13 +259,24 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             toOne = [toOneFaults objectForKey:globalId];
             if (!toOne) {
                 // This is hard coded. Uses relationshipKey as entityName. We can change this when we have a full database model.
-                toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:possibleToOneFaultObject.relationshipKey primaryKey:globalId];
-                [objectContext _registerObject:toOne forGlobalId:globalId];
-                [toOneFaults setObject:toOne forKey:globalId];
-                //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+                // To make life easier before we get a full model we try to ask the object for an entity name for the relation.
+                var entityName;
+                if ([possibleToOneFaultObject.object respondsToSelector:@selector(enityNameForRelationshipKey:)]) {
+                    entityName = [possibleToOneFaultObject.object enityNameForRelationshipKey:possibleToOneFaultObject.relationshipKey];
+                } else {
+                    entityName = possibleToOneFaultObject.relationshipKey;
+                }
+                if (entityName != nil) {
+                    toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:entityName primaryKey:globalId];
+                    //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
+                }
             }
         }
-        [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
+        if (toOne) {
+            [objectContext _registerObject:toOne forGlobalId:globalId];
+            [toOneFaults setObject:toOne forKey:globalId];
+            [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
+        }
     }
     [objectContext setDoNotObserveValues:NO];
     return newArray;
