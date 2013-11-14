@@ -270,13 +270,13 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                 }
                 if (entityName != nil) {
                     toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:entityName primaryKey:globalId];
+                    [objectContext _registerObject:toOne forGlobalId:globalId];
+                    [toOneFaults setObject:toOne forKey:globalId];
                     //console.log([self className] + " " + _cmd + " Can't find object for toOne relationship '" + possibleToOneFaultObject.relationshipKey + "' (" + toOne + ") on object " + possibleToOneFaultObject.object);
                 }
             }
         }
         if (toOne) {
-            [objectContext _registerObject:toOne forGlobalId:globalId];
-            [toOneFaults setObject:toOne forKey:globalId];
             [possibleToOneFaultObject.object setValue:toOne forKey:possibleToOneFaultObject.relationshipKey];
         }
     }
