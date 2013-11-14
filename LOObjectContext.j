@@ -122,6 +122,7 @@ LOObjectContextDebugModeFetch = 1 << 0;
 LOObjectContextDebugModeSaveChanges = 1 << 1;
 LOObjectContextDebugModeReceiveData = 1 << 2;
 LOObjectContextDebugModeObserveValue = 1 << 3;
+LOObjectContextDebugModeAllInfo = ~0;
 
 @implementation LOObjectContext : CPObject {
     LOToOneProxyObject  toOneProxyObject;               // Extra observer proxy for to one relation attributes
