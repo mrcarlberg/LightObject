@@ -229,14 +229,14 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             if (fault) {
                 // If there is a fetch outstanding for the fault we have to take care of it.
                 if (fault.faultFired && !fault.faultPopulated) {
-                    var connectionDictionary = [self connectionDictionaryForFault:fault];
-                    if (connectionDictionary) {
-                        var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[connectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
-                        [fault morphObjectTo:obj callCompletionBlocks:/*connectionDictionary.completionBlocks*/nil postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+                    var faultConnectionDictionary = [self connectionDictionaryForFault:fault];
+                    if (faultConnectionDictionary) {
+                        var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[faultConnectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
+                        [fault morphObjectTo:obj callCompletionBlocks:/*faultConnectionDictionary.completionBlocks*/nil postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
                         // Delete the fault in the connection dictionary so when this request complets it will be treated as a regular reqest and not a fault request
-                        [connectionDictionary.faults removeObject:fault];
-                        if([connectionDictionary.faults count] === 0)
-                            delete connectionDictionary.faults;
+                        [faultConnectionDictionary.faults removeObject:fault];
+                        if([faultConnectionDictionary.faults count] === 0)
+                            delete faultConnectionDictionary.faults;
                     }
                 } else {
                     [fault morphObjectTo:obj];
@@ -244,7 +244,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             }
 
             if (type === entityName) {
-                // Add the morphed fault or the new received object to the list of received objects
+                // Add the new received object or the morphed fault to the list of received objects
                 [newArray addObject:fault || obj];
             }
         }
