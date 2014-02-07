@@ -75,9 +75,9 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     var response = connectionDictionary.response;
     var receivedData = connectionDictionary.receivedData;
-    var error = [self errorForResponse:response andData:receivedData fromURL:connectionDictionary.url];
     var objectContext = connectionDictionary.objectContext;
-    var jSON = receivedData ? [receivedData objectFromJSON] : nil;
+    var error;
+    var jSON = [self dataForResponse:response andData:receivedData fromURL:connectionDictionary.url error:@ref(error)];
 
     if (error) {
         [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
@@ -112,6 +112,20 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         }
     }
     return nil;
+}
+
+/*!
+  Transforms the received data to an object structure. The default implementation creates objects from JSON if the
+  statusCode is 200.
+*/
+-(id)dataForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString error:(LOErrorRef)error {
+    var statusCode = [response statusCode];
+
+    if (statusCode === 200) return data != nil ? [data objectFromJSON] : nil;
+
+    @deref(error) = [LOError errorWithDomain:nil code:statusCode userInfo:nil];
+
+    return data;
 }
 
 /*!
