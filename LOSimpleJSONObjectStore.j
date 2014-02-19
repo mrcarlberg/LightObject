@@ -398,6 +398,43 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [super saveChangesWithObjectContext:objectContext withCompletionBlock:aCompletionBlock];
 }
 
+/*!
+    Copies the updateDict and replaces all to many relationships dictionaries with insert dictionaries.
+*/
+- (CPMutableDictionary)_copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:(CPDictionary)updateDict insertedObjectToTempIdDict:(CPDictionary)insertedObjectToTempIdDict withObjectContext:(LOObjectContext)objectContext {
+    var updateDictCopy = [CPMutableDictionary dictionary];
+    var updateDictKeys = [updateDict allKeys];
+    var updateDictKeysSize = [updateDictKeys count];
+    for (var j = 0; j < updateDictKeysSize; j++) {
+        var updateDictKey = [updateDictKeys objectAtIndex:j];
+        var updateDictValue = [updateDict objectForKey:updateDictKey];
+        if ([updateDictValue isKindOfClass:CPDictionary]) {
+            var insertedRelationshipArray = [CPArray array];
+            var insertedRelationshipObjects = [updateDictValue objectForKey:@"insert"];
+            var insertedRelationshipObjectsSize = [insertedRelationshipObjects count];
+            for (var k = 0; k < insertedRelationshipObjectsSize; k++) {
+                var insertedRelationshipObject = [insertedRelationshipObjects objectAtIndex:k];
+                var insertedRelationshipObjectPrimaryKey = [self primaryKeyForObject:insertedRelationshipObject];
+                // Use primary key if object has it, otherwise use the created tmp id
+                if (insertedRelationshipObjectPrimaryKey) {
+                    var insertedRelationshipObjectType = [self typeOfObject:insertedRelationshipObject];
+                    var insertedRelationshipObjectPrimaryKeyAttribute = [self primaryKeyAttributeForType:insertedRelationshipObjectType objectContext:objectContext];
+                    [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectPrimaryKey forKey:insertedRelationshipObjectPrimaryKeyAttribute]];
+                } else {
+                    var insertedRelationshipObjectTempId = [insertedObjectToTempIdDict objectForKey:insertedRelationshipObject._UID];
+                    if (!insertedRelationshipObjectTempId) {
+                        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't get primary key or temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
+                    }
+                    [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectTempId forKey:@"_tmpid"]];
+                }
+            }
+            updateDictValue = [CPDictionary dictionaryWithObject:insertedRelationshipArray forKey:@"inserts"];
+        }
+        [updateDictCopy setObject:updateDictValue forKey:updateDictKey];
+    }
+    return updateDictCopy;
+}
+
 - (CPMutableDictionary)_jsonDictionaryForModifiedObjectsWithObjectContext:(LOObjectContext)objectContext {
     var modifyDict = [CPMutableDictionary dictionary];
     var modifiedObjects = [objectContext modifiedObjects];
@@ -407,6 +444,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var updateArray = [CPMutableArray array];
         var deleteArray = [CPMutableArray array];
         var insertedObjectToTempIdDict = [CPMutableDictionary dictionary];
+        // First create temporary ids for to many relationship inserts
         for (var i = 0; i < size; i++) {
             var objDict = [modifiedObjects objectAtIndex:i];
             var obj = [objDict object];
@@ -414,17 +452,30 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var deleteDict = [objDict deleteDict];
             if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
                 var primaryKey = [self primaryKeyForObject:obj];
-                var insertDictCopy = [insertDict copy];
+                // Create a tmp id if primary key does not exists
+                if (!primaryKey) {
+                    var tmpId = [CPString stringWithFormat:@"%d", i];
+                    [insertedObjectToTempIdDict setObject:tmpId forKey:[obj UID]];
+                    [objDict setTmpId:tmpId];
+                }
+            }
+        }
+        // Inserts
+        for (var i = 0; i < size; i++) {
+            var objDict = [modifiedObjects objectAtIndex:i];
+            var obj = [objDict object];
+            var insertDict = [objDict insertDict];
+            var deleteDict = [objDict deleteDict];
+            if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
+                var primaryKey = [self primaryKeyForObject:obj];
+                var insertDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:insertDict insertedObjectToTempIdDict:insertedObjectToTempIdDict withObjectContext:objectContext];
                 // Use primary key if object has it, otherwise create a tmp id
                 if (primaryKey) {
                     var type = [self typeOfObject:obj];
                     var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
                     [insertDictCopy setObject:primaryKey forKey:primaryKeyAttribute];
                 } else {
-                    var tmpId = [CPString stringWithFormat:@"%d", i];
-                    [insertedObjectToTempIdDict setObject:tmpId forKey:[obj UID]];
-                    [objDict setTmpId:tmpId];
-                    [insertDictCopy setObject:tmpId forKey:@"_tmpid"];
+                    [insertDictCopy setObject:[objDict tmpId] forKey:@"_tmpid"];
                 }
                 [insertDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
                 [insertArray addObject:insertDictCopy];
@@ -439,36 +490,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
             if (updateDict && !deleteDict) { // Don't do this if it is deleted
-                var updateDictCopy = [CPMutableDictionary dictionary];
-                var updateDictKeys = [updateDict allKeys];
-                var updateDictKeysSize = [updateDictKeys count];
-                for (var j = 0; j < updateDictKeysSize; j++) {
-                    var updateDictKey = [updateDictKeys objectAtIndex:j];
-                    var updateDictValue = [updateDict objectForKey:updateDictKey];
-                    if ([updateDictValue isKindOfClass:CPDictionary]) {
-                        var insertedRelationshipArray = [CPArray array];
-                        var insertedRelationshipObjects = [updateDictValue objectForKey:@"insert"];
-                        var insertedRelationshipObjectsSize = [insertedRelationshipObjects count];
-                        for (var k = 0; k < insertedRelationshipObjectsSize; k++) {
-                            var insertedRelationshipObject = [insertedRelationshipObjects objectAtIndex:k];
-                            var insertedRelationshipObjectPrimaryKey = [self primaryKeyForObject:insertedRelationshipObject];
-                            // Use primary key if object has it, otherwise use the created tmp id
-                            if (insertedRelationshipObjectPrimaryKey) {
-                                var insertedRelationshipObjectType = [self typeOfObject:insertedRelationshipObject];
-                                var insertedRelationshipObjectPrimaryKeyAttribute = [self primaryKeyAttributeForType:insertedRelationshipObjectType objectContext:objectContext];
-                                [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectPrimaryKey forKey:insertedRelationshipObjectPrimaryKeyAttribute]];
-                            } else {
-                                var insertedRelationshipObjectTempId = [insertedObjectToTempIdDict objectForKey:insertedRelationshipObject._UID];
-                                if (!insertedRelationshipObjectTempId) {
-                                    CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't get primary key or temp. id for object " + insertedRelationshipObject + " on relationship " + updateDictKey);
-                                }
-                                [insertedRelationshipArray addObject:[CPDictionary dictionaryWithObject:insertedRelationshipObjectTempId forKey:@"_tmpid"]];
-                            }
-                        }
-                        updateDictValue = [CPDictionary dictionaryWithObject:insertedRelationshipArray forKey:@"inserts"];
-                    }
-                    [updateDictCopy setObject:updateDictValue forKey:updateDictKey];
-                }
+                var updateDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:updateDict insertedObjectToTempIdDict:insertedObjectToTempIdDict withObjectContext:objectContext];
                 [updateDictCopy setObject:type forKey:@"_type"];
                 var uuid = [self primaryKeyForObject:obj];
                 if (uuid) {

@@ -344,12 +344,19 @@ LOObjectContextDebugModeAllInfo = ~0;
     var oldValue = [theChanges valueForKey:CPKeyValueChangeOldKey];
     if (newValue === oldValue) return;
 
-    var updateEvent = [LOUpdateEvent updateEventWithObject:theObject updateDict:[[self subDictionaryForKey:@"updateDict" forObject:theObject] copy] key:theKeyPath old:oldValue new:newValue];
+    // If it is a new object all changed attributes are stored in the "insertDict"
+    var dictType = [self isObjectStored:theObject] ? @"updateDict" : @"insertDict";
+    var updateDict = [self subDictionaryForKey:dictType forObject:theObject];
+    var updateEvent = [LOUpdateEvent updateEventWithObject:theObject updateDict:updateDict dictType:dictType key:theKeyPath old:oldValue new:newValue];
     [self registerEvent:updateEvent];
-    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+
+    if (!updateDict) {
+        updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:theObject];
+    }
+
 	[updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
 
-	if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+	if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" " + dictType + @": " + [updateDict description]);
 
 	// Simple validation handling
 	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
@@ -385,15 +392,21 @@ LOObjectContextDebugModeAllInfo = ~0;
     }
     var oldGlobalId = [self globalIdForObject:oldValue];
     var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:theKeyPath forType:[self typeOfObject:theObject] objectContext:self];
-    var updateDict = [[self subDictionaryForKey:@"updateDict" forObject:theObject] copy];
-    var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
+    // If it is a new object all changed attributes are stored in the "insertDict"
+    var dictType = [self isObjectStored:theObject] ? @"updateDict" : @"insertDict";
+    var updateDict = [self subDictionaryForKey:dictType forObject:theObject];
+    var updateEvent = [LOToOneRelationshipUpdateEvent updateEventWithObject:theObject updateDict:updateDict dictType:dictType key:theKeyPath old:oldValue new:newValue foreignKey:foreignKey oldForeignValue:oldGlobalId newForeignValue:newGlobalId];
     [self registerEvent:updateEvent];
-    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
+
+    if (!updateDict) {
+        updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:theObject];
+    }
+
     if (shouldSetForeignKey) {
         [updateDict setObject:newGlobalId ? newGlobalId : [CPNull null] forKey:foreignKey];
     }
 
-    if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" updateDict: " + [updateDict description]);
+    if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" " + dictType + @": " + [updateDict description]);
 
     if (autoCommit) [self saveChanges];
 }
@@ -539,7 +552,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 
     [self awakeFromInsertionForObject:theObject];
     // Just need to create the dict to mark it for insert
-    [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
+    var insertDict = [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
 
     // Add attributes with values
     var attributeKeys = [objectStore attributeKeysForObject:theObject];
@@ -553,15 +566,13 @@ LOObjectContextDebugModeAllInfo = ~0;
             if (value) {
                 var globalId = [self globalIdForObject:value];
                 if (globalId && [objectStore primaryKeyForObject:value]) {  // If the master object doesn't have a primary key don't set the foreign key
-                    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-                    [updateDict setObject:globalId forKey:attributeKey];
+                    [insertDict setObject:globalId forKey:attributeKey];
                 }
             }
         } else if (![relationshipKeys containsObject:attributeKey]) { // Not when it is a to many relationship
             var value = [theObject valueForKey:attributeKey];
             if (value) {
-                var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:theObject];
-                [updateDict setObject:value forKey:attributeKey];
+                [insertDict setObject:value forKey:attributeKey];
             }
         }
     }
@@ -670,7 +681,8 @@ LOObjectContextDebugModeAllInfo = ~0;
 
 - (void)_add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     //CPLog.trace(@"Added new object " + [newObject className] + @" to master of type " + [masterObject className] + @" for key " + relationshipKey);
-    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:masterObject];
+    var dictType = [self isObjectStored:masterObject] ? @"updateDict" : @"insertDict";
+    var updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
     if (!relationsShipDict) {
         relationsShipDict = [CPDictionary dictionary];
@@ -701,7 +713,8 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 - (void)_unAdd:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
-    var updateDict = [self createSubDictionaryForKey:@"updateDict" forModifyObjectDictionaryForObject:masterObject];
+    var dictType = [self isObjectStored:masterObject] ? @"updateDict" : @"insertDict";
+    var updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
     if (relationsShipDict) {
         var insertsArray = [relationsShipDict objectForKey:@"insert"];
@@ -802,6 +815,10 @@ LOObjectContextDebugModeAllInfo = ~0;
             return YES;
         var updateDict = [objDict valueForKey:@"updateDict"];
         if (updateDict != nil && [updateDict objectForKey:attributeKey] != nil) {
+            return YES;
+        }
+        var insertDict = [objDict valueForKey:@"insertDict"];
+        if (insertDict != nil && [insertDict objectForKey:attributeKey] != nil) {
             return YES;
         }
     }

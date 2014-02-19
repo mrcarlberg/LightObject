@@ -100,19 +100,21 @@
 
 @implementation LOUpdateEvent : LOEvent {
     CPDictionary    updateDict;
+    CPString        dictType;
     CPString        attributeKey;
     id              oldValue;
     id              newValue;
 }
 
-+ (LOUpdateEvent) updateEventWithObject:(id) anObject updateDict:(CPDictionary) anUpdateDict key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue {
-    return [[LOUpdateEvent alloc] initWithObject:anObject updateDict:anUpdateDict key:aKey old:anOldValue new:aNewValue];
++ (LOUpdateEvent)updateEventWithObject:(id) anObject updateDict:(CPDictionary) anUpdateDict dictType:(CPString)aDictType key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue {
+    return [[LOUpdateEvent alloc] initWithObject:anObject updateDict:anUpdateDict dictType:aDictType key:aKey old:anOldValue new:aNewValue];
 }
 
-- (id)initWithObject:(id) anObject updateDict:(CPDictionary) anUpdateDict key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue {
+- (id)initWithObject:(id)anObject updateDict:(CPDictionary)anUpdateDict dictType:(CPString)aDictType key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue {
     self = [super initWithObject:anObject];
     if (self) {
-        updateDict = anUpdateDict;
+        updateDict = [anUpdateDict copy];
+        dictType = aDictType;
         attributeKey = aKey;
         oldValue = anOldValue;
         newValue = aNewValue;
@@ -120,9 +122,9 @@
     return self;
 }
 
-- (void) undoForContext:(LOObjectContext)objectContext {
+- (void)undoForContext:(LOObjectContext)objectContext {
     [object setValue:oldValue forKey:attributeKey];
-    [objectContext setSubDictionary: updateDict forKey:@"updateDict" forObject:object];
+    [objectContext setSubDictionary: updateDict forKey:dictType forObject:object];
 }
 
 @end
@@ -134,12 +136,12 @@
     id              newForeignValue;
 }
 
-+ (LOToOneRelationshipUpdateEvent) updateEventWithObject:(id) anObject updateDict:(CPDictionary) anUpdateDict key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue foreignKey:(CPString) aForeignKey oldForeignValue:(id)anOldForeignValue newForeignValue:(id)aNewForeignValue {
-    return [[LOToOneRelationshipUpdateEvent alloc] initWithObject:anObject updateDict:anUpdateDict key:aKey old:anOldValue new:aNewValue foreignKey:aForeignKey oldForeignValue:anOldForeignValue newForeignValue:aNewForeignValue];
++ (LOToOneRelationshipUpdateEvent)updateEventWithObject:(id)anObject updateDict:(CPDictionary)anUpdateDict dictType:(CPString)aDictType key:(CPString)aKey old:(id)anOldValue new:(id)aNewValue foreignKey:(CPString)aForeignKey oldForeignValue:(id)anOldForeignValue newForeignValue:(id)aNewForeignValue {
+    return [[LOToOneRelationshipUpdateEvent alloc] initWithObject:anObject updateDict:anUpdateDict dictType:aDictType key:aKey old:anOldValue new:aNewValue foreignKey:aForeignKey oldForeignValue:anOldForeignValue newForeignValue:aNewForeignValue];
 }
 
-- (id)initWithObject:(id) anObject updateDict:(CPDictionary) anUpdateDict key:(CPString) aKey old:(id) anOldValue new:(id) aNewValue foreignKey:(CPString) aForeignKey oldForeignValue:(id)anOldForeignValue newForeignValue:(id)aNewForeignValue {
-    self = [super initWithObject:anObject updateDict:anUpdateDict key:aKey old:anOldValue new:aNewValue];
+- (id)initWithObject:(id)anObject updateDict:(CPDictionary)anUpdateDict dictType:(CPString)aDictType key:(CPString)aKey old:(id)anOldValue new:(id)aNewValue foreignKey:(CPString)aForeignKey oldForeignValue:(id)anOldForeignValue newForeignValue:(id)aNewForeignValue {
+    self = [super initWithObject:anObject updateDict:anUpdateDict dictType:aDictType key:aKey old:anOldValue new:aNewValue];
     if (self) {
         foreignKey = aForeignKey;
         oldForeignValue = anOldForeignValue;
@@ -148,7 +150,7 @@
     return self;
 }
 
-- (void) undoForContext:(LOObjectContext)objectContext {
+- (void)undoForContext:(LOObjectContext)objectContext {
     [super undoForContext:objectContext];
     // The to-one relationship is recorded in the context under the 'real' foreign key (the
     // attribute ending in '_fk'). This is done in LOUpdateEvent already, so this class
