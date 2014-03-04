@@ -136,6 +136,7 @@ LOObjectContextDebugModeAllInfo = ~0;
     BOOL                autoCommit @accessors;          // True if the context should directly save changes to object store.
     BOOL                doNotObserveValues @accessors;  // True if observeValueForKeyPath methods should ignore chnages. Used when doing revert
     BOOL                readOnly;                       // True if object context is a read only context. A read only context don't listen to changes for the attributes on the objects
+    BOOL                addRelationshipAsUpdate @accessors; // True if to many relationship should be added as an update even when it is an insert. This can help the backend if it needs to resolve a newly inserted object before it can add it as a relationship.
 
     CPMutableDictionary faultObjectRequests;
 
@@ -153,6 +154,7 @@ LOObjectContextDebugModeAllInfo = ~0;
         undoEvents = [CPArray array];
         doNotObserveValues = NO;
         readOnly = NO;
+        addRelationshipAsUpdate = YES;
         debugMode = 0;
         faultObjectRequests = [CPMutableDictionary dictionary];
     }
@@ -681,7 +683,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 
 - (void)_add:(id)newObject toRelationshipWithKey:(CPString)relationshipKey forObject:(id)masterObject {
     //CPLog.trace(@"Added new object " + [newObject className] + @" to master of type " + [masterObject className] + @" for key " + relationshipKey);
-    var dictType = [self isObjectStored:masterObject] ? @"updateDict" : @"insertDict";
+    var dictType = [self addRelationshipAsUpdate] || [self isObjectStored:masterObject] ? @"updateDict" : @"insertDict";
     var updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:masterObject];
     var relationsShipDict = [updateDict objectForKey:relationshipKey];
     if (!relationsShipDict) {
