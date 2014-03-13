@@ -394,6 +394,8 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
         var connection = [CPURLConnection connectionWithRequest:request delegate:self];
         var modifiedObjects = [objectContext modifiedObjects];
         [connections addObject:{connection: connection, objectContext: objectContext, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
+    } else if (aCompletionBlock) {
+        aCompletionBlock(nil, 200);  // We have nothing to save so call the compleation block directly with a result code of 200
     }
     [super saveChangesWithObjectContext:objectContext withCompletionBlock:aCompletionBlock];
 }
