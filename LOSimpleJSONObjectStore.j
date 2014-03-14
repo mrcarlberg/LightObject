@@ -208,7 +208,13 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             }
                         }
                     } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
-                        value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
+                        var oldValue = [obj valueForKey:column];
+                        // If the old value is a fault and not populated then keep the old fault.
+                        if (![oldValue isKindOfClass:[LOFaultArray class]] || [oldValue faultPopulated]) {
+                            value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
+                        } else {
+                            value = oldValue;
+                        }
                     } else if (value && [relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
                         // The array contains only type and primaryKey for the relationship objects.
                         // The complete relationship objects can be sent before or later in the list of all objects.
