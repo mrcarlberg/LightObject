@@ -125,6 +125,7 @@ LOObjectContextDebugModeObserveValue = 1 << 3;
 LOObjectContextDebugModeAllInfo = ~0;
 
 @implementation LOObjectContext : CPObject {
+    LOObjectContext     sharedObjectContext @accessors; // A read only object context that can be shared between many object contexts
     LOToOneProxyObject  toOneProxyObject;               // Extra observer proxy for to one relation attributes
     CPDictionary        objects;                        // List of all objects in context with globalId as key
     CPArray             modifiedObjects @accessors;     // Array of LOModifyRecords with "insert", "update" and "delete" dictionaries.
@@ -287,7 +288,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 /*!
- * This is called when some objects are reeived from a fetch
+ * This is called when some objects are received from a fetch
  */
 - (void)awakeFromFetchForObjects:(CPArray)objectArray {
     for (var i = 0, size = objectArray.length; i < size; i++) {
@@ -488,7 +489,7 @@ LOObjectContextDebugModeAllInfo = ~0;
     @return YES if theObject is stored by the object store and is registered in the context
     If you insert a new object to the object context this method will return NO until you send a saveChanges:
  */
-- (BOOL)isObjectStored:(id) theObject {
+- (BOOL)isObjectStored:(id)theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] && ![self subDictionaryForKey:@"insertDict" forObject:theObject];
 }
@@ -496,7 +497,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     @return YES if theObject is registered in the context
  */
-- (BOOL)isObjectRegistered:(id) theObject {
+- (BOOL)isObjectRegistered:(id)theObject {
     var globalId = [objectStore globalIdForObject:theObject];
     return [objects objectForKey:globalId] != nil;
 }
@@ -504,25 +505,28 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     @return object to context
  */
-- (id)objectForGlobalId:(CPString) globalId {
+- (id)objectForGlobalId:(CPString)globalId {
     return [self objectForGlobalId:globalId noFaults:NO];
 }
 
 /*!
     @return object to context
  */
-- (id)objectForGlobalId:(CPString) globalId noFaults:(BOOL)noFaults {
+- (id)objectForGlobalId:(CPString)globalId noFaults:(BOOL)noFaults {
     var obj = [objects objectForKey:globalId];
+    if (obj == nil && sharedObjectContext) {
+        obj = [sharedObjectContext objectForGlobalId:globalId noFaults:noFaults];
+    }
     return noFaults && [obj conformsToProtocol:@protocol(LOFault)] ? nil : obj;
 }
 
 /*!
     @return global id for the Object. If it is not in the context nil is returned
  */
-- (CPString)globalIdForObject:(id) theObject {
+- (CPString)globalIdForObject:(id)theObject {
     if (theObject) {
         var globalId = [objectStore globalIdForObject:theObject];
-        if ([objects objectForKey:globalId]) {
+        if ([objects objectForKey:globalId] || (sharedObjectContext && [sharedObjectContext objectForGlobalId:globalId noFaults:NO])) {
             return globalId;
         }
     }
@@ -532,10 +536,10 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     @return primary key for the Object. If it is not in the context nil is returned
  */
-- (CPString)primaryKeyForObject:(id) theObject {
+- (CPString)primaryKeyForObject:(id)theObject {
     if (theObject) {
         var globalId = [objectStore globalIdForObject:theObject];
-        if ([objects objectForKey:globalId]) {
+        if ([objects objectForKey:globalId] || (sharedObjectContext && [sharedObjectContext objectForGlobalId:globalId noFaults:NO])) {
             return [objectStore primaryKeyForObject:theObject];
         }
     }
@@ -549,7 +553,7 @@ LOObjectContextDebugModeAllInfo = ~0;
     return [objectStore typeOfObject:theObject];
 }
 
-- (void)_insertObject:(id) theObject {
+- (void)_insertObject:(id)theObject {
     var type = [self typeOfObject:theObject];
 
     [self awakeFromInsertionForObject:theObject];
@@ -584,7 +588,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     Add object to context and add all non nil attributes as updated attributes
  */
-- (void)insertObject:(id) theObject {
+- (void)insertObject:(id)theObject {
     [self _insertObject: theObject];
     var insertEvent = [LOInsertEvent insertEventWithObject:theObject arrayController:nil ownerObjects:nil ownerRelationshipKey:nil];
     [self registerEvent:insertEvent];
@@ -594,7 +598,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     Add objects to context
  */
-- (void)insertObjects:(CPArray) theObjects {
+- (void)insertObjects:(CPArray)theObjects {
     //FIXME: create delete event as in -insertObject:
     var size = [theObjects count];
     for (var i = 0; i < size; i++) {
@@ -607,7 +611,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 /*!
     Uninsert object to context. Used when doing undo
  */
-- (void)unInsertObject:(id) theObject {
+- (void)unInsertObject:(id)theObject {
     [self _unInsertObject: theObject];
     if (autoCommit) [self saveChanges];
 }
