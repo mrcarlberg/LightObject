@@ -515,7 +515,7 @@ LOObjectContextDebugModeAllInfo = ~0;
 - (id)objectForGlobalId:(CPString)globalId noFaults:(BOOL)noFaults {
     var obj = [objects objectForKey:globalId];
     if (obj == nil && sharedObjectContext) {
-        obj = [sharedObjectContext objectForGlobalId:globalId noFaults:noFaults];
+        return [sharedObjectContext objectForGlobalId:globalId noFaults:noFaults];
     }
     return noFaults && [obj conformsToProtocol:@protocol(LOFault)] ? nil : obj;
 }
