@@ -190,6 +190,11 @@
     [array sortUsingDescriptors:descriptors];
 }
 
+- (void)makeObjectsPerformSelector:(SEL)aSelector {
+    [self _requestFaultIfNecessary];
+    [array makeObjectsPerformSelector:aSelector];
+}
+
 - (void)_requestFaultIfNecessary {
     if (!faultFired) {
         [self requestFaultWithCompletionBlock:nil];
