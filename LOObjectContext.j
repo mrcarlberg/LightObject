@@ -251,26 +251,36 @@ LOObjectContextDebugModeAllInfo = ~0;
 
 - (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionBlock:(Function)aCompletionBlock {
     var entityName = aFaultObject.entityName;
+    var doTheFetch = function() {
+        var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
+        var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:self];
+        //var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
+        var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
+                                                           rightExpression:[CPExpression expressionForConstantValue:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]]
+                                                                  modifier:CPDirectPredicateModifier
+                                                                      type:CPInPredicateOperatorType
+                                                                   options:0];
+        var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+        [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+        [faultObjectRequests removeObjectForKey:entityName];
+    }
     var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
-    if (!faultObjectRequestsForEntity) {
+    // If there are more then 100 fetch now to keep it small. TODO: Make this number controllable from outside
+    if (faultObjectRequestsForEntity) {
+        if ([faultObjectRequestsForEntity count] > 100) {
+            doTheFetch();
+            faultObjectRequestsForEntity = [];
+            [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:entityName];
+        }
+    } else {
         faultObjectRequestsForEntity = [];
         [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:entityName];
-        [self performBlock:function() {
-            var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:self];
-            //var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
-            var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
-                                                               rightExpression:[CPExpression expressionForConstantValue:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]]
-                                                                      modifier:CPDirectPredicateModifier
-                                                                          type:CPInPredicateOperatorType
-                                                                       options:0];
-            var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-            [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
-            [faultObjectRequests removeObjectForKey:entityName];
-        } afterDelay:0];
+        [self performBlock:doTheFetch afterDelay:0];
     }
     [faultObjectRequestsForEntity addObject:aFaultObject];
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:nil];
 }
+
 - (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
     // FIXME: Maybe check if it is an array instead of if it responds to 'count'
     if (objectList.isa && [objectList respondsToSelector:@selector(count)]) {
