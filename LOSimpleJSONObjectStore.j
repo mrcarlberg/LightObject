@@ -227,9 +227,14 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                             var relationUuid = [self primaryKeyForRawRow:relationRow forType:relationType objectContext:objectContext];
                             var relationObj = [receivedObjects objectForKey:relationUuid];
                             if (!relationObj) {
-                                relationObj = [self newObjectForType:relationType objectContext:objectContext];
-                                if (relationObj) {
+                                // Is it already in context use it and update its values when the objects arrives
+                                var relationObj = [objectContext objectForGlobalId:relationUuid];
+                                if (!relationObj) {
+                                    relationObj = [self newObjectForType:relationType objectContext:objectContext];
                                     [self setPrimaryKey:relationUuid forObject:relationObj];
+                                }
+
+                                if (relationObj) {
                                     [receivedObjects setObject:relationObj forKey:relationUuid];
                                 }
                             }
