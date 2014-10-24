@@ -123,7 +123,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 
     if (statusCode === 200) return data != nil ? [data objectFromJSON] : nil;
 
-    @deref(error) = [LOError errorWithDomain:nil code:statusCode userInfo:nil];
+    if (error) @deref(error) = [LOError errorWithDomain:nil code:statusCode userInfo:nil];
 
     return data;
 }
