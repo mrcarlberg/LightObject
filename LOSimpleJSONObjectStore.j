@@ -17,7 +17,7 @@
 
 LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector = @selector(objectsReceived:withConnectionDictionary:);
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
-LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
+//LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
     CPDictionary    attributeKeysForObjectClassName;
@@ -45,15 +45,30 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:faultObjects];
 }
 
+/*!
+    Sends request of objects based on fetchSpecification.
+    aCompletionBlock is called when finished.
+*/
 - (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faults:(id)faults {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     if (fetchSpecification.requestPreProcessBlock) {
         fetchSpecification.requestPreProcessBlock(request);
     }
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext request:request withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:faults];
+}
+
+/*!
+    Sends request of objects based on request. fetchSpecification is not used and only added to connection dictionary
+    completionBlocks are called when finished.
+    Returns the connectionDictionary
+*/
+- (id)requestObjectsWithFetchSpecification:(LOFFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext request:(CPURLRequest)request withCompletionBlocks:(CPArray)completionBlocks faults:(id)faults {
     var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    [connections addObject:{connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faults:faults, url: url, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
-    if (objectContext.debugMode & LOObjectContextDebugModeFetch) CPLog.trace(@"LOObjectContextDebugModeFetch: Entity: " + [fetchSpecification entityName] + @", url: " + url);
+    var connectionDictionary = {connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, request: request, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faults:faults, url: url, completionBlocks: completionBlocks, timestamp: [CPDate new]};
+    [connections addObject:connectionDictionary];
+    if (objectContext.debugMode & LOObjectContextDebugModeFetch) CPLog.trace(@"LOObjectContextDebugModeFetch: Entity: " + [fetchSpecification entityName] + @", qualifier: " + [fetchSpecification qualifier] + @", url: " + url);
+    return connectionDictionary;
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
@@ -76,11 +91,15 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     var response = connectionDictionary.response;
     var receivedData = connectionDictionary.receivedData;
     var objectContext = connectionDictionary.objectContext;
+    var fromURL = connectionDictionary.url;
+    var request = connectionDictionary.request;
     var error;
-    var jSON = [self dataForResponse:response andData:receivedData fromURL:connectionDictionary.url error:@ref(error)];
+    var jSON = [self dataForResponse:response andData:receivedData fromURL:fromURL connection:connection error:@ref(error)];
 
     if (error) {
-        [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
+        if ([self handleErrorForResponse:response request:request andData:jSON fromURL:fromURL connection:connection error:error]) {
+            [objectContext errorReceived:error withFetchSpecification:connectionDictionary.fetchSpecification result:jSON statusCode:[response statusCode] completionBlocks:connectionDictionary.completionBlocks];
+        }
     } else {
         if (objectContext.debugMode & LOObjectContextDebugModeReceiveData) CPLog.trace(@"LOObjectContextDebugModeReceiveData: Url: " + connectionDictionary.url + @", data: (" + (jSON ? jSON.length : 0) + ") " + receivedData);
         [self performSelector:connectionDictionary.receiveSelector withObject:jSON withObject:connectionDictionary]
@@ -115,13 +134,22 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
 }
 
 /*!
+  Method that handles errors. The default method just returns YES that tells the caller to continue.
+  If this method returns NO the caller will abort and leave it up to this method to do what is needed.
+  For example it can be used to redo the request if the connetion was lost for some reason.
+*/
+- (BOOL)handleErrorForResponse:(CPHTTPURLResponse)response request:(CPURLRequest)request andData:(CPString)data fromURL:(CPString)urlString connection:(CPURLConnection)connection error:(LOError)error {
+    return YES;
+}
+
+/*!
   Transforms the received data to an object structure. The default implementation creates objects from JSON if the
   statusCode is 200.
 */
--(id)dataForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString error:(LOErrorRef)error {
+- (id)dataForResponse:(CPHTTPURLResponse)response andData:(CPString)data fromURL:(CPString)urlString connection:(CPURLConnection)connection error:(LOErrorRef)error {
     var statusCode = [response statusCode];
 
-    if (statusCode === 200) return data != nil ? [data objectFromJSON] : nil;
+    if (statusCode === 200) return data != nil && [data length] > 0 ? [data objectFromJSON] : nil;
 
     if (error) @deref(error) = [LOError errorWithDomain:nil code:statusCode userInfo:nil];
 
@@ -207,6 +235,7 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
                                 value = nil;
                             }
                         }
+                    // A fault must have the attribute '_fault' set to something.
                     } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
                         var oldValue = [obj valueForKey:column];
                         // If the old value is a fault and not populated then keep the old fault.
@@ -391,24 +420,40 @@ LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceive
     [objectContext didSaveChangesWithResult:jSONObjects andStatus:[connectionDictionary.response statusCode] withCompletionBlocks:completionBlocks];
 }
 
+/*!
+    POST object contexts modified objects as JSON data.
+    aCompletionBlock is called when finished.
+*/
 - (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     var modifyDict = [self _jsonDictionaryForModifiedObjectsWithObjectContext:objectContext];
     if ([modifyDict count] > 0) {       // Only save if thera are changes
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
         var url = [self urlForSaveChangesWithData:json];
-        var jsonText = [CPString JSONFromObject:json];
-	    // DEBUG: Uncoment to see posted data
-        if (objectContext.debugMode & LOObjectContextDebugModeSaveChanges) CPLog.trace(@"Save Changes POST Data: " + jsonText);
-        var request = [CPURLRequest requestWithURL:url];
-        [request setHTTPMethod:@"POST"];
-        [request setHTTPBody:jsonText];
-        var connection = [CPURLConnection connectionWithRequest:request delegate:self];
+        var jsonString = [CPString JSONFromObject:json];
         var modifiedObjects = [objectContext modifiedObjects];
-        [connections addObject:{connection: connection, objectContext: objectContext, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector, completionBlocks: aCompletionBlock ? [aCompletionBlock] : nil}];
+        var request = [CPURLRequest requestWithURL:url];
+
+        [request setHTTPMethod:@"POST"];
+        [request setHTTPBody:jsonString];
+
+        [self saveChangesWithObjectContext:objectContext request:request modifiedObjects:modifiedObjects withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
     } else if (aCompletionBlock) {
         aCompletionBlock(nil, 200);  // We have nothing to save so call the compleation block directly with a result code of 200
     }
     [super saveChangesWithObjectContext:objectContext withCompletionBlock:aCompletionBlock];
+}
+
+/*!
+    Send update request. modifiedObjects is added to connection dictionary for later use (kind of userInfo)
+    completionBlocks are called when finished.
+    Returns the connectionDictionary
+*/
+- (id)saveChangesWithObjectContext:(LOObjectContext)objectContext request:(CPURLRequest)request modifiedObjects:(id)modifiedObjects withCompletionBlocks:(CPArray)completionBlocks {
+    var connection = [CPURLConnection connectionWithRequest:request delegate:self];
+    var connectionDictionary = {connection: connection, objectContext: objectContext, request: request, modifiedObjects: modifiedObjects, receiveSelector: LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector, completionBlocks: completionBlocks, timestamp: [CPDate new]};
+    [connections addObject:connectionDictionary];
+    if (objectContext.debugMode & LOObjectContextDebugModeSaveChanges) CPLog.trace(@"Save Changes POST Data: " + [request HTTPBody]);
+    return connectionDictionary;
 }
 
 /*!
