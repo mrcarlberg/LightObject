@@ -219,13 +219,14 @@ CPLogRegister(CPLogPrint, "warn");
 
     [objectContext insert:mapping withRelationshipWithKey:@"persons_schools" between:achilles and:school];
 
-    var record = [[objectContext modifiedObjects] objectAtIndex:0];
-    [self assert:mapping equals:[record object]];
-    [self assert:1 equals:[[objectContext modifiedObjects] count]];
-    [self assertNull:[record deleteDict] message:@"deletion marker"];
-    [self assertNotNull:[record insertDict] message:@"insertion marker"];
+    var modifiedObjects = [objectContext modifiedObjects];
+    var modifiedObjectObjects = [modifiedObjects valueForKey:@"object"];
+    [self assertTrue:[modifiedObjectObjects containsObject:mapping]];
+    [self assert:3 equals:[[objectContext modifiedObjects] count]];
+    [self assertNull:[objectContext subDictionaryForKey:@"deleteDict" forObject:mapping] message:@"deletion marker"];
+    [self assertNotNull:[objectContext subDictionaryForKey:@"insertDict" forObject:mapping] message:@"insertion marker"];
 
-    var updateDict = [record updateDict];
+    var updateDict = [objectContext subDictionaryForKey:@"updateDict" forObject:mapping];
     [self assertNotNull:updateDict message:@"update dict"];
     [self assert:2 equals:[updateDict objectForKey:@"person_fk"]];
     [self assert:100 equals:[updateDict objectForKey:@"school_fk"]];
