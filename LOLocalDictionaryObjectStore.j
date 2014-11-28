@@ -147,7 +147,7 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray) requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext objectsReceived:objects allReceivedObjects:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
 }
@@ -155,7 +155,7 @@
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:[faultArray]];
 }
@@ -165,7 +165,7 @@
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  * Must call [objectContext saveChangesDidComplete] when done
  */
-- (void) saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     [objectContext saveChangesDidComplete];
 }
 
@@ -173,7 +173,7 @@
  * Must return an array with keys for all attributes for this object.
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray) attributeKeysForObject:(id) theObject {
+- (CPArray)attributeKeysForObject:(id) theObject {
     // Maybe not the cleanest way of doing this but it works for now.
     // The dictionary (theObject) might just have the attribute "key" and "entity" so we need to find a
     // complete dictionary in the fixture to find all attributes.
@@ -189,14 +189,14 @@
 /*!
  * Returns the type of the object
  */
-- (CPString) typeOfObject:(id) theObject {
+- (CPString)typeOfObject:(id)theObject {
     return [theObject objectForKey:@"entity"];
 }
 
 /*!
  * Returns a unique id for the object
  */
-- (CPString) globalIdForObject:(id) theObject {
+- (CPString)globalIdForObject:(id)theObject {
     return [theObject UID];
 }
 
@@ -210,14 +210,14 @@
 /*!
  * Returns the primary key attribute for the raw row.
  */
-- (CPString) primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+- (CPString)primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
         return @"key";
 }
 
 /*!
  * Returns true if the attribute is a foreign key for the raw row.
  */
-- (BOOL) isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+- (BOOL)isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     return [attribute hasSuffix:@"_fk"];
 }
 
