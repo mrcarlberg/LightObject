@@ -171,7 +171,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     [objectContext setDoNotObserveValues:YES];
     for (var i = 0; i < size; i++) {
         var row = jSONObjects[i];
-        var type = [self typeForRawRow:row objectContext:objectContext];
+        var type = [self typeForRawRow:row objectContext:objectContext fetchSpecification:fetchSpecification];
         var uuid = [self primaryKeyForRawRow:row forType:type objectContext:objectContext];
         var objectFromObjectContext;    // Keep track if the object is already in the objectContext
         var obj = [receivedObjects objectForKey:uuid];
@@ -252,7 +252,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                         var relationsSize = [relations count];
                         for (var k = 0; k < relationsSize; k++) {
                             var relationRow = [relations objectAtIndex:k];
-                            var relationType = [self typeForRawRow:relationRow objectContext:objectContext];
+                            var relationType = [self typeForRawRow:relationRow objectContext:objectContext fetchSpecification:fetchSpecification];
                             var relationUuid = [self primaryKeyForRawRow:relationRow forType:relationType objectContext:objectContext];
                             var relationObj = [receivedObjects objectForKey:relationUuid];
                             if (!relationObj) {

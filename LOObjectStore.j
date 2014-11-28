@@ -104,7 +104,7 @@
 /*!
  * Returns the type for the raw row.
  */
-- (CPString)typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext {
+- (CPString)typeForRawRow:(id)row objectContext:(LOObjectContext)objectContext fetchSpecification:(LOFetchSpecification)fetchSpecification {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
