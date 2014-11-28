@@ -21,7 +21,7 @@
     return self;
 }
 
-- (CPArray) _fetchAndFilterObjects:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext {
+- (CPArray) _fetchAndFilterObjects:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext {
     //print(_cmd + " entity:" + [fetchSpecification entityName] + " oper: " + [fetchSpecification operator] + " qualifier:" + [fetchSpecification qualifier]);
     var fixtureObjects = [objectFixture objectForKey:[fetchSpecification entityName]];
     var predicate = [fetchSpecification qualifier];
@@ -147,7 +147,7 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray) requestObjectsWithFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray) requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext objectsReceived:objects allReceivedObjects:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
 }
@@ -155,7 +155,7 @@
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray) requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:[faultArray]];
 }

@@ -233,19 +233,19 @@ LOObjectContextDebugModeAllInfo = ~0;
     return nil;
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification {
     [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:nil];
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFFetchSpecification)aFetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }
 /*
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
     [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
 }*/
 
