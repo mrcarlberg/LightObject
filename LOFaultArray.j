@@ -7,6 +7,7 @@
 @import <Foundation/CPPredicate.j>
 @import "LOFault.j"
 
+@class LOEditingContext
 
 @implementation LOFaultArray : CPMutableArray <LOFault> {
     LOObjectContext objectContext @accessors;

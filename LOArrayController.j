@@ -10,6 +10,7 @@
 
 @class LOInsertEvent
 @class LODeleteEvent
+@class LOObjectContext
 
 
 @implementation LOArrayController : CPArrayController
