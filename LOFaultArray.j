@@ -8,6 +8,8 @@
 @import "LOFault.j"
 
 @class LOEditingContext
+@class LOObjectContext
+@class LOFetchSpecification
 
 @implementation LOFaultArray : CPMutableArray <LOFault> {
     LOObjectContext objectContext @accessors;
