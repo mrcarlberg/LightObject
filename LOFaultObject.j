@@ -7,6 +7,7 @@
 @import <Foundation/CPPredicate.j>
 @import "LOFault.j"
 
+@class LOObjectContext;
 
 @implementation LOFaultObject : CPObject <LOFault> {
     LOObjectContext objectContext @accessors;

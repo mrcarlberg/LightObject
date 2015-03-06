@@ -59,6 +59,8 @@ var LOObjectContext_classForType = 1 << 0,
 @end
 
 
+@class LOObjectContext;
+
 @implementation LOToOneProxyObject : CPObject {
     LOObjectContext objectContext;
 }
