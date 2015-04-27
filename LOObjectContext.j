@@ -446,6 +446,12 @@ LOObjectContextDebugModeAllInfo = ~0;
     }
 }
 
+- (void)unregisterAllObjects {
+  [objects enumerateKeysAndObjectsUsingBlock:function(anId,anObject) { 
+      [self unregisterObject:anObject]; 
+  }];
+}
+
 - (void)registerObject:(id)theObject {
     // TODO: Check if theObject is already registrered
     [self _registerObject:theObject forGlobalId:[objectStore globalIdForObject:theObject]];
