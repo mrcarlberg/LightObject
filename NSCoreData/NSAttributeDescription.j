@@ -51,6 +51,7 @@ var xcprototypes_cp = [
   		[self setClassValue:[[aCoder decodeObjectForKey: @"NSAttributeValueClassName"] stringByReplacingOccurrencesOfString:@"NS" withString:@"CP"]];
 		[self setDefaultValue:[aCoder decodeObjectForKey: @"NSDefaultValue"]];
 		[self setName:[aCoder decodeObjectForKey: @"NSPropertyName"]];
+		[self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
 
 		ns_valueTransformerName = [aCoder decodeObjectForKey: @"NSValueTransformerName"];
 		ns_entity = [aCoder decodeObjectForKey: @"NSEntity"];	//is set in NSEntityDescription		

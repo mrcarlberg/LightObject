@@ -31,3 +31,4 @@
 @import "LOFaultArray.j"
 @import "LOLocalDictionaryObjectStore.j"
 @import "LOObjectContext.j"
+@import "CoreData.j"

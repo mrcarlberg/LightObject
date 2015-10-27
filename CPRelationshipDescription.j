@@ -6,7 +6,6 @@
 
 @import <Foundation/CPObject.j>
 @import "CPPropertyDescription.j"
-@import "CPManagedObject.j"
 
 
 CPRelationshipDescriptionDeleteRuleNullify = 0;
@@ -17,15 +16,15 @@ CPRelationshipDescriptionDeleteRuleNoAction = 3;
 
 @implementation CPRelationshipDescription : CPPropertyDescription
 {
-	CPDString _inversePropertyName @accessors(property=inversePropertyName);
-	CPDString _destinationEntityName @accessors(property=destinationEntityName);
+	CPString _inversePropertyName @accessors(property=inversePropertyName);
+	CPString _destinationEntityName @accessors(property=destinationEntityName);
 	BOOL _toMany @accessors(property=isToMany);
 	int _deleteRule @accessors(property=deleteRule);
 }
 
 - (Class)destinationClassType
 {
-	var result = [CPManagedObject class];
+	var result = [CPObject class];
 	var classType = CPClassFromString(_destinationEntityName);
 
 	if(classType != nil)
@@ -39,7 +38,7 @@ CPRelationshipDescriptionDeleteRuleNoAction = 3;
 - (BOOL)acceptValue:(id) aValue
 {
 	var result = NO;
-	var theProperty = [[self propertiesByName] objectForKey:aKey]
+	var theProperty = [[self propertiesByName] objectForKey:_name]; // FIXME: Don't know if this should be '_name' instead of the unknown variable 'aKey'
 	result = [theProperty acceptValue:aValue];
 	return result;
 }

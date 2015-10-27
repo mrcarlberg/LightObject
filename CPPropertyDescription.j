@@ -13,6 +13,7 @@ CPPropertyDescriptionKey = "CPPropertyDescriptionKey";
 	CPString _name @accessors(property=name);
 	BOOL _isOptional;
 	CPEntityDescription _entity @accessors(property=entity);
+	CPDictionary _userInfo @accessors(property=userInfo);
 }
 
 - (BOOL)isOptional

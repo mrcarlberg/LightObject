@@ -10,7 +10,6 @@
     CPDictionary ns_properties;
     CPDictionary ns_subentities;
     NSEntityDescription ns_superentity;
-    CPDictionary ns_userInfo;
     id ns_versionHashModifier;
 }
 
@@ -22,11 +21,11 @@
 	{		
 		[self setName:[aCoder decodeObjectForKey: @"NSEntityName"]];
 		[self setExternalName:[aCoder decodeObjectForKey: @"NSClassNameForEntity"]];
+		[self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
 		ns_model = [aCoder decodeObjectForKey: @"NSManagedObjectModel"];	//will set on addEntity in CPManagedObjectModel
 		ns_properties = [aCoder decodeObjectForKey: @"NSProperties"];
 		ns_subentities = [aCoder decodeObjectForKey: @"NSSubentities"];
 		ns_superentity = [aCoder decodeObjectForKey: @"NSSuperentity"];
-		ns_userInfo = [aCoder decodeObjectForKey: @"NSUserInfo"];
 		ns_versionHashModifier = [aCoder decodeObjectForKey: @"NSVersionHashModifier"];	
 	}
 

@@ -11,8 +11,6 @@
 @import "CPAttributeDescription.j"
 @import "CPRelationshipDescription.j"
 @import "CPEntityDescription.j"
-@import "CPPropertyListReader_Vintage.j"
-@import "CPPropertyListReader_Binary.j"
 
 var EOMODEL_SUFFIX = "eomodeld";
 var COREDATAMODEL_SUFFIX = "xcdatamodel";

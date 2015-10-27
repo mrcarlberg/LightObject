@@ -30,6 +30,7 @@
 		[self setIsOptional:[aCoder decodeBoolForKey: @"NSIsOptional"]];
 		[self setIsToMany:[self NS_isToMany:[aCoder decodeIntForKey: @"NSMaxCount"]]];
 		[self setDeleteRule:[self NS_deleteRule:[aCoder decodeIntForKey: @"NSDeleteRule"]]];
+		[self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
 	}
 
 	return self;

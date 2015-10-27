@@ -8,7 +8,6 @@
 @import "CPPropertyDescription.j"
 @import "CPAttributeDescription.j"
 @import "CPRelationshipDescription.j"
-@import "CPManagedObject.j"
 
 @implementation CPEntityDescription : CPObject
 {
@@ -16,6 +15,7 @@
 	CPString _name @accessors(property=name);
 	CPString _externalName @accessors(property=externalName);
 	CPMutableSet _properties @accessors(property=properties);
+	CPDictionary _userInfo @accessors(property=userInfo);
 }
 
 - (id)init
