@@ -8,7 +8,6 @@
 @implementation NSRelationshipDescription : CPRelationshipDescription
 {
     NSEntityDescription _destinationEntity;
-    CPString _destinationEntityName
 
     NSRelationshipDescription _inverseRelationship;
    	CPString _inverseRelationshipName;
