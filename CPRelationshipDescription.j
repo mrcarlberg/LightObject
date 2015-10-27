@@ -27,12 +27,12 @@ CPRelationshipDescriptionDeleteRuleNoAction = 3;
 {
 	var result = [CPManagedObject class];
 	var classType = CPClassFromString(_destinationEntityName);
-	
+
 	if(classType != nil)
 	{
 		result = classType;
 	}
-	
+
 	return result
 }
 

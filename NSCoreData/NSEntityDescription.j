@@ -29,7 +29,7 @@
 		ns_userInfo = [aCoder decodeObjectForKey: @"NSUserInfo"];
 		ns_versionHashModifier = [aCoder decodeObjectForKey: @"NSVersionHashModifier"];	
 	}
-	
+
 	return self;
 }
 

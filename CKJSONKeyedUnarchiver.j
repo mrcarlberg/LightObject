@@ -58,7 +58,7 @@ var CKJSONKeyedUnarchiverClassKey = @"$$CLASS$$";
 - (id)_decodeObject:(JSON)encodedJSON
 {
     var decodedObject = nil;
-    
+
     if ([self _isJSONAPrimitive:encodedJSON]) // Primitives
     {
         decodedObject = encodedJSON;
@@ -70,24 +70,24 @@ var CKJSONKeyedUnarchiverClassKey = @"$$CLASS$$";
         {
            array[i] = [self _decodeObject:[array objectAtIndex:i]];
         }
-        
+
         decodedObject = array;
     }
     else // Capp. objects
     {
         var unarchiver = [[[self class] alloc] initForReadingWithData:encodedJSON];
-        
+
         var theClass = CPClassFromString(encodedJSON[CKJSONKeyedUnarchiverClassKey]);
         decodedObject = [[theClass alloc] initWithCoder:unarchiver];
     }
-    
+
     return decodedObject;
 }
 
 - (id)_decodeDictionaryOfObjectsForKey:(CPString)aKey
 {
     var decodedDictionary = [CPDictionary dictionary];
-    
+
     var encodedJSON = _json[aKey];
     for (var key in encodedJSON)
     {

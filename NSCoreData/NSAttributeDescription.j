@@ -55,7 +55,7 @@ var xcprototypes_cp = [
 		ns_valueTransformerName = [aCoder decodeObjectForKey: @"NSValueTransformerName"];
 		ns_entity = [aCoder decodeObjectForKey: @"NSEntity"];	//is set in NSEntityDescription		
 	}
-	
+
 	return self;
 }
 
@@ -73,7 +73,7 @@ var xcprototypes_cp = [
 		i++;
 	}
 	return result;
-	
+
 }
 
 - (Class)classForKeyedArchiver

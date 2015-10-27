@@ -24,7 +24,7 @@
 
 		[self NS_transformEntities];
 	}
-	
+
 	return self;
 }
 
@@ -37,7 +37,7 @@
 		var aNSEntity = [ns_entities objectForKey:aName];	
 		[self addEntity:aNSEntity];
 	}
-	
+
 	[[self entities] makeObjectsPerformSelector:@selector(NS_loadEntityDescription)];	
 }
 

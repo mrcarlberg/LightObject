@@ -12,9 +12,9 @@
 
     NSRelationshipDescription _inverseRelationship;
    	CPString _inverseRelationshipName;
-	
+
 	NSRelationshipDescription ns_entity;
-    
+
 	int ns_minCount;
 }
 
@@ -31,7 +31,7 @@
 		[self setIsToMany:[self NS_isToMany:[aCoder decodeIntForKey: @"NSMaxCount"]]];
 		[self setDeleteRule:[self NS_deleteRule:[aCoder decodeIntForKey: @"NSDeleteRule"]]];
 	}
-	
+
 	return self;
 }
 

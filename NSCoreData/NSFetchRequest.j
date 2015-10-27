@@ -17,7 +17,7 @@
 	{
 		CPLog.info("NSFetchRequest" + [aCoder._plistObject allKeys]);		
 	}
-	
+
 	return self;
 }
 

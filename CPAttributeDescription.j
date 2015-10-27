@@ -39,12 +39,12 @@ CPDTransformableAttributeType = 1200;
 {
 	var result = [CPObject class];
 	var classType = CPClassFromString(_classValue);
-	
+
 	if(classType != nil)
 	{
 		result = classType;
 	}
-	
+
 	return result
 }
 
@@ -87,7 +87,7 @@ CPDTransformableAttributeType = 1200;
 		default:
 			result = "CPDUndefinedAttributeType";
 	}
-	
+
 	return result;
 }
 
@@ -95,12 +95,12 @@ CPDTransformableAttributeType = 1200;
 - (BOOL)acceptValue:(id) aValue
 {
 	var result = NO;
-	
+
 	if([aValue isKindOfClass:[self classValue]])
 	{
 		result = YES;
 	}
-	
+
 	return result;
 }
 
@@ -109,7 +109,7 @@ CPDTransformableAttributeType = 1200;
 	var result = "\n";
 	result = result + "\n";
 	result = result + "-CPAttributeDescription-";
-	
+
 	result = result + "\n";
 	result = result + "name:" + [self name] + ";";
 	result = result + "\n";

@@ -3,7 +3,7 @@
 //
 //  Created by Raphael Bartolome on 06.01.10.
 //
- 
+
 @import <Foundation/CPObject.j>
 @import <Foundation/CPSet.j>
 

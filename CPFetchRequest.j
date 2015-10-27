@@ -27,7 +27,7 @@
 		_sortDescriptors = sortDescriptors;
 		_fetchLimit = aFetchLimit;
 	}
-	
+
 	return self;
 }
 
@@ -41,7 +41,7 @@
 		_sortDescriptors = nil;
 		_fetchLimit = 0;
 	}
-	
+
 	return self;
 }
 @end

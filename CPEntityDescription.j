@@ -24,14 +24,14 @@
 	{
 		_properties = [[CPMutableSet alloc] init];
 	}
-	
+
 	return self;
 }
 
-+ (CPManagedObject)insertNewObjectForEntityForName:(CPString)aEntityName inManagedObjectContext:(CPManagedObjectContext) aContext
+/*+ (CPManagedObject)insertNewObjectForEntityForName:(CPString)aEntityName inManagedObjectContext:(CPManagedObjectContext) aContext
 {
 	var result = [aContext insertNewObjectForEntityForName:aEntityName];
-	
+
 	return result;
 }
 
@@ -53,9 +53,9 @@
 	{
 		newObject = [[CPManagedObject alloc] initWithEntity:self];
 	}
-	
+
 	return newObject;
-}
+}*/
 
 - (void)addRelationshipWithName:(CPString)name toMany:(BOOL)toMany optional:(BOOL)isOptional deleteRule:(int) aDeleteRule destination:(CPString)destinationEntityName
 {
@@ -66,7 +66,7 @@
 	[tmp setIsOptional:isOptional];
 	[tmp setDeleteRule:aDeleteRule];
 	[tmp setDestinationEntityName:destinationEntityName];
-	
+
 	[self addProperty:tmp];
 }
 
@@ -78,7 +78,7 @@
 	[tmp setTypeValue:aAttributeType];
 	[tmp setClassValue:aClassValue];
 	[tmp setIsOptional:isOptional];
-	
+
 	[self addProperty:[tmp copy]];
 }
 
@@ -112,21 +112,21 @@
 {
 	var result = [[CPMutableArray alloc] init];
 	var allAttributes = [self attributesByName];
-	
+
 	var allKeys = [allAttributes allKeys];
 	var i = 0;
-	
+
 	for(i=0;i<[allKeys count];i++)
 	{
 		var aKey = [allKeys objectAtIndex:i];
 		var attribute = [allAttributes objectForKey:aKey];
-	
+
 		if(attribute != nil && ![attribute isOptional])
 		{
 			[result addObject:aKey];
 		}
 	}
-	
+
 	return result
 }
 
@@ -134,21 +134,21 @@
 {
 	var result = [[CPMutableArray alloc] init];
 	var allRC = [self relationshipsByName];
-	
+
 	var allKeys = [allRC allKeys];
 	var i = 0;
-	
+
 	for(i=0;i<[allKeys count];i++)
 	{
 		var aKey = [allKeys objectAtIndex:i];
 		var property = [allRC objectForKey:aKey];
-	
+
 		if(property != nil && ![property isOptional])
 		{
 			[result addObject:aKey];
 		}
 	}
-	
+
 	return result
 }
 
@@ -188,7 +188,7 @@
 	{
 		return YES;
 	}
-	
+
 	return NO;
 }
 
@@ -203,10 +203,10 @@
 	result = result + "name:" + [self name] + ";";
 	result = result + "\n";
 	result = result + "externalName:" + [self externalName] + ";";
-	
+
 	var propertiesE = [_properties objectEnumerator];
 	var aProperty;
-	
+
 	while((aProperty = [propertiesE nextObject]))
 	{
 		result = result + "\n";

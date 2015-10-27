@@ -17,7 +17,7 @@
 	{
 		CPLog.info("NSFetchedPropertyDescription: " + [aCoder._plistObject allKeys]);		
 	}
-	
+
 	return self;
 }
 

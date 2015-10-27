@@ -30,7 +30,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 	{
 		_entities = [[CPMutableSet alloc] init];
 	}
-	
+
 	return self;
 }
 
@@ -53,7 +53,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 	}
 
 	CPLog.info("Data Model '" + [objectModel name] + "' loaded");
-	
+
 	return objectModel;
 }
 
@@ -74,11 +74,11 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 {
 	var pathComponents = [aFilePath componentsSeparatedByString:@"/"];
 	[pathComponents removeObjectAtIndex:0];
-	
+
 	var pathComponentsEnum = [pathComponents objectEnumerator];
 	var aPathComponent;
-	
-	while(aPathComponent = [pathComponentsEnum nextObject])
+
+	while((aPathComponent = [pathComponentsEnum nextObject]) != null)
 	{
 		if([CPManagedObjectModel hasSupportedModelSuffix:aPathComponent])
 		{
@@ -107,7 +107,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 	{
 		result = YES;
 	}
-	
+
 	return result;
 }
 
@@ -116,7 +116,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 	var result = NO;
 	if([[self name] isEqualToString:aModelName])
 		result = YES;
-		
+
 	return result;
 }
 
@@ -140,22 +140,22 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 			result = entity;
 		}
     }
-	
+
 	return result;
 }
 
 - (CPArray) entitiesByName
 {
 	var result = [[CPMutableArray alloc] init];
-	
+
 	var entitiesE = [_entities objectEnumerator];
 	var aEntity;
-	
+
 	while((aEntity = [entitiesE nextObject]))
 	{
 		[result addObject:[aEntity name]];
-	}	
-	
+	}
+
 	return result;
 }
 
@@ -168,10 +168,10 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 - (CPString)stringRepresentation
 {
 	var result = "CPObjectModel";
-	
+
 	var entitiesE = [_entities objectEnumerator];
 	var aEntity;
-	
+
 	while((aEntity = [entitiesE nextObject]))
 	{
 		result = result + "\n";
