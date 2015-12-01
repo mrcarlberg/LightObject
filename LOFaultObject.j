@@ -140,7 +140,7 @@
     }
 
     var objectStore = [objectContext objectStore],
-        allAttributes = [objectStore attributeKeysForObject:anObject],
+        allAttributes = [objectStore attributeKeysForObject:anObject withType:entityName],
         attributes = [];
 
     //CPLog.trace([self className] + " " + _cmd + " Morph to object: '" + [anObject description]);
@@ -155,7 +155,7 @@
     }
 
     // Add to many relationships
-    attributes = [attributes arrayByAddingObjectsFromArray:[objectStore relationshipKeysForObject:anObject]];
+    attributes = [attributes arrayByAddingObjectsFromArray:[objectStore relationshipKeysForObject:anObject withType:entityName]];
 
     // Here we set this a little early, but we can't do it later as the object will morph to another type after this
     [self setFaultPopulated:YES];

@@ -46,7 +46,7 @@
     return [theObject objectForKey:@"key"];
 }
 
-- (CPArray)relationshipKeysForObject:(id)theObject {
+- (CPArray)relationshipKeysForObject:(id)theObject withType:(CPString)entityName {
     var entity = [self typeOfObject:theObject];
     if (entity === @"school") {
         return [@"persons"];

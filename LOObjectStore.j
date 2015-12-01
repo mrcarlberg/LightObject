@@ -48,10 +48,13 @@
 }
 
 /*!
- * Must return an array with keys for all attributes for this object
+ * Must return an array with keys for all attributes for this object.
+ * To many relationship keys and to one relationsship foreign key attributes should be included.
+ * To one relationsship attribute should not be included.
+ * Primary key should not be included.
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray)attributeKeysForObject:(id)theObject {
+- (CPArray)attributeKeysForObject:(id)theObject withType:(CPString)entityName {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
@@ -59,7 +62,7 @@
  * Must return an array with keys for all to many relationship attributes for this object
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray)relationshipKeysForObject:(id)theObject {
+- (CPArray)relationshipKeysForObject:(id)theObject withType:(CPString)entityName {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 

@@ -62,7 +62,7 @@
 
 - (void)_populateNewObject:(id)newObject fromReceivedObject:(id)theReceivedObject notePossibleToOneFaults:(CPMutableArray)thePossibleToOneFaults objectContext:(LOObjectContext)anObjectContext {
     var type = [self typeOfObject:newObject];
-    var attributeKeys = [self attributeKeysForObject:newObject];
+    var attributeKeys = [self attributeKeysForObject:newObject withType:type];
     //print(_cmd + " " + type + " processing attribute keys of new object: " + [attributeKeys description]);
     for (var j=0; j<[attributeKeys count]; j++) {
         var key = [attributeKeys objectAtIndex:j];
@@ -112,7 +112,7 @@
         [anObjectContext setDoNotObserveValues:YES];
 
         var oldObject = [anObjectContext objectForGlobalId:[self globalIdForObject:newObject]];
-        var columns = [self attributeKeysForObject:newObject];
+        var columns = [self attributeKeysForObject:newObject withType:type];
         var columnsCount = [columns count];
         for (var j = 0; j < columnsCount; j++) {
             var columnKey = [columns objectAtIndex:j];
@@ -173,7 +173,7 @@
  * Must return an array with keys for all attributes for this object.
  * The objectContext will observe all these attributes for changes and record them.
  */
-- (CPArray)attributeKeysForObject:(id) theObject {
+- (CPArray)attributeKeysForObject:(id) theObject withType:(CPString)entityName {
     // Maybe not the cleanest way of doing this but it works for now.
     // The dictionary (theObject) might just have the attribute "key" and "entity" so we need to find a
     // complete dictionary in the fixture to find all attributes.

@@ -431,8 +431,8 @@ LOObjectContextDebugModeAllInfo = ~0;
     var type = [self typeOfObject:theObject];
     [objects removeObjectForKey:globalId];
     if (!readOnly) {
-        var attributeKeys = [objectStore attributeKeysForObject:theObject];
-        var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+        var attributeKeys = [objectStore attributeKeysForObject:theObject withType:type];
+        var relationshipKeys = [objectStore relationshipKeysForObject:theObject withType:type];
         var attributeSize = [attributeKeys count];
         for (var i = 0; i < attributeSize; i++) {
             var attributeKey = [attributeKeys objectAtIndex:i];
@@ -461,8 +461,8 @@ LOObjectContextDebugModeAllInfo = ~0;
 - (void)_observeAttributesForObject:(id)theObject {
     if (!readOnly) {
         var type = [self typeOfObject:theObject];
-        var attributeKeys = [objectStore attributeKeysForObject:theObject];
-        var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+        var attributeKeys = [objectStore attributeKeysForObject:theObject withType:type];
+        var relationshipKeys = [objectStore relationshipKeysForObject:theObject withType:type];
         var attributeSize = [attributeKeys count];
         for (var i = 0; i < attributeSize; i++) {
             var attributeKey = [attributeKeys objectAtIndex:i];
@@ -579,8 +579,8 @@ LOObjectContextDebugModeAllInfo = ~0;
     var insertDict = [self createSubDictionaryForKey:@"insertDict" forModifyObjectDictionaryForObject:theObject];
 
     // Add attributes with values
-    var attributeKeys = [objectStore attributeKeysForObject:theObject];
-    var relationshipKeys = [objectStore relationshipKeysForObject:theObject];
+    var attributeKeys = [objectStore attributeKeysForObject:theObject withType:type];
+    var relationshipKeys = [objectStore relationshipKeysForObject:theObject withType:type];
     var attributeSize = [attributeKeys count];
     for (var i = 0; i < attributeSize; i++) {
         var attributeKey = [attributeKeys objectAtIndex:i];

@@ -61,7 +61,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 }
 
 /*!
-    Sends request of objects based on request. fetchSpecification is not used and only added to connection dictionary
+    Sends request for objects based on request. fetchSpecification is not used and only added to connection dictionary
     completionBlocks are called when finished.
     Returns the connectionDictionary
 */
@@ -208,8 +208,8 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             }
         }
         if (obj) {
-            var relationshipKeys = [self relationshipKeysForObject:obj];
-            var columns = [self attributeKeysForObject:obj];
+            var relationshipKeys = [self relationshipKeysForObject:obj withType:type];
+            var columns = [self attributeKeysForObject:obj withType:type];
 
             [self setPrimaryKey:uuid forObject:obj];
             var columnSize = [columns count];
@@ -238,8 +238,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                                 value = nil;
                             }
                         }
-                    // A fault must have the attribute '_fault' set to something.
-                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) { // Handle to many relationship as fault. Backend sends a JSON dictionary. We don't care what it is.
+                    // Handle to many relationship as fault. Backend sends a JSON dictionary.
+                    // A fault must have the attribute '_fault' set to something. We don't care what it is.
+                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) {
                         var oldValue = [obj valueForKey:column];
                         // If the old value is a fault and not populated then keep the old fault.
                         if (![oldValue isKindOfClass:[LOFaultArray class]] || [oldValue faultPopulated]) {
@@ -351,7 +352,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             //CPLog.trace(@"tracing: _registerOrReplaceObject: Object already in objectContext: " + obj);
             [objectContext setDoNotObserveValues:YES];
             var oldObject = [objectContext objectForGlobalId:[self globalIdForObject:obj]];
-            var columns = [self attributeKeysForObject:obj];
+            var columns = [self attributeKeysForObject:obj withType:type];
             var columnSize = [columns count];
             for (var j = 0; j < columnSize; j++) {
                 var columnKey = [columns objectAtIndex:j];
@@ -606,14 +607,6 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return nil;
 }
 
-- (CPArray)relationshipKeysForObject:(id)theObject {
-    return [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
-}
-
-
-- (CPArray)attributeKeysForObject:(id)theObject {
-    return [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
-}
 
 - (CPArray) _createAttributeKeysFromRow:(id) row forObject: theObject {
     var className = [theObject className];
@@ -638,6 +631,298 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             [connectionDictionary.completionBlocks addObject:aCompletionBlock];
         }
     }
+}
+
+@end
+
+
+@implementation LOSimpleJSONObjectStore (Model) {
+    JSObject entityNameToEntityCache;
+    JSObject toOneForeignKeyToAttributeCache;
+    JSObject toOneAttributeToForeignKeyCache;
+    JSObject attributeKeyCache;
+    JSObject relationshipKeyCache;
+    CPString primaryKeyCache;
+}
+
+/*!
+ * Will cache to one relations to foreignKey and vice versa for each entity.
+   Will also cache primaryKey for each entity. We are not supporting composite primary keys right now.
+   The information is read from the model.
+ */
+- (void)_createForeignKeyAttributeCacheForEntityName:(CPString)entityName {
+    var aModel = model;
+
+    if (entityNameToEntityCache == nil) {
+        var entityNames = [aModel entitiesByName];
+
+        entityNameToEntityCache = {};
+        for (var i = 0, size = [entityNames count]; i < size; i++) {
+            var aEntityName = [entityNames objectAtIndex:i],
+                entity = [aModel entityWithName:aEntityName],
+                userInfo = [entity userInfo],
+                useEntityName = [userInfo objectForKey:@"entityName"];
+
+            entityNameToEntityCache[useEntityName || aEntityName] = entity;
+        }
+    }
+
+    if (toOneForeignKeyToAttributeCache == nil) toOneForeignKeyToAttributeCache = {};
+    if (toOneAttributeToForeignKeyCache == nil) toOneAttributeToForeignKeyCache = {};
+    if (primaryKeyCache == nil) primaryKeyCache = {};
+    if (attributeKeyCache == nil) attributeKeyCache = {};
+    if (relationshipKeyCache == nil) relationshipKeyCache = {};
+
+    var entity = entityNameToEntityCache[entityName],
+        attributesDict = [entity propertiesByName],
+        allAttributeNames = [attributesDict allKeys],
+        foreignKeyCache = toOneForeignKeyToAttributeCache[entityName] = {},
+        attributeCache = toOneAttributeToForeignKeyCache[entityName] = {},
+        attributeKeyCacheForEntity = attributeKeyCache[entityName] = [],
+        relationshipKeyCacheForEntity = relationshipKeyCache[entityName] = [];
+
+    if (entity === nil) {
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't find entity '" + entityName + @"' in model");
+    }
+
+    for (var i = 0, size = [allAttributeNames count]; i < size; i++) {
+        var attributeName = [allAttributeNames objectAtIndex:i],
+            attribute = [attributesDict objectForKey:attributeName];
+
+        // It has to be to one relationship
+        if ([attribute isKindOfClass:CPRelationshipDescription]) {
+            if ([attribute isToMany]) {
+                // Add to attributeKey cache if to many relationsship.
+                [attributeKeyCacheForEntity addObject:attribute];
+                [relationshipKeyCacheForEntity addObject:attribute];
+            } else {
+                // foreignKey name can be stored in the userInfo.
+                var userInfo = [attribute userInfo],
+                    foreignKeyName = [userInfo objectForKey:@"foreignKey"];
+
+                if (foreignKeyName === nil) {
+                    // If no userInfo information exists on the relationship just assume it ends with 'ForeignKey'
+                    foreignKeyName = attributeName + @"ForeignKey";
+                }
+
+                var foreignKeyAttribute = [attributesDict objectForKey:foreignKeyName];
+                // The foreignKey attribute must exist on the entity
+                if (foreignKeyAttribute) {
+                    foreignKeyCache[foreignKeyName] = attribute;
+                    attributeCache[attributeName] = foreignKeyAttribute;
+                } else {
+                    CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Has no foreign key attribute (" + foreignKeyName + ") for relationship (" + attributeName + ") in model for entity:" + entityName);
+                }
+            }
+        } else {
+            // Check if this attribute has 'primaryKey: YES' in the userInfo
+            var userInfo = [attribute userInfo],
+                isAvailableIn = [[userInfo objectForKey:@"availableIn"] lowercaseString];
+
+            // FIXME: To have an attribute in the model that is not used in the client (we are the client) we set the userInfo
+            // key 'availableIn' to include the string "backend". We can have for example a comma separated list...
+            // More thoughts about this is needed but this will work for now.
+            if (!(([isAvailableIn rangeOfString:@"backend"] || {}).location >= 0)) {
+                var isPrimaryKey = [userInfo objectForKey:@"primaryKey"];
+
+                if (isPrimaryKey) {
+                    if (primaryKeyCache[entityName]) {
+                        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attribute '" + attributeName + "' is marked as primaryKey but attribute '" + [primaryKeyCache[entityName] name] + "' ia already marked as primary key for entity '" + entityName + "'");
+                    } else {
+                        primaryKeyCache[entityName] = attribute;
+                    }
+                } else {
+                    // Only add attribute to attribute key cache if it is not the primaryKey
+                    [attributeKeyCacheForEntity addObject:attribute];
+                }
+            }
+        }
+    }
+
+    // If we don't have a primary key from above try to find an attribute with the name 'primaryKey'.
+    if (primaryKeyCache[entityName] == nil) {
+        var primaryKeyAttribute = [attributesDict objectForKey:@"primaryKey"];
+
+        if (primaryKeyAttribute == nil) {
+            CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can find a primary key for entity '" + entityName + "'");
+        } else {
+            primaryKeyCache[entityName] = primaryKeyAttribute;
+            // Now remove the attribute from the attribute key cache as we don't want the primary key in it.
+            [attributeKeyCacheForEntity removeObject:primaryKeyAttribute];
+        }
+    }
+}
+
+/*!
+ * Returns true if the attribute is a foreign key for the raw row.
+ */
+- (BOOL)isForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    if (toOneForeignKeyToAttributeCache != nil) {
+        var entityCache = toOneForeignKeyToAttributeCache[aType];
+
+        if (entityCache) {
+            if ([attribute hasSuffix:@"ForeignKey"] && entityCache[attribute] == nil)
+                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] To one relationship is missing in model with foreign key attributes: '" + attribute + "' , for entity '" + aType + "'");
+            return entityCache[attribute] != nil;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:aType];
+
+    return [self isForeignKeyAttribute:attribute forType:aType objectContext:objectContext];
+}
+
+/*!
+ * Returns to one relationship attribute that correspond to the foreign key attribute for the raw row
+ */
+- (CPString)toOneRelationshipAttributeForForeignKeyAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    if (toOneForeignKeyToAttributeCache != nil) {
+        var entityCache = toOneForeignKeyToAttributeCache[aType];
+
+        if (entityCache) {
+            return [entityCache[attribute] name];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:aType];
+
+    return [self toOneRelationshipAttributeForForeignKeyAttribute:attribute forType:aType objectContext:objectContext];
+}
+
+/*!
+ * Returns foreign key attribute that correspond to the to one relationship attribute for the type
+ */
+- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+        if (toOneAttributeToForeignKeyCache != nil) {
+        var entityCache = toOneAttributeToForeignKeyCache[aType];
+
+        if (entityCache) {
+            return [entityCache[attribute] name];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:aType];
+
+    return [self foreignKeyAttributeForToOneRelationshipAttribute:attribute forType:aType objectContext:objectContext];
+}
+
+/*!
+ * Returns the primary key attribute for a type and for an object context.
+ */
+- (CPString)primaryKeyAttributeForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+    if (primaryKeyCache != nil) {
+        var entityCache = primaryKeyCache[aType];
+
+        if (entityCache) {
+            return [entityCache name];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:aType];
+
+    return [self primaryKeyAttributeForType:aType objectContext:objectContext];
+}
+
+/*!
+ * Must return an array with keys for all attributes for this object.
+ * To many relationship keys and to one relationsship foreign key attributes should be included.
+ * To one relationsship attribute should not be included.
+ * Primary key should not be included.
+ * The objectContext will observe all these attributes for changes and record them.
+ */
+
+ var OnlyPrintLogOncePerEntityName = {};
+
+ - (CPArray)attributeKeysForObject:(id)theObject withType:(CPString)entityName {
+    // FIXME: Right now we do the old non model version and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
+    var oldAttributeKeys = [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
+
+    if (attributeKeyCache != nil) {
+        var entityCache = attributeKeyCache[entityName];
+
+        if (entityCache) {
+            var attributeKeys = [entityCache valueForKey:@"name"];
+            var oldSet = [CPSet setWithArray:oldAttributeKeys];
+            var newSet = [CPSet setWithArray:attributeKeys];
+
+            if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
+                var missingAttributes = [oldSet copy];
+                [missingAttributes minusSet:newSet];
+                var newAttributes = [newSet copy];
+                [newAttributes minusSet:oldSet];
+                if (!OnlyPrintLogOncePerEntityName[entityName]) {
+                    CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
+                    OnlyPrintLogOncePerEntityName[entityName] = YES;
+                }
+            }
+
+            return attributeKeys;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    var attributeKeys = [attributeKeyCache[entityName] valueForKey:@"name"];
+    var oldSet = [CPSet setWithArray:oldAttributeKeys];
+    var newSet = [CPSet setWithArray:attributeKeys];
+
+    if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
+        var missingAttributes = [oldSet copy];
+        [missingAttributes minusSet:newSet];
+        var newAttributes = [newSet copy];
+        [newAttributes minusSet:oldSet];
+        if (!OnlyPrintLogOncePerEntityName[entityName]) {
+            CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
+            OnlyPrintLogOncePerEntityName[entityName] = YES;
+        }
+    }
+
+    return attributeKeys;
+}
+
+/*!
+ * Must return an array with keys for all to many relationship attributes for this object
+ * The objectContext will observe all these attributes for changes and record them.
+ */
+- (CPArray)relationshipKeysForObject:(id)theObject withType:(CPString)entityName {
+    // FIXME: Right now we do the old non model version also and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
+    var oldRelationshipKeys = [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
+
+    if (relationshipKeyCache != nil) {
+        var entityCache = relationshipKeyCache[entityName];
+
+        if (entityCache) {
+            var relationshipKeys = [entityCache valueForKey:@"name"];
+            var oldSet = [CPSet setWithArray:oldRelationshipKeys];
+            var newSet = [CPSet setWithArray:relationshipKeys];
+
+            if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
+                var missingAttributes = [oldSet copy];
+                [missingAttributes minusSet:newSet];
+                var newAttributes = [newSet copy];
+                [newAttributes minusSet:oldSet];
+                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Relationships are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
+            }
+
+            return relationshipKeys;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    var relationshipKeys = [relationshipKeyCache[entityName] valueForKey:@"name"];
+    var oldSet = [CPSet setWithArray:oldRelationshipKeys];
+    var newSet = [CPSet setWithArray:relationshipKeys];
+
+    if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
+        var missingAttributes = [oldSet copy];
+        [missingAttributes minusSet:newSet];
+        var newAttributes = [newSet copy];
+        [newAttributes minusSet:oldSet];
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
+    }
+
+    return relationshipKeys;
 }
 
 @end
