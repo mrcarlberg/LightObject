@@ -20,6 +20,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 {
 	CPString _name @accessors(property=name);
 	CPMutableSet _entities @accessors(property=entities);
+	JSObject _entitiesCache;
 }
 
 - (id)init
@@ -122,18 +123,28 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 {
 	[entity setModel:self];
 	[_entities addObject:entity];
+	_entitiesCache = nil;
 }
 
 
 - (CPEntityDescription)entityWithName:(CPString)name
 {
+	if (_entitiesCache)
+		return _entitiesCache[name];
+
 	var result;
 	var entity;
 	var e = [_entities objectEnumerator];
 
+	_entitiesCache = {};
+
 	while ((entity = [e nextObject]) != nil)
     {
-		if([[entity name] isEqualToString:name])
+    	var entityName = [entity name];
+
+    	_entitiesCache[entityName] = entity;
+
+		if([entityName isEqualToString:name])
 		{
 			result = entity;
 		}
@@ -142,7 +153,7 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 	return result;
 }
 
-- (CPArray) entitiesByName
+- (CPArray)entitiesByName
 {
 	var result = [[CPMutableArray alloc] init];
 
@@ -178,4 +189,5 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 
 	return result;
 }
+
 @end
