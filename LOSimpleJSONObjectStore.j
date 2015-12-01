@@ -14,21 +14,24 @@
 @import "LOObjectStore.j"
 @import "LOFaultArray.j"
 @import "LOFaultObject.j"
+@import "CPManagedObjectModel.j"
 
 LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector = @selector(objectsReceived:withConnectionDictionary:);
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
 //LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
 
 @implementation LOSimpleJSONObjectStore : LOObjectStore {
-    CPDictionary    attributeKeysForObjectClassName;
-    CPArray         connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
+    CPDictionary            attributeKeysForObjectClassName;
+    CPArray                 connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
+    CPManagedObjectModel    model;
 }
 
-- (id)init {
+- (id)initWithModel:(CPManagedObjectModel)aModel {
     self = [super init];
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
+        model = aModel;
     }
     return self;
 }
