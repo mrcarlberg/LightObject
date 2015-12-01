@@ -6,6 +6,7 @@
 
 @import <Foundation/Foundation.j>
 @import "CPPropertyDescription.j"
+@import "CPFetchRequest.j"
 
 
 @implementation CPFetchedPropertyDescription : CPPropertyDescription

@@ -9,6 +9,8 @@
 @import "CPAttributeDescription.j"
 @import "CPRelationshipDescription.j"
 
+@class CPManagedObjectModel;
+
 @implementation CPEntityDescription : CPObject
 {
 	CPManagedObjectModel _model @accessors(property=model);

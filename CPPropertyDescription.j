@@ -6,6 +6,8 @@
 
 @import <Foundation/CPObject.j>
 
+@class CPEntityDescription
+
 CPPropertyDescriptionKey = "CPPropertyDescriptionKey";
 
 @implementation CPPropertyDescription : CPObject
