@@ -37,7 +37,7 @@
 
 - (BOOL)NS_isToMany:(int)count
 {    
-	if(count > 1)
+	if(count !== 1)
 	{
 		return YES;
 	}
