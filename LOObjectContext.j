@@ -1076,3 +1076,20 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 @end
+
+
+@implementation LOObjectContext (Model)
+
+- (CPPropertyDescription)propertyForKey:(CPString)propertyName withObject:(id)anObject {
+    return [objectStore propertyForKey:propertyName withEntityNamed:[self typeOfObject:anObject]];
+}
+
+- (CPPropertyDescription)propertyForKey:(CPString)propertyName withEntityNamed:(CPString)entityName {
+    return [objectStore propertyForKey:propertyName withEntityNamed:entityName];
+}
+
+- (CPAttributeDescription)attributeForKey:(CPString)propertyName withEntityNamed:(CPString)entityName {
+    return [objectStore attributeForKey:propertyName withEntityNamed:entityName];
+}
+
+@end

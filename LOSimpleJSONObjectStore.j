@@ -15,6 +15,8 @@
 @import "LOFaultArray.j"
 @import "LOFaultObject.j"
 @import "CPManagedObjectModel.j"
+@import "LOContextValueTransformer.j"
+
 
 LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector = @selector(objectsReceived:withConnectionDictionary:);
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
@@ -163,6 +165,8 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
  Creates objects from JSON. If there is a relationship it is up to this method to create a LOFaultArray, LOFaultObject or the actual object.
  */
 - (CPArray)_objectsFromJSON:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary collectAllObjectsIn:(CPDictionary)receivedObjects {
+ // TODO: Add test cases for this method.
+ // TODO: Split this method into smaller parts.
     if (!jSONObjects.isa || ![jSONObjects isKindOfClass:CPArray])
         return jSONObjects;
     var objectContext = connectionDictionary.objectContext;
@@ -310,7 +314,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                     if (faultConnectionDictionary) {
                         var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[faultConnectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
                         [fault morphObjectTo:obj callCompletionBlocks:/*faultConnectionDictionary.completionBlocks*/nil postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
-                        // Delete the fault in the connection dictionary so when this request complets it will be treated as a regular reqest and not a fault request
+                        // Delete the fault in the connection dictionary so when this request compleats it will be treated as a regular reqest and not a fault request
                         [faultConnectionDictionary.faults removeObject:fault];
                         if([faultConnectionDictionary.faults count] === 0)
                             delete faultConnectionDictionary.faults;
@@ -709,8 +713,10 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     JSObject entityNameToEntityCache;
     JSObject toOneForeignKeyToAttributeCache;
     JSObject toOneAttributeToForeignKeyCache;
-    JSObject attributeKeyCache;
-    JSObject relationshipKeyCache;
+    JSObject attributeKeyCache;                 // Cache with all attributes
+    JSObject relationshipKeyCache;              // Cache with all to many relationship attributes
+    JSObject propertyKeyCache;                  // Cache with all properties
+    JSObject attributeValueTypeCache            // Cache with valueType for attribute
     CPString primaryKeyCache;
 }
 
@@ -741,24 +747,42 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     if (primaryKeyCache == nil) primaryKeyCache = {};
     if (attributeKeyCache == nil) attributeKeyCache = {};
     if (relationshipKeyCache == nil) relationshipKeyCache = {};
+    if (propertyKeyCache == nil) propertyKeyCache = {};
+    if (attributeValueTypeCache == nil) attributeValueTypeCache = {};
 
     var entity = entityNameToEntityCache[entityName],
         attributesDict = [entity propertiesByName],
-        allAttributeNames = [attributesDict allKeys],
-        foreignKeyCache = toOneForeignKeyToAttributeCache[entityName] = {},
-        attributeCache = toOneAttributeToForeignKeyCache[entityName] = {},
-        attributeKeyCacheForEntity = attributeKeyCache[entityName] = [],
-        relationshipKeyCacheForEntity = relationshipKeyCache[entityName] = [];
+        entityUserInfo = [entity userInfo],
+        parentEntityName = [entityUserInfo objectForKey:@"parentEntity"];
 
     if (entity === nil) {
         CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't find entity '" + entityName + @"' in model");
     }
 
+    if (parentEntityName) {
+        // If we have a parent entity in the user info add its properties. Use sub entity's property if it is a duplicate
+        var parentPropertyJSDict = [self propertiesByNameForEntityNamed:parentEntityName];
+        if (parentPropertyJSDict) {
+            var newAttributesDict = [CPDictionary dictionaryWithJSObject:parentPropertyJSDict];
+            [newAttributesDict addEntriesFromDictionary:attributesDict];
+            attributesDict = newAttributesDict;
+        }
+    }
+
+    var allAttributeNames = [attributesDict allKeys],
+        foreignKeyCache = toOneForeignKeyToAttributeCache[entityName] = {},
+        attributeCache = toOneAttributeToForeignKeyCache[entityName] = {},
+        attributeKeyCacheForEntity = attributeKeyCache[entityName] = [],
+        relationshipKeyCacheForEntity = relationshipKeyCache[entityName] = [],
+        propertyKeyCacheForEntity = propertyKeyCache[entityName] = {},
+        attributeValueTypeCacheForEntity = attributeValueTypeCache[entityName] = {};
+
     for (var i = 0, size = [allAttributeNames count]; i < size; i++) {
         var attributeName = [allAttributeNames objectAtIndex:i],
             attribute = [attributesDict objectForKey:attributeName];
 
-        // It has to be to one relationship
+        propertyKeyCacheForEntity[attributeName] = attribute;
+
         if ([attribute isKindOfClass:CPRelationshipDescription]) {
             if ([attribute isToMany]) {
                 // Add to attributeKey cache if to many relationsship.
@@ -793,6 +817,13 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             // More thoughts about this is needed but this will work for now.
             if (!(([isAvailableIn rangeOfString:@"backend"] || {}).location >= 0)) {
                 var isPrimaryKey = [userInfo objectForKey:@"primaryKey"];
+                var transformerName = [userInfo objectForKey:@"valueTransformerName"];
+
+                if (transformerName != nil) {
+                    attributeValueTypeCacheForEntity[attributeName] = CPDTransformableAttributeType;
+                } else {
+                    attributeValueTypeCacheForEntity[attributeName] = [attribute typeValue];
+                }
 
                 if (isPrimaryKey) {
                     if (primaryKeyCache[entityName]) {
@@ -813,7 +844,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
         var primaryKeyAttribute = [attributesDict objectForKey:@"primaryKey"];
 
         if (primaryKeyAttribute == nil) {
-            CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can find a primary key for entity '" + entityName + "'");
+            CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can not find a primary key for entity '" + entityName + "'");
         } else {
             primaryKeyCache[entityName] = primaryKeyAttribute;
             // Now remove the attribute from the attribute key cache as we don't want the primary key in it.
@@ -893,36 +924,52 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 }
 
 /*!
+ * Returns an array with all attributes for entity with name
+ */
+- (CPArray)attributesForEntityNamed:(CPString)entityName {
+    if (attributeKeyCache != nil) {
+        var entityCache = attributeKeyCache[entityName];
+
+        if (entityCache) {
+            return entityCache;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self attributesForEntityNamed:entityName];
+}
+
+/*!
  * Must return an array with keys for all attributes for this object.
  * To many relationship keys and to one relationsship foreign key attributes should be included.
  * To one relationsship attribute should not be included.
  * Primary key should not be included.
- * The objectContext will observe all these attributes for changes and record them.
+ * The objectContext will observe all these attributes for changes and record them. Not if the object context is 'read only'
  */
 
  var OnlyPrintLogOncePerEntityName = {};
 
  - (CPArray)attributeKeysForObject:(id)theObject withType:(CPString)entityName {
-    // FIXME: Right now we do the old non model version and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
-    var oldAttributeKeys = [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
-
     if (attributeKeyCache != nil) {
         var entityCache = attributeKeyCache[entityName];
 
         if (entityCache) {
             var attributeKeys = [entityCache valueForKey:@"name"];
-            var oldSet = [CPSet setWithArray:oldAttributeKeys];
-            var newSet = [CPSet setWithArray:attributeKeys];
+            if (!OnlyPrintLogOncePerEntityName[entityName]) {
+                // FIXME: Right now we do the old non model version and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
+                var oldAttributeKeys = [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
+                var oldSet = [CPSet setWithArray:oldAttributeKeys];
+                var newSet = [CPSet setWithArray:attributeKeys];
 
-            if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
-                var missingAttributes = [oldSet copy];
-                [missingAttributes minusSet:newSet];
-                var newAttributes = [newSet copy];
-                [newAttributes minusSet:oldSet];
-                if (!OnlyPrintLogOncePerEntityName[entityName]) {
+                if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
+                    var missingAttributes = [oldSet copy];
+                    [missingAttributes minusSet:newSet];
+                    var newAttributes = [newSet copy];
+                    [newAttributes minusSet:oldSet];
                     CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
-                    OnlyPrintLogOncePerEntityName[entityName] = YES;
                 }
+                OnlyPrintLogOncePerEntityName[entityName] = YES;
             }
 
             return attributeKeys;
@@ -992,6 +1039,63 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     }
 
     return relationshipKeys;
+}
+
+/*!
+ *  Return property from model based in name and entity
+ */
+- (CPPropertyDescription)propertyForKey:(CPString)propertyName withEntityNamed:(CPString)entityName {
+    if (propertyKeyCache != nil) {
+        var entityCache = propertyKeyCache[entityName];
+
+        if (entityCache) {
+            return entityCache[propertyName];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self propertyForKey:propertyName withEntityNamed:entityName];
+}
+
+/*!
+ *  Return Javascript object with all properties. Key is property name.
+ */
+- (JSObject)propertiesByNameForEntityNamed:(CPString)entityName {
+    if (propertyKeyCache != nil) {
+        var entityCache = propertyKeyCache[entityName];
+
+        if (entityCache) {
+            return entityCache;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self propertiesByNameForEntityNamed:entityName];
+}
+
+/*!
+ *  Return attribute from model based on name and entity
+ */
+- (CPAttributeDescription)attributeForKey:(CPString)propertyName withEntityNamed:(CPString)entityName {
+    var property = [self propertyForKey:propertyName withEntityNamed:entityName];
+
+    return [property isKindOfClass:CPAttributeDescription] ? property : nil;
+}
+
+- (CPString)typeValueForAttributeKey:(CPString)attributeName withEntityNamed:(CPString)entityName {
+    if (attributeValueTypeCache != nil) {
+        var entityCache = attributeValueTypeCache[entityName];
+
+        if (entityCache) {
+            return entityCache[attributeName];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self typeValueForAttributeKey:attributeName withEntityNamed:entityName];
 }
 
 @end
