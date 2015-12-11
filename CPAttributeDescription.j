@@ -27,7 +27,8 @@ CPDTransformableAttributeType = 1200;
 {
 	CPString _classValue;
 	int _typeValue @accessors(property=typeValue);
-	id _defaultValue @accessors(property= defaultValue);
+	id _defaultValue @accessors(property=defaultValue);
+	CPString _valueTransformerName @accessors(property=valueTransformerName);
 }
 
 - (void)setClassValue:(CPString) aClassValue

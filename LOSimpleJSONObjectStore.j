@@ -275,7 +275,26 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                                 [value addObject:relationObj];
                             }
                         }
+                    } else {
+                        // Ok, it is a regular value. Check if it has a transformer.
+                        var typeValue = [self typeValueForAttributeKey:column withEntityNamed:type];
+
+                        switch (typeValue) {
+                            case CPDTransformableAttributeType:
+                                var valueTransformer = [self valueTransformerForAttribute:column withEntityNamed:type];
+
+                                if (valueTransformer) {
+                                    if ([valueTransformer conformsToProtocol:@protocol(LOContextValueTransformer)])
+                                        value = [valueTransformer reverseTransformedValue:value withContext:{object:obj, attributeKey:column}];
+                                    else
+                                        value = [valueTransformer reverseTransformedValue:value];
+                                }
+
+                                break;
+                        }
                     }
+
+                    // We want to set the value on the object if it is a different value.
                     if (value !== [obj valueForKey:column]) {
                         [obj setValue:value forKey:column];
                         // FIXME: Clean up posible changes in object context if a new value has been set
@@ -340,6 +359,36 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     }
     [objectContext setDoNotObserveValues:NO];
     return newArray;
+}
+
+- (CPValueTransformer)valueTransformerForAttribute:(CPString)attributeName withEntityNamed:(CPString)entityName {
+    var attribute = [self attributeForKey:attributeName withEntityNamed:entityName];
+    var userInfo = [attribute userInfo];
+    // Transformer name in userInfo overrides the type value on the attribute. This will allow the attribute to have a type and a transformer
+    var valueTransformerName = [userInfo objectForKey:@"valueTransformerName"] || [attribute valueTransformerName];
+    var valueTransformer;
+
+    if (valueTransformerName) {
+        valueTransformer = [CPValueTransformer valueTransformerForName:valueTransformerName];
+
+        if (!valueTransformer)
+        {
+            var valueTransformerClass = CPClassFromString(valueTransformerName);
+
+            if (valueTransformerClass)
+            {
+                valueTransformer = [[valueTransformerClass alloc] init];
+                [valueTransformerClass setValueTransformer:valueTransformer forName:valueTransformerName];
+            }
+        }
+    }
+
+    if (!valueTransformer) {
+        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Can't find value transformer with name '" + valueTransformerName +
+            "'' for attribute '" + attributeName + "' on entity '" + entityName + "'");
+    }
+
+    return valueTransformer;
 }
 
 - (void) _registerOrReplaceObject:(CPArray) theObjects withConnectionDictionary:(id)connectionDictionary{
@@ -462,14 +511,17 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 /*!
     Copies the updateDict and replaces all to many relationships dictionaries with insert dictionaries.
+    If an attribute has a transformer it will be used to transform the value.
 */
-- (CPMutableDictionary)_copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:(CPDictionary)updateDict insertedObjectToTempIdDict:(CPDictionary)insertedObjectToTempIdDict withObjectContext:(LOObjectContext)objectContext {
+- (CPMutableDictionary)_copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:(CPDictionary)updateDict insertedObjectToTempIdDict:(CPDictionary)insertedObjectToTempIdDict forObject:(id)obj withObjectContext:(LOObjectContext)objectContext {
+    var entityName = [self typeOfObject:obj];
     var updateDictCopy = [CPMutableDictionary dictionary];
     var updateDictKeys = [updateDict allKeys];
     var updateDictKeysSize = [updateDictKeys count];
     for (var j = 0; j < updateDictKeysSize; j++) {
         var updateDictKey = [updateDictKeys objectAtIndex:j];
         var updateDictValue = [updateDict objectForKey:updateDictKey];
+        // FIXME: Use the model to check the type of the attribute. It doesn't need to be a relation if it is a CPDictionary.
         if ([updateDictValue isKindOfClass:CPDictionary]) {
             var insertedRelationshipArray = [CPArray array];
             var insertedRelationshipObjects = [updateDictValue objectForKey:@"insert"];
@@ -491,6 +543,23 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 }
             }
             updateDictValue = [CPDictionary dictionaryWithObject:insertedRelationshipArray forKey:@"inserts"];
+        } else {
+            // Ok, it is a regular value. Check if it has a transformer.
+            var typeValue = [self typeValueForAttributeKey:updateDictKey withEntityNamed:entityName];
+
+            switch (typeValue) {
+                case CPDTransformableAttributeType:
+                    var valueTransformer = [self valueTransformerForAttribute:updateDictKey withEntityNamed:entityName];
+
+                    if (valueTransformer) {
+                        if ([valueTransformer conformsToProtocol:@protocol(LOContextValueTransformer)])
+                            updateDictValue = [valueTransformer transformedValue:updateDictValue withContext:{object:obj, attributeKey:updateDictKey}];
+                        else
+                            updateDictValue = [valueTransformer transformedValue:updateDictValue];
+                    }
+
+                    break;
+            }
         }
         [updateDictCopy setObject:updateDictValue forKey:updateDictKey];
     }
@@ -530,16 +599,16 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             var deleteDict = [objDict deleteDict];
             if (insertDict && !deleteDict) {    // Don't do this if it is also deleted
                 var primaryKey = [self primaryKeyForObject:obj];
-                var insertDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:insertDict insertedObjectToTempIdDict:insertedObjectToTempIdDict withObjectContext:objectContext];
+                var type = [self typeOfObject:obj];
+                var insertDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:insertDict insertedObjectToTempIdDict:insertedObjectToTempIdDict forObject:obj withObjectContext:objectContext];
                 // Use primary key if object has it, otherwise create a tmp id
                 if (primaryKey) {
-                    var type = [self typeOfObject:obj];
                     var primaryKeyAttribute = [self primaryKeyAttributeForType:type objectContext:objectContext];
                     [insertDictCopy setObject:primaryKey forKey:primaryKeyAttribute];
                 } else {
                     [insertDictCopy setObject:[objDict tmpId] forKey:@"_tmpid"];
                 }
-                [insertDictCopy setObject:[self typeOfObject:obj] forKey:@"_type"];
+                [insertDictCopy setObject:type forKey:@"_type"];
                 [insertArray addObject:insertDictCopy];
             }
         }
@@ -552,7 +621,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             var deleteDict = [objDict deleteDict];
             var updateDict = [objDict updateDict];
             if (updateDict && !deleteDict) { // Don't do this if it is deleted
-                var updateDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:updateDict insertedObjectToTempIdDict:insertedObjectToTempIdDict withObjectContext:objectContext];
+                var updateDictCopy = [self _copyUpdateDictAndCreateInsertDictionariesForToManyRelationships:updateDict insertedObjectToTempIdDict:insertedObjectToTempIdDict forObject:obj withObjectContext:objectContext];
                 [updateDictCopy setObject:type forKey:@"_type"];
                 var uuid = [self primaryKeyForObject:obj];
                 if (uuid) {

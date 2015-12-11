@@ -32,3 +32,4 @@
 @import "LOLocalDictionaryObjectStore.j"
 @import "LOObjectContext.j"
 @import "CoreData.j"
+@import "LOContextValueTransformer.j"
