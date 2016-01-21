@@ -710,20 +710,26 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 
 @implementation LOSimpleJSONObjectStore (Model) {
-    JSObject entityNameToEntityCache;
+    JSObject entityNameToEntityCache;               // Cache with entity for entity name
+    JSObject entityNameToEntityNameCache            // Cache with entity name for XCode model entity name. This is needed as XCode only allows names starting with capital letter and we can override that.
     JSObject toOneForeignKeyToAttributeCache;
     JSObject toOneAttributeToForeignKeyCache;
-    JSObject attributeKeyCache;                 // Cache with all attributes
-    JSObject relationshipKeyCache;              // Cache with all to many relationship attributes
-    JSObject propertyKeyCache;                  // Cache with all properties
-    JSObject attributeValueTypeCache            // Cache with valueType for attribute
+    JSObject attributeKeyCache;                     // Cache with all attributes
+    JSObject relationshipKeyCache;                  // Cache with all to many relationship attributes
+    JSObject propertyKeyCache;                      // Cache with all properties
+    JSObject attributeValueTypeCache                // Cache with valueType for attribute
+    JSObject relationshipDestinationEntityNameCache // Cache with destination entity name for relations
+    JSObject inversRelationNameCache                // Cache with invers relation name for relations
     CPString primaryKeyCache;
 }
 
 /*!
  * Will cache to one relations to foreignKey and vice versa for each entity.
-   Will also cache primaryKey for each entity. We are not supporting composite primary keys right now.
-   The information is read from the model.
+ * Will also cache primaryKey for each entity. We are not supporting composite primary keys right now.
+ * The information is read from the model.
+
+ * As XCode demand that entity names start with a capital letter we allow the name to be overridden by
+ * entering a key/value pair in the user info dictionary with a 'entityName' key.
  */
 - (void)_createForeignKeyAttributeCacheForEntityName:(CPString)entityName {
     var aModel = model;
@@ -732,6 +738,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
         var entityNames = [aModel entitiesByName];
 
         entityNameToEntityCache = {};
+        entityNameToEntityNameCache = {};
         for (var i = 0, size = [entityNames count]; i < size; i++) {
             var aEntityName = [entityNames objectAtIndex:i],
                 entity = [aModel entityWithName:aEntityName],
@@ -739,6 +746,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 useEntityName = [userInfo objectForKey:@"entityName"];
 
             entityNameToEntityCache[useEntityName || aEntityName] = entity;
+            entityNameToEntityNameCache[aEntityName] = useEntityName;
         }
     }
 
@@ -749,6 +757,8 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     if (relationshipKeyCache == nil) relationshipKeyCache = {};
     if (propertyKeyCache == nil) propertyKeyCache = {};
     if (attributeValueTypeCache == nil) attributeValueTypeCache = {};
+    if (relationshipDestinationEntityNameCache == nil) relationshipDestinationEntityNameCache = {};
+    if (inversRelationNameCache == nil) inversRelationNameCache = {};
 
     var entity = entityNameToEntityCache[entityName],
         attributesDict = [entity propertiesByName],
@@ -775,7 +785,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
         attributeKeyCacheForEntity = attributeKeyCache[entityName] = [],
         relationshipKeyCacheForEntity = relationshipKeyCache[entityName] = [],
         propertyKeyCacheForEntity = propertyKeyCache[entityName] = {},
-        attributeValueTypeCacheForEntity = attributeValueTypeCache[entityName] = {};
+        attributeValueTypeCacheForEntity = attributeValueTypeCache[entityName] = {},
+        relationshipDestinationEntityNameCacheForEntity = relationshipDestinationEntityNameCache[entityName] = {},
+        inversRelationNameCacheForEntity = inversRelationNameCache[entityName] = {};
 
     for (var i = 0, size = [allAttributeNames count]; i < size; i++) {
         var attributeName = [allAttributeNames objectAtIndex:i],
@@ -807,8 +819,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                     CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Has no foreign key attribute (" + foreignKeyName + ") for relationship (" + attributeName + ") in model for entity:" + entityName);
                 }
             }
+            relationshipDestinationEntityNameCacheForEntity[attributeName] = entityNameToEntityNameCache[[attribute destinationEntityName]];
+            inversRelationNameCacheForEntity[attributeName] = [attribute inversePropertyName];
         } else {
-            // Check if this attribute has 'primaryKey: YES' in the userInfo
             var userInfo = [attribute userInfo],
                 isAvailableIn = [[userInfo objectForKey:@"availableIn"] lowercaseString];
 
@@ -825,6 +838,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                     attributeValueTypeCacheForEntity[attributeName] = [attribute typeValue];
                 }
 
+                // Check if this attribute has 'primaryKey: YES' in the userInfo
                 if (isPrimaryKey) {
                     if (primaryKeyCache[entityName]) {
                         CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attribute '" + attributeName + "' is marked as primaryKey but attribute '" + [primaryKeyCache[entityName] name] + "' ia already marked as primary key for entity '" + entityName + "'");
@@ -892,7 +906,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 /*!
  * Returns foreign key attribute that correspond to the to one relationship attribute for the type
  */
-- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType {
         if (toOneAttributeToForeignKeyCache != nil) {
         var entityCache = toOneAttributeToForeignKeyCache[aType];
 
@@ -903,7 +917,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
     [self _createForeignKeyAttributeCacheForEntityName:aType];
 
-    return [self foreignKeyAttributeForToOneRelationshipAttribute:attribute forType:aType objectContext:objectContext];
+    return [self foreignKeyAttributeForToOneRelationshipAttribute:attribute forType:aType];
 }
 
 /*!
@@ -1096,6 +1110,51 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     [self _createForeignKeyAttributeCacheForEntityName:entityName];
 
     return [self typeValueForAttributeKey:attributeName withEntityNamed:entityName];
+}
+
+- (CPString)foreignKeyAttributeForInversRelationshipWithRelationshipAttribute:(CPString)relationshipKey withEntityNamed:(CPString)entityName {
+    if (relationshipDestinationEntityNameCache != nil) {
+        var destinationEntityCache = relationshipDestinationEntityNameCache[entityName];
+        var inversRelationNameEntityCache = inversRelationNameCache[entityName];
+
+        if (destinationEntityCache) {
+            var inversRelationName = inversRelationNameEntityCache[relationshipKey];
+
+            if (inversRelationName !== entityName)
+                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Invers relation name '" + inversRelationName + "' is wrong. Should be '" + entityName + "'");
+
+            var destinationEntityName = destinationEntityCache[relationshipKey];
+            var oldEntityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
+
+            if (destinationEntityName !== oldEntityName)
+                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Relation '" + relationshipKey + "' gives wrong destination entity name '" + destinationEntityName + "'. Should be '" + oldEntityName + "'");
+
+            var foreignKey = [self foreignKeyAttributeForToOneRelationshipAttribute:inversRelationName forType:destinationEntityName];
+
+            return foreignKey;
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    //if (relationshipDestinationEntityNameCache[entityName])
+        return [self foreignKeyAttributeForInversRelationshipWithRelationshipAttribute:relationshipKey withEntityNamed:entityName];
+    //else
+    //    return nil;
+}
+
+- (CPString)destinationEntityNameForRelationshipKey:(CPString)attributeName withEntityNamed:(CPString)entityName {
+    if (relationshipDestinationEntityNameCache != nil) {
+        var entityCache = relationshipDestinationEntityNameCache[entityName];
+
+        if (entityCache) {
+            return entityCache[attributeName];
+        }
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self destinationEntityNameForRelationshipKey:attributeName withEntityNamed:entityName];
 }
 
 @end

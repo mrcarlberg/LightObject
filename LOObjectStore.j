@@ -142,7 +142,7 @@
 /*!
  * Returns foreign key attribute that correspond to the to one relationship attribute for the type
  */
-- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType objectContext:(LOObjectContext)objectContext {
+- (CPString)foreignKeyAttributeForToOneRelationshipAttribute:(CPString)attribute forType:(CPString)aType {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 

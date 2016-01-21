@@ -406,7 +406,7 @@ LOObjectContextDebugModeAllInfo = ~0;
         newGlobalId = nil;
     }
     var oldGlobalId = [self globalIdForObject:oldValue];
-    var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:theKeyPath forType:[self typeOfObject:theObject] objectContext:self];
+    var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:theKeyPath forType:[self typeOfObject:theObject]];
     // If it is a new object all changed attributes are stored in the "insertDict"
     var dictType = [self isObjectStored:theObject] ? @"updateDict" : @"insertDict";
     var updateDict = [self subDictionaryForKey:dictType forObject:theObject];

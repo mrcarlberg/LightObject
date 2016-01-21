@@ -7,12 +7,12 @@
 
 @implementation NSRelationshipDescription : CPRelationshipDescription
 {
-    NSEntityDescription _destinationEntity;
+//    NSEntityDescription _destinationEntity;
 
-    NSRelationshipDescription _inverseRelationship;
-   	CPString _inverseRelationshipName;
+//    NSRelationshipDescription _inverseRelationship;
+//   	CPString _inverseRelationshipName;
 
-	NSRelationshipDescription ns_entity;
+//	NSRelationshipDescription ns_entity;
 
 	int ns_minCount;
 }

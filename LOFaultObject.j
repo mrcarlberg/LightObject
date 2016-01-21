@@ -98,7 +98,7 @@
     This is hard coded: The relationshipKey from the master object is used as the entity name
     This can be changed when we are using a model.
  */
-- (void) requestFaultWithCompletionBlock:(Function)aCompletionBlock {
+- (void)requestFaultWithCompletionBlock:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultFired = YES;

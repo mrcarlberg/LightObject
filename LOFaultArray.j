@@ -10,6 +10,7 @@
 @class LOEditingContext
 @class LOObjectContext
 @class LOFetchSpecification
+@class CPRelationshipDescription
 
 @implementation LOFaultArray : CPMutableArray <LOFault> {
     LOObjectContext objectContext @accessors;
@@ -36,7 +37,7 @@
  return array;
  }
  */
-- (id) initWithObjectContext:(CPObjectContext) anObjectContext masterObject:(id) aMasterObject relationshipKey:(CPString) aRelationshipKey {
+- (id)initWithObjectContext:(CPObjectContext)anObjectContext masterObject:(id)aMasterObject relationshipKey:(CPString)aRelationshipKey {
     //    CPLog.trace(@"tracing: LOFaultArray.init:");
     self = [super init];
     if (self) {
@@ -207,19 +208,20 @@
 /*!
     This is hard coded: The master object has an attribute (relationshipKey) that is used as the entity name (the last character is removed, "attribute:persons -> entity:person) The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
  */
-- (void) requestFaultWithCompletionBlock:(Function)aCompletionBlock {
+- (void)requestFaultWithCompletionBlock:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultPopulated = NO;
-        var entityName = [relationshipKey substringToIndex:[relationshipKey length] - 1];
         var objectStore = [objectContext objectStore];
-        var foreignKey = [objectStore foreignKeyAttributeForToOneRelationshipAttribute:[objectContext typeOfObject:masterObject] forType:entityName objectContext:objectContext];
+        var masterObjectType = [objectContext typeOfObject:masterObject];
+        var foreignKey = [objectStore foreignKeyAttributeForInversRelationshipWithRelationshipAttribute:relationshipKey withEntityNamed:masterObjectType];
+        var destinationEntityName = [objectStore destinationEntityNameForRelationshipKey:relationshipKey withEntityNamed:masterObjectType];
         var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:foreignKey]
                                                            rightExpression:[CPExpression expressionForConstantValue:[objectContext globalIdForObject:masterObject]]
                                                                   modifier:CPDirectPredicateModifier
                                                                       type:CPEqualToPredicateOperatorType
                                                                    options:0];
-        fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+        fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:destinationEntityName qualifier:qualifier];
         [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
         [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fetchSpecification, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
     } else if (aCompletionBlock) {
