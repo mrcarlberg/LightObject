@@ -22,7 +22,7 @@
 @import "CPFetchRequestTemplates.j"
 
 @import "CPManagedObjectModel+XCDataModel.j"
-@import "NSCoreData/NSCoreData.j"
+@import "NSCoreData.j"
 
 //Memory store
 //@import "CPCoreDataPersistantStores/MemoryStore/CPMemoryStore.j"
