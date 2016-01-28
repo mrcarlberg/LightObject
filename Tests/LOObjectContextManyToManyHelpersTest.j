@@ -34,7 +34,7 @@ CPLogRegister(CPLogPrint, "warn");
 - (void)addFakeArrayFaultsForObjects:(CPArray)theObjects inObjectContext:(LOObjectContext)aContext {
     for (var i=0; i<theObjects.length; i++) {
         var object = theObjects[i];
-        var relationshipKeys = [self relationshipKeysForObject:object withType:(CPString)entityName];
+        var relationshipKeys = [self relationshipKeysForObject:object withType:entityName];
         for (var j=0; j<relationshipKeys.length; j++) {
             var relationshipKey = relationshipKeys[j];
             var fault = [[LOFaultArray alloc] initWithObjectContext:aContext masterObject:object relationshipKey:relationshipKey];
