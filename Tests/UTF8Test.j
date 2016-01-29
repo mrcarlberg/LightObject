@@ -1,4 +1,4 @@
-@import "../LOAdvanceJSONObjectStore"
+@import "../LOAdvanceJSONObjectStore.j"
 
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because

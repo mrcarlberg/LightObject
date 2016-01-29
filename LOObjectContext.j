@@ -49,7 +49,7 @@ var LOObjectContext_classForType = 1 << 0,
 }
 
 - (BOOL) isEmpty {
-    return !insertDict && !updateDict && !deleteDict;
+    return (!insertDict || [insertDict count] === 0) && (!updateDict || [updateDict count] === 0) && !deleteDict;
 }
 
 - (CPString)description {

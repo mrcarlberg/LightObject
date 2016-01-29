@@ -243,4 +243,12 @@
     return row[primaryKeyAttribute];
 }
 
+- (CPString)foreignKeyAttributeForInversRelationshipWithRelationshipAttribute:(CPString)relationshipKey withEntityNamed:(CPString)entityName {
+    return [self foreignKeyAttributeForToOneRelationshipAttribute:entityName forType:[relationshipKey substringToIndex:[relationshipKey length] - 1]];
+}
+
+- (CPString)destinationEntityNameForRelationshipKey:(CPString)attributeName withEntityNamed:(CPString)entityName {
+    return [attributeName substringToIndex:[attributeName length] - 1];
+}
+
 @end
