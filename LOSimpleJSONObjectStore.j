@@ -38,23 +38,23 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return self;
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:nil];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:nil];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:[faultArray]];
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:[faultArray]];
 }
 
-- (CPArray)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionBlock:aCompletionBlock faults:faultObjects];
+- (CPArray)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:faultObjects];
 }
 
 /*!
     Sends request of objects based on fetchSpecification.
     aCompletionBlock is called when finished.
 */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock faults:(id)faults {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock faults:(id)faults {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     if (fetchSpecification.requestPreProcessBlock) {
         fetchSpecification.requestPreProcessBlock(request);
@@ -481,7 +481,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     POST object contexts modified objects as JSON data.
     aCompletionBlock is called when finished.
 */
-- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
     var modifyDict = [self _jsonDictionaryForModifiedObjectsWithObjectContext:objectContext];
     if ([modifyDict count] > 0) {       // Only save if thera are changes
         var json = [LOJSKeyedArchiver archivedDataWithRootObject:modifyDict];
@@ -497,7 +497,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     } else if (aCompletionBlock) {
         aCompletionBlock(nil, 200);  // We have nothing to save so call the compleation block directly with a result code of 200
     }
-    [super saveChangesWithObjectContext:objectContext withCompletionBlock:aCompletionBlock];
+    [super saveChangesWithObjectContext:objectContext withCompletionHandler:aCompletionBlock];
 }
 
 /*!
@@ -696,7 +696,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return [attributeKeysSet allValues];
 }
 
-- (void)addCompletionBlock:(Function)aCompletionBlock toTriggeredFault:(id <LOFault>)aFault {
+- (void)addCompletionHandler:(Function)aCompletionBlock toTriggeredFault:(id <LOFault>)aFault {
     var size = [connections count];
     for (var i = 0; i < size; i++) {
         var connectionDictionary = [connections objectAtIndex:i];

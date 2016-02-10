@@ -236,22 +236,22 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 - (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification {
-    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:nil];
+    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionHandler:nil];
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification withCompletionBlock:(Function)aCompletionBlock {
-    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
+    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
-    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
+    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
 }
 /*
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlock:(Function)aCompletionBlock {
-    [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionHandler:(Function)aCompletionBlock {
+    [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
 }*/
 
-- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionBlock:(Function)aCompletionBlock {
+- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionHandler:(Function)aCompletionBlock {
     var entityName = aFaultObject.entityName;
     var doTheFetch = function() {
         var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
@@ -263,7 +263,7 @@ LOObjectContextDebugModeAllInfo = ~0;
                                                                       type:CPInPredicateOperatorType
                                                                    options:0];
         var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-        [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionBlock:aCompletionBlock];
+        [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
         [faultObjectRequests removeObjectForKey:entityName];
     }
     var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
@@ -904,10 +904,10 @@ LOObjectContextDebugModeAllInfo = ~0;
     the response is returned.
 */
 - (void)saveChanges {
-    [self saveChangesWithCompletionBlock:nil];
+    [self saveChangesWithCompletionHandler:nil];
 }
 
-- (void)saveChangesWithCompletionBlock:(Function)aCompletionBlock {
+- (void)saveChangesWithCompletionHandler:(Function)aCompletionBlock {
     if (implementedDelegateMethods & LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted) {
         var shouldSave = YES;
         var size = [modifiedObjects count];
@@ -928,7 +928,7 @@ LOObjectContextDebugModeAllInfo = ~0;
         }
     }
 
-    [objectStore saveChangesWithObjectContext:self withCompletionBlock:aCompletionBlock];
+    [objectStore saveChangesWithObjectContext:self withCompletionHandler:aCompletionBlock];
 
     // Remove transaction
     var count = [undoEvents count];
@@ -1067,9 +1067,9 @@ LOObjectContextDebugModeAllInfo = ~0;
     If fault is already triggered it will call the completion block directly.
     This is a handy utility when you want to do something on a object. You know that it might be a fault but you don't know if it has triggered.
  */
-- (void)triggerFault:(LOFault)fault withCompletionBlock:(Function)aCompletionBlock {
+- (void)triggerFault:(LOFault)fault withCompletionHandler:(Function)aCompletionBlock {
     if ([fault conformsToProtocol:@protocol(LOFault)]) {
-        [fault requestFaultWithCompletionBlock:aCompletionBlock];
+        [fault requestFaultWithCompletionHandler:aCompletionBlock];
     } else {
         aCompletionBlock(fault);
     }

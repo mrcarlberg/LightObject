@@ -147,7 +147,7 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext objectsReceived:objects allReceivedObjects:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
 }
@@ -155,7 +155,7 @@
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:[faultArray]];
 }
@@ -165,7 +165,7 @@
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  * Must call [objectContext saveChangesDidComplete] when done
  */
-- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
     [objectContext saveChangesDidComplete];
 }
 

@@ -15,7 +15,7 @@
 /*!
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
@@ -23,20 +23,20 @@
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
 - (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext {
-    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext withCompletionBlock:nil];
+    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext withCompletionHandler:nil];
 }
 
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultObject:(LOFaultObject)faultObject] when fault objects are received
  */
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
@@ -44,7 +44,7 @@
  * This method should save all changes to the backend.
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  */
-- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionBlock:(Function)aCompletionBlock {
+- (void)saveChangesWithObjectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
 }
 
 /*!

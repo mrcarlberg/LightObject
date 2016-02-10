@@ -201,14 +201,14 @@
 
 - (void)_requestFaultIfNecessary {
     if (!faultFired) {
-        [self requestFaultWithCompletionBlock:nil];
+        [self requestFaultWithCompletionHandler:nil];
     }
 }
 
 /*!
     This is hard coded: The master object has an attribute (relationshipKey) that is used as the entity name (the last character is removed, "attribute:persons -> entity:person) The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
  */
-- (void)requestFaultWithCompletionBlock:(Function)aCompletionBlock {
+- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultPopulated = NO;
@@ -222,13 +222,13 @@
                                                                       type:CPEqualToPredicateOperatorType
                                                                    options:0];
         fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:destinationEntityName qualifier:qualifier];
-        [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withCompletionBlock:aCompletionBlock];
+        [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withCompletionHandler:aCompletionBlock];
         [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fetchSpecification, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
     } else if (aCompletionBlock) {
         if (faultPopulated) {
             aCompletionBlock(self);
         } else {
-            [objectStore addCompletionBlock:aCompletionBlock toTriggeredFault:self];
+            [objectStore addCompletionHandler:aCompletionBlock toTriggeredFault:self];
         }
     }
 }

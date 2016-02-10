@@ -90,7 +90,7 @@
 
 - (void)_requestFaultIfNecessary {
     if (!faultFired) {
-        [self requestFaultWithCompletionBlock:nil];
+        [self requestFaultWithCompletionHandler:nil];
     }
 }
 
@@ -98,18 +98,18 @@
     This is hard coded: The relationshipKey from the master object is used as the entity name
     This can be changed when we are using a model.
  */
-- (void)requestFaultWithCompletionBlock:(Function)aCompletionBlock {
+- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultFired = YES;
         faultPopulated = NO;
-        [objectContext requestFaultObject:self withCompletionBlock:aCompletionBlock];
+        [objectContext requestFaultObject:self withCompletionHandler:aCompletionBlock];
         //CPLog.trace([self className] + " " + _cmd + " Fire fault: '" + entityName + "' q: " + [qualifier description]);
     } else if (aCompletionBlock) {
         if (faultPopulated) {
             aCompletionBlock(self);
         } else {
-            [[objectContext objectStore] addCompletionBlock:aCompletionBlock toTriggeredFault:self];
+            [[objectContext objectStore] addCompletionHandler:aCompletionBlock toTriggeredFault:self];
         }
     }
 }
