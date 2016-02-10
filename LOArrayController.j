@@ -11,6 +11,7 @@
 @class LOInsertEvent
 @class LODeleteEvent
 @class LOObjectContext
+@class LOFetchSpecification
 
 
 @implementation LOArrayController : CPArrayController
