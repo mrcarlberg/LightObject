@@ -369,17 +369,17 @@ LOObjectContextDebugModeAllInfo = ~0;
         updateDict = [self createSubDictionaryForKey:dictType forModifyObjectDictionaryForObject:theObject];
     }
 
-	[updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
+    [updateDict setObject:newValue !== nil ? newValue : [CPNull null] forKey:theKeyPath];
 
-	if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" " + dictType + @": " + [updateDict description]);
+    if (debugMode & LOObjectContextDebugModeObserveValue) CPLog.trace(@"%@", @"LOObjectContextDebugModeObserveValue: Keypath: " + theKeyPath +  @" object:" + theObject + @" change:" + theChanges + @" " + dictType + @": " + [updateDict description]);
 
-	// Simple validation handling
-	if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
-    	var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
-		if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
-			[delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
-		}
-	}
+    // Simple validation handling
+    if (implementedDelegateMethods & LOObjectContext_objectContext_didValidateProperty_withError && [theObject respondsToSelector:@selector(validatePropertyWithKeyPath:value:error:)]) {
+        var validationError = [theObject validatePropertyWithKeyPath:theKeyPath value:theChanges error:validationError];
+        if ([validationError domain] === [LOError LOObjectValidationDomainString]) {
+            [delegate objectContext:self didValidateProperty:theKeyPath withError:validationError];
+        }
+    }
 
     if (autoCommit) [self saveChanges];
 }
@@ -896,17 +896,28 @@ LOObjectContextDebugModeAllInfo = ~0;
     [undoEvents addObject:[]];
 }
 
+- (IBAction)save:(id)sender {
+    [self saveChangesWithCompletionHandler:nil];
+}
+
+- (IBAction)revert:(id)sender {
+    [self revert];
+}
+
+/*!
+    @deprecated. Use save:(id)sender instead
+ */
+- (void)saveChanges {
+    [self saveChangesWithCompletionHandler:nil];
+}
+
 /*!
     Saves the changes in the Object Context.
     It will ask the delegate 'objectContext:shouldSaveChanges:withObject:inserted:' and if
     it returns true it will tell the object store to save the changes.
     A completion block can be provided that is called with the result and statuc code when
     the response is returned.
-*/
-- (void)saveChanges {
-    [self saveChangesWithCompletionHandler:nil];
-}
-
+ */
 - (void)saveChangesWithCompletionHandler:(Function)aCompletionBlock {
     if (implementedDelegateMethods & LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted) {
         var shouldSave = YES;
@@ -950,6 +961,9 @@ LOObjectContextDebugModeAllInfo = ~0;
     }
 }
 
+/*!
+    @deprecated. Use revert:(id)sender instead
+ */
 - (void)revert {
 //    [self setModifiedObjects:[CPArray array]];
 

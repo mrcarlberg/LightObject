@@ -5,25 +5,49 @@
 //
 
 @import <Foundation/Foundation.j>
+@import "CPManagedObjectModel.j"
 
 
 @implementation CPManagedObjectModel (XCDataModel)
 
-
-+ (void)parseCoreDataModel:(CPString)aModelName
++ (void)modelWithContentsOfURL:(CPString)aPath completionHandler:(Function/*(CPManagedObjectModel)*/)completionBlock
 {
-	var modelPath = aModelName;
-	/*if(![modelPath hasSuffix:@"cxcdatamodel"])
-	{
-		var modelNameComponents = [modelPath componentsSeparatedByString:@"."];
-		modelPath = [modelNameComponents objectAtIndex:0] + ".cxcdatamodel";
-	}*/
+    /*if(![modelPath hasSuffix:@"cxcdatamodel"])
+    {
+        var modelNameComponents = [modelPath componentsSeparatedByString:@"."];
+        modelPath = [modelNameComponents objectAtIndex:0] + ".cxcdatamodel";
+    }*/
 
-	var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:modelPath] returningResponse:nil];
-	var managedObjectModel = [self objectModelFromXMLData:data];
+    var request = [CPURLRequest requestWithURL:aPath];
+    [CPURLConnection sendAsynchronousRequest:request queue:[CPOperationQueue mainQueue] completionHandler:function(response, result, error) {
+        var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:aPath] returningResponse:nil];
+        var managedObjectModel = [self objectModelFromXMLData:data];
 
-	[managedObjectModel setNameFromFilePath: modelPath];
-	return managedObjectModel;
+        [managedObjectModel setNameFromFilePath:aPath];
+        if (completionBlock) completionBlock(managedObjectModel);
+    }];
+}
+
++ (id)parseCoreDataModel:(CPString)aModelName
+{
+    var modelPath = aModelName;
+    /*if(![modelPath hasSuffix:@"cxcdatamodel"])
+    {
+        var modelNameComponents = [modelPath componentsSeparatedByString:@"."];
+        modelPath = [modelNameComponents objectAtIndex:0] + ".cxcdatamodel";
+    }*/
+
+    var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:modelPath] returningResponse:nil];
+
+    if (data == nil) {
+        console.log("Can't find model at path '" + modelPath + "'");
+        return nil;
+    } else {
+        var managedObjectModel = [self objectModelFromXMLData:data];
+
+        [managedObjectModel setNameFromFilePath:modelPath];
+        return managedObjectModel;
+    }
 }
 
 + (id)objectModelFromXMLData:(CPData)modelData withName:(CPString)aName

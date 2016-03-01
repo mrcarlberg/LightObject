@@ -35,3 +35,4 @@
 @import "CoreData.j"
 @import "LOContextValueTransformer.j"
 @import "LOJSONFormatSupport.j"
+@import "CPPredicate+ConvenienceMethods.j"

@@ -17,13 +17,35 @@
 @implementation LOArrayController : CPArrayController
 {
     @outlet LOObjectContext objectContext;
+    CPArray prepareContentBlocksToRunWhenModelIsReceived;
 }
 
 - (id)init {
     self = [super init];
     if (self) {
+        prepareContentBlocksToRunWhenModelIsReceived = [];
     }
     return self;
+}
+
+- (id)initWithCoder:(CPCoder)aCoder {
+    prepareContentBlocksToRunWhenModelIsReceived = [];
+    self = [super initWithCoder:aCoder];
+    if (self) {
+    }
+    return self;
+}
+
+- (void)awakeFromCib {
+    // In 'prepareContent' the bindings will not be ready so blocks are added to this array and executed here.
+    if (prepareContentBlocksToRunWhenModelIsReceived)
+    {
+        var objectStore = [objectContext objectStore];
+        [prepareContentBlocksToRunWhenModelIsReceived enumerateObjectsUsingBlock:function(aBlock) {
+            [objectStore addBlockToRunWhenModelIsReceived:aBlock];
+        }];
+        prepareContentBlocksToRunWhenModelIsReceived = nil;
+    }
 }
 
 // TODO: We should advertise a 'real' binding for objectContext, not piggyback on managedObjectContext.
@@ -36,11 +58,27 @@
     return objectContext;
 }
 
+- (void)prepareContent {
+    var entityName = [self entityName];
+    if (entityName != nil) {
+        [prepareContentBlocksToRunWhenModelIsReceived addObject:function() {
+            var aFetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:[self fetchPredicate]];
+            [objectContext requestObjectsWithFetchSpecification:aFetchSpecification withCompletionHandler:function(resultArray, statusCode) {
+                if (statusCode === 200) [self setContent:resultArray];
+            }];
+        }];
+    } else {
+        [super prepareContent];
+    }
+}
+
 - (@action)insert:(id)sender {
     if (![self canInsert])
         return;
 
     var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
+    var entityName = [self entityName];
+    if (entityName) newObject._loObjectType = entityName;
     [self insertObject:newObject];
 }
 

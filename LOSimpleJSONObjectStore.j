@@ -38,6 +38,26 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return self;
 }
 
+- (id)init {
+    self = [super init];
+    console.log(_cmd + ": " + self);
+    if (self) {
+        connections = [CPArray array];
+        attributeKeysForObjectClassName = [CPDictionary dictionary];
+    }
+    return self;
+}
+
+- (id)initWithCoder:(CPCoder)aCoder {
+    self = [super initWithCoder:aCoder];
+    console.log(_cmd + ": " + self);
+    if (self) {
+        connections = [CPArray array];
+        attributeKeysForObjectClassName = [CPDictionary dictionary];
+    }
+    return self;
+}
+
 - (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
     [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:nil];
 }
@@ -238,7 +258,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                                 value = toOne;
                             } else {
                                 // Add it to a list and try again after we have registered all objects.
-                                [possibleToOneFaultObjects addObject:{@"object":obj, @"relationshipKey":column, @"globalId":value}];
+                                [possibleToOneFaultObjects addObject:{@"object":obj, @"relationshipKey":column, @"globalId":value, @"type": type}];
                                 value = nil;
                             }
                         }
@@ -347,7 +367,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 if ([possibleToOneFaultObject.object respondsToSelector:@selector(enityNameForRelationshipKey:)]) {
                     entityName = [possibleToOneFaultObject.object enityNameForRelationshipKey:possibleToOneFaultObject.relationshipKey];
                 } else {
-                    entityName = possibleToOneFaultObject.relationshipKey;
+                    entityName = [[self propertyForKey:possibleToOneFaultObject.relationshipKey withEntityNamed:possibleToOneFaultObject.type] destinationEntityName];
                 }
                 if (entityName != nil) {
                     toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:entityName primaryKey:globalId];
@@ -667,17 +687,13 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 }
 
 - (CPString)globalIdForObject:(id)theObject {
-    //CPLog.trace(@"[" + [self className] + @" " + _cmd + @"] theObject:" + [theObject description]);
-    if ([theObject respondsToSelector:@selector(uuid)]) {
-        var objectType = [self typeOfObject:theObject];
-        var uuid = [self globalIdForObjectType:objectType andPrimaryKey:[self primaryKeyForObject:theObject]];
+    var objectType = [self typeOfObject:theObject];
+    var uuid = [self globalIdForObjectType:objectType andPrimaryKey:[self primaryKeyForObject:theObject]];
 
-        if (!uuid) {    // If we don't have one from the backend, create a temporary until we get one.
-            uuid = objectType + theObject._UID;
-        }
-        return uuid;
+    if (!uuid) {    // If we don't have one from the backend, create a temporary until we get one.
+        uuid = objectType + theObject._UID;
     }
-    return nil;
+    return uuid;
 }
 
 
@@ -1155,6 +1171,16 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     [self _createForeignKeyAttributeCacheForEntityName:entityName];
 
     return [self destinationEntityNameForRelationshipKey:attributeName withEntityNamed:entityName];
+}
+
+- (CPEntityDescription)entityForName:(CPString)entityName {
+    if (relationshipDestinationEntityNameCache != nil) {
+        return entityNameToEntityCache[entityName] || nil;
+    }
+
+    [self _createForeignKeyAttributeCacheForEntityName:entityName];
+
+    return [self entityForName:entityName];
 }
 
 @end

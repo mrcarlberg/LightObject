@@ -6,6 +6,7 @@
  */
 
 @import <Foundation/CPObject.j>
+@import <Foundation/CPPredicate.j>
 
 @implementation LOFetchSpecification : CPObject
 {
