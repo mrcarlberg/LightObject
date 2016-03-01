@@ -11,16 +11,16 @@
 
 @implementation CPFetchedPropertyDescription : CPPropertyDescription
 {
-	CPFetchRequest _fetchRequest @accessors(property=fetchRequest);
+    CPFetchRequest _fetchRequest @accessors(property=fetchRequest);
 }
 
 - (CPString)stringRepresentation
 {
-	var result = "\n";
-	result = result + "\n";
-	result = result + "-CPFetchedPropertyDescription-";
+    var result = "\n";
+    result = result + "\n";
+    result = result + "-CPFetchedPropertyDescription-";
 
-	return result;
+    return result;
 }
 
 @end

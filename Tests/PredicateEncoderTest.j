@@ -78,7 +78,7 @@
 }
 
 - (void)testAggregateExpression {
-	var expr = [CPExpression expressionForAggregate:[ [CPExpression expressionForConstantValue:1], [CPExpression expressionForConstantValue:@"two"] ]];
+    var expr = [CPExpression expressionForAggregate:[ [CPExpression expressionForConstantValue:1], [CPExpression expressionForConstantValue:@"two"] ]];
     var json = [expr LOJSONFormat];
     [self assert:@"array" equals:json.type];
     [self assertJSON:json.value equals:[{type:@"number",value:1},{type:@"string",value:@"two"}]];
@@ -103,7 +103,7 @@
         var expr = [CPExpression expressionForAggregate:@[ [[CPObject alloc] init] ] ];
         [expr LOJSONFormat];
     };
-	[self assertThrows:f name:LOJSONUnsupportedExpressionValueException reason:@"Unsupported value of aggregate expression: Unsupported type 'object' for constant value expression"];
+    [self assertThrows:f name:LOJSONUnsupportedExpressionValueException reason:@"Unsupported value of aggregate expression: Unsupported type 'object' for constant value expression"];
 }
 
 - (void)testConstantValueExpressionThrowsOnUnknownType {
@@ -166,23 +166,23 @@
 }
 
 - (void)testComparisonPredicateWithConstantValueInKeyPath {
-	var predicate = [CPPredicate predicateWithFormat:@"'v' IN k"];
-	var json = [predicate LOJSONFormat];
-	[self assertJSON:json equals:{o: @"in", l: @"v", lt: @"string", r: @"k", rt: @"keyPath"}];
+    var predicate = [CPPredicate predicateWithFormat:@"'v' IN k"];
+    var json = [predicate LOJSONFormat];
+    [self assertJSON:json equals:{o: @"in", l: @"v", lt: @"string", r: @"k", rt: @"keyPath"}];
 }
 
 - (void)testComparisonPredicateWithKeyPathInConstantValues {
-	var predicate = [CPPredicate predicateWithFormat:@"k IN {1,2}"];
-	var json = [predicate LOJSONFormat];
-	[self assertJSON:json matches:{o: @"in", l: @"k", lt: @"keyPath", rt: @"array"} message:"sans r"];
-	[self assertJSON:json.r matches:[ {type:@"number",value:1}, {type:@"number",value:2} ]];
+    var predicate = [CPPredicate predicateWithFormat:@"k IN {1,2}"];
+    var json = [predicate LOJSONFormat];
+    [self assertJSON:json matches:{o: @"in", l: @"k", lt: @"keyPath", rt: @"array"} message:"sans r"];
+    [self assertJSON:json.r matches:[ {type:@"number",value:1}, {type:@"number",value:2} ]];
 }
 
 - (void)testComparisonPredicateWithKeyPathBetweenConstantValues {
-	var predicate = [CPPredicate predicateWithFormat:@"k BETWEEN {1,2}"];
-	var json = [predicate LOJSONFormat];
-	[self assertJSON:json matches:{o: @"between", l: @"k", lt: @"keyPath", rt: @"array"} message:"sans r"];
-	[self assertJSON:json.r matches:[ {type:@"number",value:1}, {type:@"number",value:2} ]];
+    var predicate = [CPPredicate predicateWithFormat:@"k BETWEEN {1,2}"];
+    var json = [predicate LOJSONFormat];
+    [self assertJSON:json matches:{o: @"between", l: @"k", lt: @"keyPath", rt: @"array"} message:"sans r"];
+    [self assertJSON:json.r matches:[ {type:@"number",value:1}, {type:@"number",value:2} ]];
 }
 
 - (void)testComparisonPredicateSupportedOperators {
@@ -193,8 +193,8 @@
     [self assertJSON:[[CPPredicate predicateWithFormat:@"k <= 's'"] LOJSONFormat] matches:{"o": "<="}];
     [self assertJSON:[[CPPredicate predicateWithFormat:@"k >= 's'"] LOJSONFormat] matches:{"o": ">="}];
     [self assertJSON:[[CPPredicate predicateWithFormat:@"k LIKE 's'"] LOJSONFormat] matches:{"o": "like"}];
-	[self assertJSON:[[CPPredicate predicateWithFormat:@"'s' IN k"] LOJSONFormat] matches:{o: @"in"}];
-	[self assertJSON:[[CPPredicate predicateWithFormat:@"k BETWEEN {1,2}"] LOJSONFormat] matches:{o: @"between"}];
+    [self assertJSON:[[CPPredicate predicateWithFormat:@"'s' IN k"] LOJSONFormat] matches:{o: @"in"}];
+    [self assertJSON:[[CPPredicate predicateWithFormat:@"k BETWEEN {1,2}"] LOJSONFormat] matches:{o: @"between"}];
 }
 
 - (void)testCompoundPredicateAND {

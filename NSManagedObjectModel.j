@@ -7,38 +7,38 @@
 
 @implementation NSManagedObjectModel : CPManagedObjectModel
 {
-	CPMutableDictionary ns_entities;
-	CPSet ns_versionIdentifier;
-	id ns_fetchRequestTemplates;
+    CPMutableDictionary ns_entities;
+    CPSet ns_versionIdentifier;
+    id ns_fetchRequestTemplates;
 }
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
-	self = [super init];
+    self = [super init];
 
-	if (self)
-	{
-		ns_entities = [aCoder decodeObjectForKey:@"NSEntities"];
-		ns_versionIdentifier = [aCoder decodeObjectForKey:@"NSVersionIdentifiers"];	
-		ns_fetchRequestTemplates = [aCoder decodeObjectForKey:@"NSFetchRequestTemplate"];
+    if (self)
+    {
+        ns_entities = [aCoder decodeObjectForKey:@"NSEntities"];
+        ns_versionIdentifier = [aCoder decodeObjectForKey:@"NSVersionIdentifiers"];
+        ns_fetchRequestTemplates = [aCoder decodeObjectForKey:@"NSFetchRequestTemplate"];
 
-		[self NS_transformEntities];
-	}
+        [self NS_transformEntities];
+    }
 
-	return self;
+    return self;
 }
 
 - (void)NS_transformEntities
-{	
-	var keyEnumerator = [ns_entities keyEnumerator];
-	var aName;
-	while(aName = [keyEnumerator nextObject])
-	{
-		var aNSEntity = [ns_entities objectForKey:aName];	
-		[self addEntity:aNSEntity];
-	}
+{
+    var keyEnumerator = [ns_entities keyEnumerator];
+    var aName;
+    while(aName = [keyEnumerator nextObject])
+    {
+        var aNSEntity = [ns_entities objectForKey:aName];
+        [self addEntity:aNSEntity];
+    }
 
-	[[self entities] makeObjectsPerformSelector:@selector(NS_loadEntityDescription)];	
+    [[self entities] makeObjectsPerformSelector:@selector(NS_loadEntityDescription)];
 }
 
 

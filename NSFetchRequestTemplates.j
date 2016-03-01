@@ -12,14 +12,14 @@
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
-	self = [super init];
+    self = [super init];
 
-	if (self)
-	{
-		CPLog.info("NSFetchRequestTemplates: " + [aCoder._plistObject allKeys]);		
-	}
+    if (self)
+    {
+        CPLog.info("NSFetchRequestTemplates: " + [aCoder._plistObject allKeys]);
+    }
 
-	return self;
+    return self;
 }
 
 

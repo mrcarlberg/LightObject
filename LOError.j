@@ -16,25 +16,25 @@ LOObjectValidationDomainString = @"LOObjectValidationDomainString";
 }
 
 + (CPString)LOObjectValidationDomainString {
-	return LOObjectValidationDomainString;
+    return LOObjectValidationDomainString;
 }
 
 + (CPString)LOValidationErrorKeyString {
-	return LOValidationErrorKeyString;
+    return LOValidationErrorKeyString;
 }
 
 + (id)errorWithDomain:(CPString)aDomain code:(int)aCode userInfo:(CPDictionary)aUserInfo {
-	return [[LOError alloc] initWithDomain:aDomain code:aCode userInfo:aUserInfo];
+    return [[LOError alloc] initWithDomain:aDomain code:aCode userInfo:aUserInfo];
 }
 
 - (id)initWithDomain:(CPString)aDomain code:(int)aCode userInfo:(CPDictionary)aUserInfo {
-	self = [super init];
-	if (self) {
-		domain = aDomain;
-		code = aCode;
-		userInfo = aUserInfo;
-	}
-	return self;
+    self = [super init];
+    if (self) {
+        domain = aDomain;
+        code = aCode;
+        userInfo = aUserInfo;
+    }
+    return self;
 }
 
 - (CPString)description {

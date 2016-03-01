@@ -10,56 +10,56 @@
 //    NSEntityDescription _destinationEntity;
 
 //    NSRelationshipDescription _inverseRelationship;
-//   	CPString _inverseRelationshipName;
+//      CPString _inverseRelationshipName;
 
-//	NSRelationshipDescription ns_entity;
+//  NSRelationshipDescription ns_entity;
 
-	int ns_minCount;
+    int ns_minCount;
 }
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
-	self = [super init];
+    self = [super init];
 
-	if (self)
-	{	
-		[self setDestinationEntityName:[aCoder decodeObjectForKey: @"_NSDestinationEntityName"]];
-		[self setInversePropertyName:[aCoder decodeObjectForKey: @"_NSInverseRelationshipName"]];
-		[self setName:[aCoder decodeObjectForKey: @"NSPropertyName"]];
-		[self setIsOptional:[aCoder decodeBoolForKey: @"NSIsOptional"]];
-		[self setIsToMany:[self NS_isToMany:[aCoder decodeIntForKey: @"NSMaxCount"]]];
-		[self setDeleteRule:[self NS_deleteRule:[aCoder decodeIntForKey: @"NSDeleteRule"]]];
-		[self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
-	}
+    if (self)
+    {
+        [self setDestinationEntityName:[aCoder decodeObjectForKey: @"_NSDestinationEntityName"]];
+        [self setInversePropertyName:[aCoder decodeObjectForKey: @"_NSInverseRelationshipName"]];
+        [self setName:[aCoder decodeObjectForKey: @"NSPropertyName"]];
+        [self setOptional:[aCoder decodeBoolForKey: @"NSIsOptional"]];
+        [self setIsToMany:[self NS_isToMany:[aCoder decodeIntForKey: @"NSMaxCount"]]];
+        [self setDeleteRule:[self NS_deleteRule:[aCoder decodeIntForKey: @"NSDeleteRule"]]];
+        [self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
+    }
 
-	return self;
+    return self;
 }
 
 - (BOOL)NS_isToMany:(int)count
-{    
-	if(count !== 1)
-	{
-		return YES;
-	}
+{
+    if(count !== 1)
+    {
+        return YES;
+    }
     else
-	{
-		return NO;
-	}
+    {
+        return NO;
+    }
 }
 
 - (int) NS_deleteRule:(int) aDeleteRule
 {
-	var result = CPRelationshipDescriptionDeleteRuleNullify;
-	if(aDeleteRule == 3)
-		result = CPRelationshipDescriptionDeleteRuleDeny;
-	else if(aDeleteRule == 2)
-		result = CPRelationshipDescriptionDeleteRuleCascade;
-	else if(aDeleteRule == 1)
-		result = CPRelationshipDescriptionDeleteRuleNullify;
-	else if(aDeleteRule == 0)
-		result = CPRelationshipDescriptionDeleteRuleNoAction;
+    var result = CPRelationshipDescriptionDeleteRuleNullify;
+    if(aDeleteRule == 3)
+        result = CPRelationshipDescriptionDeleteRuleDeny;
+    else if(aDeleteRule == 2)
+        result = CPRelationshipDescriptionDeleteRuleCascade;
+    else if(aDeleteRule == 1)
+        result = CPRelationshipDescriptionDeleteRuleNullify;
+    else if(aDeleteRule == 0)
+        result = CPRelationshipDescriptionDeleteRuleNoAction;
 
-	return result;
+    return result;
 }
 
 - (Class)classForKeyedArchiver

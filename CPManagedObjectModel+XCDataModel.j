@@ -26,30 +26,30 @@
 	return managedObjectModel;
 }
 
-+ (void)objectModelFromXMLData:(CPData)modelData withName:(CPString)aName
++ (id)objectModelFromXMLData:(CPData)modelData withName:(CPString)aName
 {
-	var managedObjectModel = [self objectModelFromXMLData:data];
-	[managedObjectModel setName:aName];
+    var managedObjectModel = [self objectModelFromXMLData:data];
+    [managedObjectModel setName:aName];
 
-	return managedObjectModel;
+    return managedObjectModel;
 }
 
-+ (void)objectModelFromXMLData:(CPData)modelData
++ (id)objectModelFromXMLData:(CPData)modelData
 {
-	return [self objectModelFromXMLString:[modelData rawString]];
+    return [self objectModelFromXMLString:[modelData rawString]];
 }
 
-+ (void)objectModelFromXMLString:(CPString)modelString
++ (id)objectModelFromXMLString:(CPString)modelString
 {
-	var plistContents = modelString.replace(/\<key\>\s*CF\$UID\s*\<\/key\>/g, "<key>CP$UID</key>");
-	var unarchiver = [[CPKeyedUnarchiver alloc] initForReadingWithData:[CPData dataWithRawString:plistContents]];
-	var managedObjectModel = [unarchiver decodeObjectForKey:@"root"];
+    var plistContents = modelString.replace(/\<key\>\s*CF\$UID\s*\<\/key\>/g, "<key>CP$UID</key>");
+    var unarchiver = [[CPKeyedUnarchiver alloc] initForReadingWithData:[CPData dataWithRawString:plistContents]];
+    var managedObjectModel = [unarchiver decodeObjectForKey:@"root"];
 
-	if (!managedObjectModel) {
-		managedObjectModel = modelFromXML(modelString);
-	}
+    if (!managedObjectModel) {
+        managedObjectModel = modelFromXML(modelString);
+    }
 
-	return managedObjectModel;
+    return managedObjectModel;
 }
 
 @end
@@ -245,40 +245,42 @@ var modelFromXML = function(/*String | XMLNode*/ aStringOrXMLNode)
 
         switch (String(NODE_NAME(XMLNode)))
         {
-        	case MODEL_ENTITY: 			object = [[CPEntityDescription alloc] init];
-        								[object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-										[object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName")];
-        								[modelObject addEntity:object];
+            case MODEL_ENTITY:          object = [[CPEntityDescription alloc] init];
+                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName")];
+                                        [object setAbstract:ATTRIBUTE_VALUE(XMLNode, "isAbstract") === 'YES'];
+                                        [modelObject addEntity:object];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);
-        								break;
-        	case MODEL_ATTRIBUTE: 		object = [[CPAttributeDescription alloc] init];
-        								[object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-										[object setIsOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
-										var typeValueString = ATTRIBUTE_VALUE(XMLNode, "attributeType").replace(/\s+/g, ''); // Remove spaces
-										if (typeValueString === "Binary") typeValueString = "BinaryData";
-										var typeValue = global["CPD" + typeValueString + "AttributeType"];
-										//console.log("ValueType for " + ATTRIBUTE_VALUE(XMLNode, "attributeType") + " : " + typeValue);
-										[object setTypeValue:typeValue || CPDUndefinedAttributeType];
-										[object setDefaultValue:ATTRIBUTE_VALUE(XMLNode, "defaultValueString")];
-        								[currentContainer addProperty:object];
-        								[object setEntity:currentContainer];
+                                        break;
+            case MODEL_ATTRIBUTE:       object = [[CPAttributeDescription alloc] init];
+                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
+                                        [object setTransient:ATTRIBUTE_VALUE(XMLNode, "transient") === 'YES'];
+                                        var typeValueString = ATTRIBUTE_VALUE(XMLNode, "attributeType").replace(/\s+/g, ''); // Remove spaces
+                                        if (typeValueString === "Binary") typeValueString = "BinaryData";
+                                        var typeValue = global["CPD" + typeValueString + "AttributeType"];
+                                        //console.log("ValueType for " + ATTRIBUTE_VALUE(XMLNode, "attributeType") + " : " + typeValue);
+                                        [object setTypeValue:typeValue || CPDUndefinedAttributeType];
+                                        [object setDefaultValue:ATTRIBUTE_VALUE(XMLNode, "defaultValueString")];
+                                        [currentContainer addProperty:object];
+                                        [object setEntity:currentContainer];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);
-        								break;
-        	case MODEL_RELATIONSHIP: 	object = [[CPRelationshipDescription alloc] init];
-        								[object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-										[object setIsOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
-        								[currentContainer addProperty:object];
-        								[object setEntity:currentContainer];
+                                        break;
+            case MODEL_RELATIONSHIP:    object = [[CPRelationshipDescription alloc] init];
+                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
+                                        [currentContainer addProperty:object];
+                                        [object setEntity:currentContainer];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);
-        								break;
-        	case MODEL_USERINFO: 		object = new CFMutableDictionary();
-        								[currentContainer setUserInfo:object];
+                                        break;
+            case MODEL_USERINFO:        object = new CFMutableDictionary();
+                                        [currentContainer setUserInfo:object];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);
-        								break;
-        	case MODEL_ENTRY:           currentContainer.setValueForKey(ATTRIBUTE_VALUE(XMLNode, "key"), ATTRIBUTE_VALUE(XMLNode, "value"));
-        								break;
-        	case MODEL_ELEMENTS:        break;
-        	case MODEL_ELEMENT:         break;
+                                        break;
+            case MODEL_ENTRY:           currentContainer.setValueForKey(ATTRIBUTE_VALUE(XMLNode, "key"), ATTRIBUTE_VALUE(XMLNode, "value"));
+                                        break;
+            case MODEL_ELEMENTS:        break;
+            case MODEL_ELEMENT:         break;
 
             default:                    throw new Error("*** '" + NODE_NAME(XMLNode) + "' tag not recognized in model file.");
         }

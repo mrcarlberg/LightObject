@@ -18,176 +18,176 @@ var CPDCOREDATAMODEL_SUFFIX = "cpxcdatamodel";
 
 @implementation CPManagedObjectModel : CPObject
 {
-	CPString _name @accessors(property=name);
-	CPMutableSet _entities @accessors(property=entities);
-	JSObject _entitiesCache;
+    CPString _name @accessors(property=name);
+    CPMutableSet _entities @accessors(property=entities);
+    JSObject _entitiesCache;
 }
 
 - (id)init
 {
-	if(self = [super init])
-	{
-		_entities = [[CPMutableSet alloc] init];
-	}
+    if(self = [super init])
+    {
+        _entities = [[CPMutableSet alloc] init];
+    }
 
-	return self;
+    return self;
 }
 
 + (id)modelWithModelNamed:(CPString) aModelName bundle:(CPBundle)aBundle
 {
-	var objectModel = [[CPManagedObjectModel alloc] init];
-	var modelURL = [aBundle || [CPBundle mainBundle] pathForResource:aModelName];
-	if(modelURL != nil)
-	{
-		//check what kind of model we have
-		if([aModelName hasSuffix:EOMODEL_SUFFIX])
-		{
-			[objectModel parseEOModel:modelURL];
-		}
-		else if([aModelName hasSuffix:COREDATAMODEL_SUFFIX] 
-					|| [aModelName hasSuffix:CPDCOREDATAMODEL_SUFFIX])
-		{
-			objectModel = [CPManagedObjectModel parseCoreDataModel:modelURL];
-		}
-	}
+    var objectModel = [[CPManagedObjectModel alloc] init];
+    var modelURL = [aBundle || [CPBundle mainBundle] pathForResource:aModelName];
+    if(modelURL != nil)
+    {
+        //check what kind of model we have
+        if([aModelName hasSuffix:EOMODEL_SUFFIX])
+        {
+            [objectModel parseEOModel:modelURL];
+        }
+        else if([aModelName hasSuffix:COREDATAMODEL_SUFFIX]
+                    || [aModelName hasSuffix:CPDCOREDATAMODEL_SUFFIX])
+        {
+            objectModel = [CPManagedObjectModel parseCoreDataModel:modelURL];
+        }
+    }
 
-	CPLog.info("Data Model '" + [objectModel name] + "' loaded");
+    CPLog.info("Data Model '" + [objectModel name] + "' loaded");
 
-	return objectModel;
+    return objectModel;
 }
 
-+ (id) mergedModelFromBundles: (CPArray) bundles 
++ (id)mergedModelFromBundles: (CPArray) bundles
 {
     //Unimplemented
-	return nil
+    return nil
 }
 
 
-+ (id) modelByMergingModels: (CPArray) models 
++ (id)modelByMergingModels: (CPArray) models
 {
-	//Unimplemented
+    //Unimplemented
     return nil;
 }
 
 - (void)setNameFromFilePath:(CPString)aFilePath
 {
-	var pathComponents = [aFilePath componentsSeparatedByString:@"/"];
-	[pathComponents removeObjectAtIndex:0];
+    var pathComponents = [aFilePath componentsSeparatedByString:@"/"];
+    [pathComponents removeObjectAtIndex:0];
 
-	var pathComponentsEnum = [pathComponents objectEnumerator];
-	var aPathComponent;
+    var pathComponentsEnum = [pathComponents objectEnumerator];
+    var aPathComponent;
 
-	while((aPathComponent = [pathComponentsEnum nextObject]) != null)
-	{
-		if([CPManagedObjectModel hasSupportedModelSuffix:aPathComponent])
-		{
-			var componentSuffix = [aPathComponent componentsSeparatedByString:@"."];
-			if([componentSuffix count] > 1)
-			{
-				[self setName:[componentSuffix objectAtIndex:0]];
-				break;
-			}
-		}
-	}
+    while((aPathComponent = [pathComponentsEnum nextObject]) != null)
+    {
+        if([CPManagedObjectModel hasSupportedModelSuffix:aPathComponent])
+        {
+            var componentSuffix = [aPathComponent componentsSeparatedByString:@"."];
+            if([componentSuffix count] > 1)
+            {
+                [self setName:[componentSuffix objectAtIndex:0]];
+                break;
+            }
+        }
+    }
 }
 
 + (BOOL)hasSupportedModelSuffix:(CPString) aModelFile
 {
-	var result = NO;
-	if([aModelFile hasSuffix:EOMODEL_SUFFIX])
-	{
-		result = YES;
-	}
-	else if([aModelFile hasSuffix:COREDATAMODEL_SUFFIX])
-	{
-		result = YES;
-	}
-	else if([aModelFile hasSuffix:CPDCOREDATAMODEL_SUFFIX])
-	{
-		result = YES;
-	}
+    var result = NO;
+    if([aModelFile hasSuffix:EOMODEL_SUFFIX])
+    {
+        result = YES;
+    }
+    else if([aModelFile hasSuffix:COREDATAMODEL_SUFFIX])
+    {
+        result = YES;
+    }
+    else if([aModelFile hasSuffix:CPDCOREDATAMODEL_SUFFIX])
+    {
+        result = YES;
+    }
 
-	return result;
+    return result;
 }
 
 - (BOOL)isModelAllowedForMergeByName:(CPString) aModelName
 {
-	var result = NO;
-	if([[self name] isEqualToString:aModelName])
-		result = YES;
+    var result = NO;
+    if([[self name] isEqualToString:aModelName])
+        result = YES;
 
-	return result;
+    return result;
 }
 
 - (void)addEntity:(CPEntityDescription) entity
 {
-	[entity setModel:self];
-	[_entities addObject:entity];
-	_entitiesCache = nil;
+    [entity setModel:self];
+    [_entities addObject:entity];
+    _entitiesCache = nil;
 }
 
 
 - (CPEntityDescription)entityWithName:(CPString)name
 {
-	if (_entitiesCache)
-		return _entitiesCache[name];
+    if (_entitiesCache)
+        return _entitiesCache[name];
 
-	var result;
-	var entity;
-	var e = [_entities objectEnumerator];
+    var result;
+    var entity;
+    var e = [_entities objectEnumerator];
 
-	_entitiesCache = {};
+    _entitiesCache = {};
 
-	while ((entity = [e nextObject]) != nil)
+    while ((entity = [e nextObject]) != nil)
     {
-    	var entityName = [entity name];
+        var entityName = [entity name];
 
-    	_entitiesCache[entityName] = entity;
+        _entitiesCache[entityName] = entity;
 
-		if([entityName isEqualToString:name])
-		{
-			result = entity;
-		}
+        if([entityName isEqualToString:name])
+        {
+            result = entity;
+        }
     }
 
-	return result;
+    return result;
 }
 
 - (CPArray)entitiesByName
 {
-	var result = [[CPMutableArray alloc] init];
+    var result = [[CPMutableArray alloc] init];
 
-	var entitiesE = [_entities objectEnumerator];
-	var aEntity;
+    var entitiesE = [_entities objectEnumerator];
+    var aEntity;
 
-	while((aEntity = [entitiesE nextObject]))
-	{
-		[result addObject:[aEntity name]];
-	}
+    while((aEntity = [entitiesE nextObject]))
+    {
+        [result addObject:[aEntity name]];
+    }
 
-	return result;
+    return result;
 }
 
 - (CPFetchRequest)fetchRequestFromTemplateWithName:(CPString) aTemplateName
 {
-	//Unimplemented
-	return nil;
+    //Unimplemented
+    return nil;
 }
 
 - (CPString)stringRepresentation
 {
-	var result = "CPObjectModel";
+    var result = "CPObjectModel";
 
-	var entitiesE = [_entities objectEnumerator];
-	var aEntity;
+    var entitiesE = [_entities objectEnumerator];
+    var aEntity;
 
-	while((aEntity = [entitiesE nextObject]))
-	{
-		result = result + "\n";
-		result = result + [aEntity stringRepresentation];
-	}
+    while((aEntity = [entitiesE nextObject]))
+    {
+        result = result + "\n";
+        result = result + [aEntity stringRepresentation];
+    }
 
-	return result;
+    return result;
 }
 
 @end

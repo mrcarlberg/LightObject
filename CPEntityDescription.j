@@ -13,209 +13,228 @@
 
 @implementation CPEntityDescription : CPObject
 {
-	CPManagedObjectModel _model @accessors(property=model);
-	CPString _name @accessors(property=name);
-	CPString _externalName @accessors(property=externalName);
-	CPMutableSet _properties @accessors(property=properties);
-	CPDictionary _userInfo @accessors(property=userInfo);
+    CPManagedObjectModel _model @accessors(property=model);
+    CPString _name @accessors(property=name);
+    CPString _externalName @accessors(property=externalName);
+    BOOL _isAbstract;
+    CPMutableSet _properties @accessors(property=properties);
+    CPDictionary _userInfo @accessors(property=userInfo);
 }
 
 - (id)init
 {
-	if(self = [super init])
-	{
-		_properties = [[CPMutableSet alloc] init];
-	}
+    if(self = [super init])
+    {
+        _properties = [[CPMutableSet alloc] init];
+        _isAbstract = false;
+    }
 
-	return self;
+    return self;
 }
 
 /*+ (CPManagedObject)insertNewObjectForEntityForName:(CPString)aEntityName inManagedObjectContext:(CPManagedObjectContext) aContext
 {
-	var result = [aContext insertNewObjectForEntityForName:aEntityName];
+    var result = [aContext insertNewObjectForEntityForName:aEntityName];
 
-	return result;
+    return result;
 }
 
 - (CPManagedObject)createObject
 {
-	var newObject;
-	var objectClassWithName = CPClassFromString(_name);
-	var objectClassWithExternaName = CPClassFromString(_externalName);
+    var newObject;
+    var objectClassWithName = CPClassFromString(_name);
+    var objectClassWithExternaName = CPClassFromString(_externalName);
 
-	if(objectClassWithExternaName != nil)
-	{
-		newObject = [[objectClassWithExternaName alloc] initWithEntity:self]
-	}
-	else if(objectClassWithName != nil)
-	{
-		newObject = [[objectClassWithName alloc] initWithEntity:self];
-	}
-	else
-	{
-		newObject = [[CPManagedObject alloc] initWithEntity:self];
-	}
+    if(objectClassWithExternaName != nil)
+    {
+        newObject = [[objectClassWithExternaName alloc] initWithEntity:self]
+    }
+    else if(objectClassWithName != nil)
+    {
+        newObject = [[objectClassWithName alloc] initWithEntity:self];
+    }
+    else
+    {
+        newObject = [[CPManagedObject alloc] initWithEntity:self];
+    }
 
-	return newObject;
+    return newObject;
 }*/
+
+- (BOOL)isAbstract
+{
+    return _isAbstract;
+}
+
+- (void)setAbstract:(BOOL)isAbstract
+{
+    if(isAbstract == null)
+    {
+        _isAbstract = false;
+    }
+    else
+    {
+        _isAbstract = isAbstract;
+    }
+}
 
 - (void)addRelationshipWithName:(CPString)name toMany:(BOOL)toMany optional:(BOOL)isOptional deleteRule:(int) aDeleteRule destination:(CPString)destinationEntityName
 {
-	var tmp = [[CPRelationshipDescription alloc] init];
-	[tmp setName:name];
-	[tmp setEntity:self];
-	[tmp setIsToMany:toMany];
-	[tmp setIsOptional:isOptional];
-	[tmp setDeleteRule:aDeleteRule];
-	[tmp setDestinationEntityName:destinationEntityName];
+    var tmp = [[CPRelationshipDescription alloc] init];
+    [tmp setName:name];
+    [tmp setEntity:self];
+    [tmp setIsToMany:toMany];
+    [tmp setOptional:isOptional];
+    [tmp setDeleteRule:aDeleteRule];
+    [tmp setDestinationEntityName:destinationEntityName];
 
-	[self addProperty:tmp];
+    [self addProperty:tmp];
 }
 
 - (void)addAttributeWithName:(CPString)name classValue:(CPString)aClassValue typeValue:(int)aAttributeType optional:(BOOL)isOptional
 {
-	var tmp = [[CPAttributeDescription alloc] init];
-	[tmp setName:name];
-	[tmp setEntity:self];
-	[tmp setTypeValue:aAttributeType];
-	[tmp setClassValue:aClassValue];
-	[tmp setIsOptional:isOptional];
+    var tmp = [[CPAttributeDescription alloc] init];
+    [tmp setName:name];
+    [tmp setEntity:self];
+    [tmp setTypeValue:aAttributeType];
+    [tmp setClassValue:aClassValue];
+    [tmp setOptional:isOptional];
 
-	[self addProperty:[tmp copy]];
+    [self addProperty:[tmp copy]];
 }
 
 - (void)addProperty:(CPPropertyDescription)property
 {
-	[_properties addObject:property];
+    [_properties addObject:property];
 }
 
 - (CPDictionary)attributesByName
 {
-	return [self _filteredPropertiesOfClass: [CPAttributeDescription class]];
+    return [self _filteredPropertiesOfClass: [CPAttributeDescription class]];
 }
 
 - (CPDictionary)relationshipsByName
 {
-	return [self _filteredPropertiesOfClass: [CPRelationshipDescription class]];
+    return [self _filteredPropertiesOfClass: [CPRelationshipDescription class]];
 }
 
 
 - (CPDictionary)propertiesByName
 {
-	return [self _filteredPropertiesOfClass: Nil];
+    return [self _filteredPropertiesOfClass: Nil];
 }
 
 - (CPArray)propertyNames
 {
-	return [[self _filteredPropertiesOfClass: Nil] allKeys];
+    return [[self _filteredPropertiesOfClass: Nil] allKeys];
 }
 
 - (CPArray)mandatoryAttributes
 {
-	var result = [[CPMutableArray alloc] init];
-	var allAttributes = [self attributesByName];
+    var result = [[CPMutableArray alloc] init];
+    var allAttributes = [self attributesByName];
 
-	var allKeys = [allAttributes allKeys];
-	var i = 0;
+    var allKeys = [allAttributes allKeys];
+    var i = 0;
 
-	for(i=0;i<[allKeys count];i++)
-	{
-		var aKey = [allKeys objectAtIndex:i];
-		var attribute = [allAttributes objectForKey:aKey];
+    for(i=0;i<[allKeys count];i++)
+    {
+        var aKey = [allKeys objectAtIndex:i];
+        var attribute = [allAttributes objectForKey:aKey];
 
-		if(attribute != nil && ![attribute isOptional])
-		{
-			[result addObject:aKey];
-		}
-	}
+        if(attribute != nil && ![attribute isOptional])
+        {
+            [result addObject:aKey];
+        }
+    }
 
-	return result
+    return result
 }
 
 - (CPArray)mandatoryRelationships
 {
-	var result = [[CPMutableArray alloc] init];
-	var allRC = [self relationshipsByName];
+    var result = [[CPMutableArray alloc] init];
+    var allRC = [self relationshipsByName];
 
-	var allKeys = [allRC allKeys];
-	var i = 0;
+    var allKeys = [allRC allKeys];
+    var i = 0;
 
-	for(i=0;i<[allKeys count];i++)
-	{
-		var aKey = [allKeys objectAtIndex:i];
-		var property = [allRC objectForKey:aKey];
-
-		if(property != nil && ![property isOptional])
-		{
-			[result addObject:aKey];
-		}
-	}
-
-	return result
-}
-
-
-- (CPDictionary) _filteredPropertiesOfClass: (Class) aClass
-{
-	var dict;
-	var e;
-	var property;
-
-	dict = [[CPMutableDictionary alloc] init];
-	e = [_properties objectEnumerator];
-	while ((property = [e nextObject]) != nil)
+    for(i=0;i<[allKeys count];i++)
     {
-      if (aClass == Nil || [property isKindOfClass: aClass])
+        var aKey = [allKeys objectAtIndex:i];
+        var property = [allRC objectForKey:aKey];
+
+        if(property != nil && ![property isOptional])
         {
-			[dict setObject: property forKey: [property name]];
+            [result addObject:aKey];
         }
     }
 
-	return dict;
+    return result
+}
+
+
+- (CPDictionary)_filteredPropertiesOfClass: (Class) aClass
+{
+    var dict;
+    var e;
+    var property;
+
+    dict = [[CPMutableDictionary alloc] init];
+    e = [_properties objectEnumerator];
+    while ((property = [e nextObject]) != nil)
+    {
+      if (aClass == Nil || [property isKindOfClass: aClass])
+        {
+            [dict setObject: property forKey: [property name]];
+        }
+    }
+
+    return dict;
 }
 
 
 - (BOOL)acceptValue:(id) aValue forProperty:(CPString) aKey
 {
-	var result = NO;
-	var theProperty = [[self propertiesByName] objectForKey:aKey]
-	result = [theProperty acceptValue:aValue];
-	return result;
+    var result = NO;
+    var theProperty = [[self propertiesByName] objectForKey:aKey]
+    result = [theProperty acceptValue:aValue];
+    return result;
 }
 
 
-- (BOOL) isEqual:(CPEntityDescription)aEntity
+- (BOOL)isEqual:(CPEntityDescription)aEntity
 {
-	if([[aEntity name] isEqualToString:_name])
-	{
-		return YES;
-	}
+    if([[aEntity name] isEqualToString:_name])
+    {
+        return YES;
+    }
 
-	return NO;
+    return NO;
 }
 
 
 - (CPString)stringRepresentation
 {
-	var result = "\n";
-	result = result + "\n";
-	result = result + "-CPEntityDescription-";
-	result = result + "\n***********";
-	result = result + "\n";
-	result = result + "name:" + [self name] + ";";
-	result = result + "\n";
-	result = result + "externalName:" + [self externalName] + ";";
+    var result = "\n";
+    result = result + "\n";
+    result = result + "-CPEntityDescription-";
+    result = result + "\n***********";
+    result = result + "\n";
+    result = result + "name:" + [self name] + ";";
+    result = result + "\n";
+    result = result + "externalName:" + [self externalName] + ";";
 
-	var propertiesE = [_properties objectEnumerator];
-	var aProperty;
+    var propertiesE = [_properties objectEnumerator];
+    var aProperty;
 
-	while((aProperty = [propertiesE nextObject]))
-	{
-		result = result + "\n";
-		result = result + [aProperty stringRepresentation];
-	}
+    while((aProperty = [propertiesE nextObject]))
+    {
+        result = result + "\n";
+        result = result + [aProperty stringRepresentation];
+    }
 
-	return result;
+    return result;
 }
 
 @end

@@ -15,33 +15,33 @@
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
-	self = [super init];
+    self = [super init];
 
-	if (self)
-	{		
-		[self setName:[aCoder decodeObjectForKey: @"NSEntityName"]];
-		[self setExternalName:[aCoder decodeObjectForKey: @"NSClassNameForEntity"]];
-		[self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
-		ns_model = [aCoder decodeObjectForKey: @"NSManagedObjectModel"];	//will set on addEntity in CPManagedObjectModel
-		ns_properties = [aCoder decodeObjectForKey: @"NSProperties"];
-		ns_subentities = [aCoder decodeObjectForKey: @"NSSubentities"];
-		ns_superentity = [aCoder decodeObjectForKey: @"NSSuperentity"];
-		ns_versionHashModifier = [aCoder decodeObjectForKey: @"NSVersionHashModifier"];	
-	}
+    if (self)
+    {
+        [self setName:[aCoder decodeObjectForKey: @"NSEntityName"]];
+        [self setExternalName:[aCoder decodeObjectForKey: @"NSClassNameForEntity"]];
+        [self setUserInfo:[aCoder decodeObjectForKey: @"NSUserInfo"]];
+        ns_model = [aCoder decodeObjectForKey: @"NSManagedObjectModel"];    //will set on addEntity in CPManagedObjectModel
+        ns_properties = [aCoder decodeObjectForKey: @"NSProperties"];
+        ns_subentities = [aCoder decodeObjectForKey: @"NSSubentities"];
+        ns_superentity = [aCoder decodeObjectForKey: @"NSSuperentity"];
+        ns_versionHashModifier = [aCoder decodeObjectForKey: @"NSVersionHashModifier"];
+    }
 
-	return self;
+    return self;
 }
 
 - (void)NS_loadEntityDescription
 {
-	var keyEnumerator = [ns_properties keyEnumerator];
-	var aPropertyName;
-	while(aPropertyName = [keyEnumerator nextObject])
-	{
-		var aProperty = [ns_properties objectForKey:aPropertyName];
-		[aProperty setEntity:self];
-		[self addProperty:aProperty];
-	}
+    var keyEnumerator = [ns_properties keyEnumerator];
+    var aPropertyName;
+    while(aPropertyName = [keyEnumerator nextObject])
+    {
+        var aProperty = [ns_properties objectForKey:aPropertyName];
+        [aProperty setEntity:self];
+        [self addProperty:aProperty];
+    }
 }
 
 - (Class)classForKeyedArchiver

@@ -97,32 +97,32 @@ function _BOPValidValueJSONOrRaise(someJSON) {
 }
 
 + (CPExpression)expressionFromLOJSONFormat:(JSON)someJSON {
-	var json = _BOPValidValueJSONOrRaise(someJSON);
-	var type = json.type;
-	var value = json.value;
+    var json = _BOPValidValueJSONOrRaise(someJSON);
+    var type = json.type;
+    var value = json.value;
 
-	if ([type isEqual:@"array"]) {
-		if (!value || !value.isa || ![value isKindOfClass:[CPArray class]])
-			[CPException raise:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type '" + type + "'. Value must be an array: '" + value + "'"];
+    if ([type isEqual:@"array"]) {
+        if (!value || !value.isa || ![value isKindOfClass:[CPArray class]])
+            [CPException raise:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type '" + type + "'. Value must be an array: '" + value + "'"];
 
-		var subexprs = [CPMutableArray array];
-		try {
-			for (var i=0; i<[value count]; i++) {
-			    var subValue = value[i];
-				[subexprs addObject:[self _atomExpressionFromLOJSONFormat:subValue]];
-			}
-		}
-		catch (exception) {
-			[CPException raise:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type '" + type + "'. Invalid sub-value: "+ [exception reason]];
-		}
-		return [CPExpression expressionForAggregate:subexprs];
-	}
+        var subexprs = [CPMutableArray array];
+        try {
+            for (var i=0; i<[value count]; i++) {
+                var subValue = value[i];
+                [subexprs addObject:[self _atomExpressionFromLOJSONFormat:subValue]];
+            }
+        }
+        catch (exception) {
+            [CPException raise:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type '" + type + "'. Invalid sub-value: "+ [exception reason]];
+        }
+        return [CPExpression expressionForAggregate:subexprs];
+    }
 
-	return [self _atomExpressionFromLOJSONFormat:json];
+    return [self _atomExpressionFromLOJSONFormat:json];
 }
 
 + (CPExpression)_atomExpressionFromLOJSONFormat:(JSON)someJSON {
-	_BOPValidValueJSONOrRaise(someJSON);
+    _BOPValidValueJSONOrRaise(someJSON);
 
     var validNumberOrRaise = function(value,type) {
         var v = (value === null) ? null : Number(value);
@@ -179,7 +179,7 @@ function _BOPValidValueJSONOrRaise(someJSON) {
                 [values addObject:[subexpr _atomLOJSONFormat]];
             }
         } catch (exception) {
-			[CPException raise:LOJSONUnsupportedExpressionValueException reason:@"Unsupported value of aggregate expression: " + [exception reason]];
+            [CPException raise:LOJSONUnsupportedExpressionValueException reason:@"Unsupported value of aggregate expression: " + [exception reason]];
         }
         return {type:"array", value:values};
     }

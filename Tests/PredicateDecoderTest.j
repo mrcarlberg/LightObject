@@ -139,27 +139,27 @@
 }
 
 - (void)testAggregateExpression {
-	var expr = [CPExpression expressionFromLOJSONFormat:{type: @"array", value: [ { type:@"string", value:@"str"}]}];
-	[self assert:[expr expressionType] equals:CPAggregateExpressionType];
-	var value = [expr collection];
-	[self assertTrue:[value isKindOfClass:[CPArray class]] message:@"value is of class " + CPStringFromClass([value class])];
-	[self assert:[value count] equals:1];
+    var expr = [CPExpression expressionFromLOJSONFormat:{type: @"array", value: [ { type:@"string", value:@"str"}]}];
+    [self assert:[expr expressionType] equals:CPAggregateExpressionType];
+    var value = [expr collection];
+    [self assertTrue:[value isKindOfClass:[CPArray class]] message:@"value is of class " + CPStringFromClass([value class])];
+    [self assert:[value count] equals:1];
 
-	var subexpr = value[0];
-	[self assert:[subexpr expressionType] equals:CPConstantValueExpressionType];
-	[self assert:[subexpr constantValue] equals:@"str"];
+    var subexpr = value[0];
+    [self assert:[subexpr expressionType] equals:CPConstantValueExpressionType];
+    [self assert:[subexpr constantValue] equals:@"str"];
 }
 
 - (void)testAggregateExpressionMustBeArray {
-	var f = function() { [CPExpression expressionFromLOJSONFormat:{type: @"array", value: @"this is not an array"}]; };
-	[self assertThrows:f name:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type 'array'. Value must be an array: 'this is not an array'"];
+    var f = function() { [CPExpression expressionFromLOJSONFormat:{type: @"array", value: @"this is not an array"}]; };
+    [self assertThrows:f name:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type 'array'. Value must be an array: 'this is not an array'"];
 }
 
 - (void)testAggregateExpressionThrowsOnInvalidSubexpression {
-	var f = function() {
-		[CPExpression expressionFromLOJSONFormat:{type: @"array", value: [@"this is not a valid value"] }];
-	};
-	[self assertThrows:f name:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type 'array'. Invalid sub-value: Expression format missing type and value"];
+    var f = function() {
+        [CPExpression expressionFromLOJSONFormat:{type: @"array", value: [@"this is not a valid value"] }];
+    };
+    [self assertThrows:f name:LOJSONInvalidExpressionValueException reason:@"Unable to parse expression of type 'array'. Invalid sub-value: Expression format missing type and value"];
 }
 
 - (void)testExpressionThrowsOnMissingValue {
@@ -199,46 +199,46 @@
 }
 
 - (void)testComparisonPredicateWithConstantValueInKeyPath {
-	var pred = [CPComparisonPredicate predicateFromLOJSONFormat:{o: "in", l: "v", r: "k", lt: "string", rt: "keyPath"}];
+    var pred = [CPComparisonPredicate predicateFromLOJSONFormat:{o: "in", l: "v", r: "k", lt: "string", rt: "keyPath"}];
     [self assert:[CPComparisonPredicate class] equals:[pred class]];
 
     [self assert:CPInPredicateOperatorType equals:[pred predicateOperatorType]];
-	[self assertConstantValueExpression:[pred leftExpression] equals:@"v"];
-	[self assertKeyPathExpression:[pred rightExpression] equals:@"k"];
+    [self assertConstantValueExpression:[pred leftExpression] equals:@"v"];
+    [self assertKeyPathExpression:[pred rightExpression] equals:@"k"];
 }
 
 - (void)testComparisonPredicateWithKeyPathInConstantValues {
-	var json = {o: "in", l: "k", r: [ {type:"number", value:1},{type:"number", value:2} ], lt: "keyPath", rt: "array"};
-	var pred = [CPComparisonPredicate predicateFromLOJSONFormat:json];
-	[self assert:[CPComparisonPredicate class] equals:[pred class]];
+    var json = {o: "in", l: "k", r: [ {type:"number", value:1},{type:"number", value:2} ], lt: "keyPath", rt: "array"};
+    var pred = [CPComparisonPredicate predicateFromLOJSONFormat:json];
+    [self assert:[CPComparisonPredicate class] equals:[pred class]];
 
     [self assert:CPInPredicateOperatorType equals:[pred predicateOperatorType]];
-	[self assertKeyPathExpression:[pred leftExpression] equals:@"k"];
+    [self assertKeyPathExpression:[pred leftExpression] equals:@"k"];
 
-	var right = [pred rightExpression];
-	[self assert:CPAggregateExpressionType equals:[right expressionType] message:@"aggregate type"];
+    var right = [pred rightExpression];
+    [self assert:CPAggregateExpressionType equals:[right expressionType] message:@"aggregate type"];
 
-	var collection = [right collection];
-	[self assert:2 equals:[collection count]];
-	[self assertConstantValueExpression:collection[0] equals:1];
-	[self assertConstantValueExpression:collection[1] equals:2];
+    var collection = [right collection];
+    [self assert:2 equals:[collection count]];
+    [self assertConstantValueExpression:collection[0] equals:1];
+    [self assertConstantValueExpression:collection[1] equals:2];
 }
 
 - (void)testComparisonPredicateWithKeyPathBetweenConstantValues {
-	var json = {o: "between", l: "k", r: [ {type:"number", value:1},{type:"number", value:2} ], lt: "keyPath", rt: "array"};
-	var pred = [CPComparisonPredicate predicateFromLOJSONFormat:json];
-	[self assert:[CPComparisonPredicate class] equals:[pred class]];
+    var json = {o: "between", l: "k", r: [ {type:"number", value:1},{type:"number", value:2} ], lt: "keyPath", rt: "array"};
+    var pred = [CPComparisonPredicate predicateFromLOJSONFormat:json];
+    [self assert:[CPComparisonPredicate class] equals:[pred class]];
 
     [self assert:CPBetweenPredicateOperatorType equals:[pred predicateOperatorType]];
-	[self assertKeyPathExpression:[pred leftExpression] equals:@"k"];
+    [self assertKeyPathExpression:[pred leftExpression] equals:@"k"];
 
-	var right = [pred rightExpression];
-	[self assert:CPAggregateExpressionType equals:[right expressionType] message:@"aggregate type"];
+    var right = [pred rightExpression];
+    [self assert:CPAggregateExpressionType equals:[right expressionType] message:@"aggregate type"];
 
-	var collection = [right collection];
-	[self assert:2 equals:[collection count]];
-	[self assertConstantValueExpression:collection[0] equals:1];
-	[self assertConstantValueExpression:collection[1] equals:2];
+    var collection = [right collection];
+    [self assert:2 equals:[collection count]];
+    [self assertConstantValueExpression:collection[0] equals:1];
+    [self assertConstantValueExpression:collection[1] equals:2];
 }
 
 - (void)testComparisonPredicateSupportedOperators {
