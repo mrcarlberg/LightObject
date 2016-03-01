@@ -977,51 +977,19 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
  * Primary key should not be included.
  * The objectContext will observe all these attributes for changes and record them. Not if the object context is 'read only'
  */
-
- var OnlyPrintLogOncePerEntityName = {};
-
- - (CPArray)attributeKeysForObject:(id)theObject withType:(CPString)entityName {
+- (CPArray)attributeKeysForObject:(id)theObject withType:(CPString)entityName {
     if (attributeKeyCache != nil) {
         var entityCache = attributeKeyCache[entityName];
 
         if (entityCache) {
             var attributeKeys = [entityCache valueForKey:@"name"];
-            if (!OnlyPrintLogOncePerEntityName[entityName]) {
-                // FIXME: Right now we do the old non model version and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
-                var oldAttributeKeys = [theObject respondsToSelector:@selector(attributeKeys)] ? [theObject attributeKeys] : [self _createAttributeKeysFromRow:nil forObject:theObject];
-                var oldSet = [CPSet setWithArray:oldAttributeKeys];
-                var newSet = [CPSet setWithArray:attributeKeys];
-
-                if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
-                    var missingAttributes = [oldSet copy];
-                    [missingAttributes minusSet:newSet];
-                    var newAttributes = [newSet copy];
-                    [newAttributes minusSet:oldSet];
-                    CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
-                }
-                OnlyPrintLogOncePerEntityName[entityName] = YES;
-            }
 
             return attributeKeys;
         }
     }
 
     [self _createForeignKeyAttributeCacheForEntityName:entityName];
-
-    var attributeKeys = [attributeKeyCache[entityName] valueForKey:@"name"];
-    var oldSet = [CPSet setWithArray:oldAttributeKeys];
-    var newSet = [CPSet setWithArray:attributeKeys];
-
-    if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
-        var missingAttributes = [oldSet copy];
-        [missingAttributes minusSet:newSet];
-        var newAttributes = [newSet copy];
-        [newAttributes minusSet:oldSet];
-        if (!OnlyPrintLogOncePerEntityName[entityName]) {
-            CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
-            OnlyPrintLogOncePerEntityName[entityName] = YES;
-        }
-    }
+    attributeKeys = [attributeKeyCache[entityName] valueForKey:@"name"];
 
     return attributeKeys;
 }
@@ -1031,42 +999,18 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
  * The objectContext will observe all these attributes for changes and record them.
  */
 - (CPArray)relationshipKeysForObject:(id)theObject withType:(CPString)entityName {
-    // FIXME: Right now we do the old non model version also and compare it to the model version. This is to make sure it works as it should.. Remove it in the future.
-    var oldRelationshipKeys = [theObject respondsToSelector:@selector(relationshipKeys)] ? [theObject relationshipKeys] : [];
-
     if (relationshipKeyCache != nil) {
         var entityCache = relationshipKeyCache[entityName];
 
         if (entityCache) {
             var relationshipKeys = [entityCache valueForKey:@"name"];
-            var oldSet = [CPSet setWithArray:oldRelationshipKeys];
-            var newSet = [CPSet setWithArray:relationshipKeys];
-
-            if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
-                var missingAttributes = [oldSet copy];
-                [missingAttributes minusSet:newSet];
-                var newAttributes = [newSet copy];
-                [newAttributes minusSet:oldSet];
-                CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Relationships are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
-            }
 
             return relationshipKeys;
         }
     }
 
     [self _createForeignKeyAttributeCacheForEntityName:entityName];
-
-    var relationshipKeys = [relationshipKeyCache[entityName] valueForKey:@"name"];
-    var oldSet = [CPSet setWithArray:oldRelationshipKeys];
-    var newSet = [CPSet setWithArray:relationshipKeys];
-
-    if ([oldSet count] !== [newSet count] || ![oldSet isSubsetOfSet:newSet]) {
-        var missingAttributes = [oldSet copy];
-        [missingAttributes minusSet:newSet];
-        var newAttributes = [newSet copy];
-        [newAttributes minusSet:oldSet];
-        CPLog.error(@"[" + [self className] + @" " + _cmd + @"] Attributes are missing: '" + [missingAttributes allObjects].toString() + "' , new attributes: '" + [newAttributes allObjects].toString() + "' for entity '" + entityName + "'");
-    }
+    relationshipKeys = [relationshipKeyCache[entityName] valueForKey:@"name"];
 
     return relationshipKeys;
 }
