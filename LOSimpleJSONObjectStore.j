@@ -367,7 +367,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 if ([possibleToOneFaultObject.object respondsToSelector:@selector(enityNameForRelationshipKey:)]) {
                     entityName = [possibleToOneFaultObject.object enityNameForRelationshipKey:possibleToOneFaultObject.relationshipKey];
                 } else {
-                    entityName = [[self propertyForKey:possibleToOneFaultObject.relationshipKey withEntityNamed:possibleToOneFaultObject.type] destinationEntityName];
+                    entityName = [self destinationEntityNameForRelationshipKey:possibleToOneFaultObject.relationshipKey withEntityNamed:possibleToOneFaultObject.type];
                 }
                 if (entityName != nil) {
                     toOne = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:entityName primaryKey:globalId];
