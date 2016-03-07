@@ -688,6 +688,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (CPString)globalIdForObject:(id)theObject {
     var objectType = [self typeOfObject:theObject];
+
+    if (objectType == nil) return nil;
+
     var uuid = [self globalIdForObjectType:objectType andPrimaryKey:[self primaryKeyForObject:theObject]];
 
     if (!uuid) {    // If we don't have one from the backend, create a temporary until we get one.
