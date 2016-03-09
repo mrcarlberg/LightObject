@@ -12,13 +12,8 @@
 
 + (void)modelWithContentsOfURL:(CPString)aPath completionHandler:(Function/*(CPManagedObjectModel)*/)completionBlock
 {
-    /*if(![modelPath hasSuffix:@"cxcdatamodel"])
-    {
-        var modelNameComponents = [modelPath componentsSeparatedByString:@"."];
-        modelPath = [modelNameComponents objectAtIndex:0] + ".cxcdatamodel";
-    }*/
+    var request = [CPURLRequest requestWithURL:[self modelFilePathFromModelPath:aPath]];
 
-    var request = [CPURLRequest requestWithURL:aPath];
     [CPURLConnection sendAsynchronousRequest:request queue:[CPOperationQueue mainQueue] completionHandler:function(response, result, error) {
         var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:aPath] returningResponse:nil];
         var managedObjectModel = [self objectModelFromXMLData:data];
@@ -30,19 +25,15 @@
 
 + (id)parseCoreDataModel:(CPString)aModelName
 {
-    var modelPath = aModelName;
-    /*if(![modelPath hasSuffix:@"cxcdatamodel"])
+    var modelPath = [self modelFilePathFromModelPath:aModelName],
+        data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:modelPath] returningResponse:nil];
+
+    if (data == nil)
     {
-        var modelNameComponents = [modelPath componentsSeparatedByString:@"."];
-        modelPath = [modelNameComponents objectAtIndex:0] + ".cxcdatamodel";
-    }*/
-
-    var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:modelPath] returningResponse:nil];
-
-    if (data == nil) {
         console.log("Can't find model at path '" + modelPath + "'");
         return nil;
-    } else {
+    } else
+    {
         var managedObjectModel = [self objectModelFromXMLData:data];
 
         [managedObjectModel setNameFromFilePath:modelPath];
@@ -53,6 +44,7 @@
 + (id)objectModelFromXMLData:(CPData)modelData withName:(CPString)aName
 {
     var managedObjectModel = [self objectModelFromXMLData:data];
+
     [managedObjectModel setName:aName];
 
     return managedObjectModel;
@@ -74,6 +66,25 @@
     }
 
     return managedObjectModel;
+}
+
++ (CPString)modelFilePathFromModelPath:(CPString)modelPath
+{
+    var pathExtension = [modelPath pathExtension];
+
+    if(pathExtension === @"xcdatamodeld")
+    {
+        var lastPathComponent = [modelPath lastPathComponent];
+
+        lastPathComponent = [lastPathComponent stringByDeletingPathExtension];
+        modelPath = [[[modelPath stringByAppendingPathComponent:lastPathComponent] stringByAppendingPathExtension:@"xcdatamodel"] stringByAppendingPathComponent:@"contents"];
+    }
+    else if (pathExtension === @"xcdatamodel")
+    {
+        modelPath = [modelPath stringByAppendingPathComponent:@"contents"];
+    }
+
+    return modelPath;
 }
 
 @end
