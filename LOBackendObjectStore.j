@@ -10,7 +10,7 @@
 
 /*!
     This object store should be used if the you want to connect to the node Backend
-    written in Objective-J 
+    written in Objective-J
 */
 
 @implementation LOBackendObjectStore : LOAdvanceJSONObjectStore {
@@ -221,7 +221,7 @@
 }
 
 - (CPString)typeOfObject:(id)theObject {
-    return theObject._loObjectType;
+    return theObject._loObjectType || ([theObject conformsToProtocol:@protocol(LOFault)] ? [theObject entityName] : nil);
 }
 
    // TODO: Move this up to super class where we use the model.
