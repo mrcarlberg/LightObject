@@ -78,6 +78,7 @@
         case @"faultPopulated":
         return faultPopulated;
 
+        // TODO: Take the primary key attribute name from the model
         case @"primaryKey":
         return primaryKey;
     }
@@ -119,7 +120,7 @@
     var object;
     for (var i = 0, size = [objectList count]; i < size; i++) {
         var anObject = [objectList objectAtIndex:i];
-        if (primaryKey === [anObject primaryKey]) {
+        if (primaryKey === [anObject valueForKey:@"primaryKey"]) {
             object = anObject;
             break;
         }
@@ -163,7 +164,14 @@
     // Make sure the object context does not record any of these changes. Should not be needed but so we can remove this.
     [objectContext setDoNotObserveValues:YES];
 
+    // Should we morph to a dictionary we have a special case when we need to initiate the CFDictionary
+    var isDictionary = [anObject isKindOfClass:CPDictionary];
+    if (isDictionary) {
+        CFDictionary.call(self);
+    }
+
     // Start morph.
+    var oldIsa = self.isa;
     self.isa = anObject.isa;
     self._UID = anObject._UID;
 
@@ -190,7 +198,14 @@
     }
 
     // Remove current ivars and copy new ivars from anObject
-    copyIvars(self, anObject);
+    copyIvars(self, oldIsa, anObject);
+
+    // If it is a dictionary we need to copy the object.
+    if (isDictionary) {
+        // Only copy the __proto__ when a dictionary as all nornal objective-j objects has 'objj_object'
+        self.__proto__ = anObject.__proto__;
+        [self addEntriesFromDictionary:anObject];
+    }
 
     // Do didChange for all attributes in object
     for (var i = 0, size = attributes.length; i < size; i++) {
@@ -206,10 +221,10 @@
 @end
 
 
-var copyIvars = function(anObject, toObject) {
-    var ivars = ivarsForClass(anObject.isa);
+var copyIvars = function(anObject, anObjectIsa, toObject) {
+    var ivars = ivarsForClass(anObjectIsa);
     for (var i = 0, size = ivars.length; i < size; i++)
-        delete ivars[i];
+        delete anObject[ivars[i]];
 
     var ivars = ivarsForClass(toObject.isa);
     for (var i = 0, size = ivars.length; i < size; i++) {
