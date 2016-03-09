@@ -445,18 +445,32 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (void) objectsReceived:(CPArray)jSONObjects withConnectionDictionary:(id)connectionDictionary {
     var objectContext = connectionDictionary.objectContext;
-    var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
-    var newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
-/*    var receivedObjectList = [receivedObjects allValues];
-    [self _registerOrReplaceObject:receivedObjectList withConnectionDictionary:connectionDictionary];
-    if (newArray.isa && [newArray isKindOfClass:CPArray]) {
-        newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
-    }
-*/    var faults = connectionDictionary.faults;
-    if (faults) {
-        [objectContext faultReceived:newArray withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks faults:faults];
+    var aFetchSpecification = connectionDictionary.fetchSpecification;
+    var allReceivedObjects;
+    var newArray;
+
+    if ([aFetchSpecification operator] === @"lazy") {
+        var entityName = [aFetchSpecification entityName];
+        newArray = [];
+        for (var i = 0, size = jSONObjects.length; i < size; i++) {
+            var fault = [LOFaultObject faultObjectWithObjectContext:objectContext entityName:entityName primaryKey:jSONObjects[i]];
+            [newArray addObject:fault];
+        }
+        allReceivedObjects = newArray;
     } else {
-        [objectContext objectsReceived:newArray allReceivedObjects:[receivedObjects allValues] withFetchSpecification:connectionDictionary.fetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks];
+        var receivedObjects = [CPDictionary dictionary]; // Collect all object with id as key
+        newArray = [self _objectsFromJSON:jSONObjects withConnectionDictionary:connectionDictionary collectAllObjectsIn:receivedObjects];
+        allReceivedObjects = [receivedObjects allValues];
+/*        [self _registerOrReplaceObject:allReceivedObjects withConnectionDictionary:connectionDictionary];
+        if (newArray.isa && [newArray isKindOfClass:CPArray]) {
+            newArray = [self _arrayByReplacingNewObjects:newArray withObjectsAlreadyRegisteredInContext:objectContext];
+        }*/
+    }
+    var faults = connectionDictionary.faults;
+    if (faults) {
+        [objectContext faultReceived:newArray withFetchSpecification:aFetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks faults:faults];
+    } else {
+        [objectContext objectsReceived:newArray allReceivedObjects:allReceivedObjects withFetchSpecification:aFetchSpecification withCompletionBlocks:connectionDictionary.completionBlocks];
     }
 }
 

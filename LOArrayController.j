@@ -63,6 +63,9 @@
     if (entityName != nil) {
         [prepareContentBlocksToRunWhenModelIsReceived addObject:function() {
             var aFetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:[self fetchPredicate]];
+            if ([self usesLazyFetching]) {
+                [aFetchSpecification setOperator:@"lazy"];
+            }
             [objectContext requestObjectsWithFetchSpecification:aFetchSpecification withCompletionHandler:function(resultArray, statusCode) {
                 if (statusCode === 200) [self setContent:resultArray];
             }];
