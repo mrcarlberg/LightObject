@@ -277,10 +277,14 @@ LOObjectContextDebugModeAllInfo = ~0;
     } else {
         faultObjectRequestsForEntity = [];
         [faultObjectRequests setObject:faultObjectRequestsForEntity forKey:entityName];
-        [self performBlock:doTheFetch afterDelay:0];
+        [self performSelector:@selector(performBlock:) withObject:doTheFetch afterDelay:0];
     }
     [faultObjectRequestsForEntity addObject:aFaultObject];
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:nil];
+}
+
+- (void)performBlock:(Function)block {
+    block();
 }
 
 - (void)objectsReceived:(CPArray)objectList allReceivedObjects:(CPArray)allReceivedObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionBlocks:(CPArray)completionBlocks {
@@ -447,8 +451,8 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 - (void)unregisterAllObjects {
-  [objects enumerateKeysAndObjectsUsingBlock:function(anId,anObject) { 
-      [self unregisterObject:anObject]; 
+  [objects enumerateKeysAndObjectsUsingBlock:function(anId,anObject) {
+      [self unregisterObject:anObject];
   }];
 }
 
