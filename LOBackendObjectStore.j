@@ -86,7 +86,7 @@
         if (qualifierString) {
             url = url + @"/" + qualifierString;
         } else {
-            qualifierString = [self UTF16ToUTF8:JSON.stringify([qualifier BOPJSONFormat])];
+            qualifierString = [LOAdvanceJSONObjectStore UTF16ToUTF8:JSON.stringify([qualifier LOJSONFormat])];
             advancedQualifierString = [[CPData dataWithRawString:qualifierString] base64];
             url = url + @"/X-LO-Advanced-Qualifier=" + md5lib.md5(qualifierString);
         }
