@@ -15,8 +15,7 @@
     var request = [CPURLRequest requestWithURL:[self modelFilePathFromModelPath:aPath]];
 
     [CPURLConnection sendAsynchronousRequest:request queue:[CPOperationQueue mainQueue] completionHandler:function(response, result, error) {
-        var data = [CPURLConnection sendSynchronousRequest: [CPURLRequest requestWithURL:aPath] returningResponse:nil];
-        var managedObjectModel = [self objectModelFromXMLData:data];
+        var managedObjectModel = [self objectModelFromXMLData:[CPData dataWithRawString:result]];
 
         [managedObjectModel setNameFromFilePath:aPath];
         if (completionBlock) completionBlock(managedObjectModel);
