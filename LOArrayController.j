@@ -62,38 +62,78 @@
     var entityName = [self entityName];
     if (entityName != nil) {
         [prepareContentBlocksToRunWhenModelIsReceived addObject:function() {
-            var aFetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:[self fetchPredicate]];
-            if ([self usesLazyFetching]) {
-                [aFetchSpecification setOperator:@"lazy"];
-            }
-            [objectContext requestObjectsWithFetchSpecification:aFetchSpecification withCompletionHandler:function(resultArray, statusCode) {
-                if (statusCode === 200) [self setContent:resultArray];
-            }];
+            [self fetch:nil];
         }];
     } else {
         [super prepareContent];
     }
 }
 
+/*!
+    Fetches the objects using fetchPredicate.
+    @param id sender - The sender of the message.
+*/
+- (@action)fetch:(id)sender
+{
+    var entityName = [self entityName];
+    if (entityName != nil) {
+        var aFetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:[self fetchPredicate]];
+        if ([self usesLazyFetching]) {
+            [aFetchSpecification setOperator:@"lazy"];
+        }
+        [objectContext requestObjectsWithFetchSpecification:aFetchSpecification withCompletionHandler:function(resultArray, statusCode) {
+            if (statusCode === 200)
+                [self setContent:resultArray];
+        }];
+    }
+}
+
+/*!
+    Creates and adds a new object to the receiver's content and arranged objects.
+
+    @param id sender - The sender of the message.
+*/
+- (void)add:(id)sender
+{
+    if (![self canAdd])
+        return;
+
+    var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
+    var entityName = [self entityName];
+
+    if (entityName) newObject._loObjectType = entityName;
+    [self insertAndRegisterObject:newObject atArrangedObjectIndex:nil];
+}
+
+/*!
+    Creates a new object and inserts it into the receiver's content array.
+    @param id sender - The sender of the message.
+*/
 - (@action)insert:(id)sender {
     if (![self canInsert])
         return;
 
     var newObject = [self automaticallyPreparesContent] ? [self newObject] : [self _defaultNewObject];
     var entityName = [self entityName];
+    var lastSelectedIndex = [_selectionIndexes lastIndex];
+
     if (entityName) newObject._loObjectType = entityName;
-    [self insertObject:newObject];
+    [self insertAndRegisterObject:newObject atArrangedObjectIndex:lastSelectedIndex];
 }
 
-- (void)insertObject:(id)newObject {
+- (void)insertAndRegisterObject:(id)newObject atArrangedObjectIndex:(int)index {
     if (![self canInsert])
         return;
 
-    [self addObject:newObject];
-    [self setSelectedObjects:[newObject]];
+    if (index != nil && index !== CPNotFound)
+        [self insertObject:newObject atArrangedObjectIndex:index];
+    else
+        [self addObject:newObject];
 
     // Ok, now we need to tell the object context that we have this new object and it is a new relationship for the owner object.
     // This might not be the best way to do this but it will do for now.
+    // We check the contentArray bindings to get hold of the owner object.
+    // TODO: Use model instead of bindings to find owner object if possible
     var info = [self infoForBinding:@"contentArray"];
     var bindingKeyPath = [info objectForKey:CPObservedKeyPathKey];
     var keyPathComponents = [bindingKeyPath componentsSeparatedByString:@"."];
