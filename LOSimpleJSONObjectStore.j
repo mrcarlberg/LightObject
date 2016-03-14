@@ -40,7 +40,6 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (id)init {
     self = [super init];
-    console.log(_cmd + ": " + self);
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
@@ -50,7 +49,6 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (id)initWithCoder:(CPCoder)aCoder {
     self = [super initWithCoder:aCoder];
-    console.log(_cmd + ": " + self);
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
