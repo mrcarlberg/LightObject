@@ -206,9 +206,10 @@
 }
 
 /*!
+    Designated method for requesting a fault.
     This is hard coded: The master object has an attribute (relationshipKey) that is used as the entity name (the last character is removed, "attribute:persons -> entity:person) The entity is expected to have a attribute named the type of the master object and ending with _fk (master object type: company -> entity attribute: company_fk)
  */
-- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultWithRequestId:(id)aRequestId completionHandler:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultPopulated = NO;
@@ -231,6 +232,13 @@
             [objectStore addCompletionHandler:aCompletionBlock toTriggeredFault:self];
         }
     }
+}
+
+/*!
+    Convenience method for calling -requestFaultWithRequestId:completionHandler: without requestId.
+ */
+- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
+    [self requestFaultWithRequestId:nil completionHandler:aCompletionBlock];
 }
 
 - (void)faultReceivedWithObjects:(CPArray)objectList {

@@ -96,10 +96,11 @@
 }
 
 /*!
+    Designated method for requesting a fault.
     This is hard coded: The relationshipKey from the master object is used as the entity name
     This can be changed when we are using a model.
  */
-- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultWithRequestId:(id)aRequestId completionHandler:(Function)aCompletionBlock {
     if (!faultFired) {
         [self setFaultFired:YES];
         faultFired = YES;
@@ -113,6 +114,13 @@
             [[objectContext objectStore] addCompletionHandler:aCompletionBlock toTriggeredFault:self];
         }
     }
+}
+
+/*!
+    Convenience method for calling requestFaultWithRequestId:completionHandler: without a requestId.
+ */
+- (void)requestFaultWithCompletionHandler:(Function)aCompletionBlock {
+    [self requestFaultWithRequestId:nil completionHandler:aCompletionBlock];
 }
 
 - (void)faultReceivedWithObjects:(CPArray)objectList {

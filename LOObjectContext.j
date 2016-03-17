@@ -1081,16 +1081,24 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 /*!
+    Designated method for triggering a fault.
     If fault is not triggered it will trigger it and call the completion block when result is received.
     If fault is already triggered it will call the completion block directly.
     This is a handy utility when you want to do something on a object. You know that it might be a fault but you don't know if it has triggered.
  */
-- (void)triggerFault:(LOFault)fault withCompletionHandler:(Function)aCompletionBlock {
+- (void)triggerFault:(LOFault)fault withRequestId:(id)aRequestId completionHandler:(Function)aCompletionBlock {
     if ([fault conformsToProtocol:@protocol(LOFault)]) {
-        [fault requestFaultWithCompletionHandler:aCompletionBlock];
+        [fault requestFaultWithRequestId:aRequestId completionHandler:aCompletionBlock];
     } else {
         aCompletionBlock(fault);
     }
+}
+
+/*!
+    Convenience method for triggering a fault without specifying a requestId.
+ */
+- (void)triggerFault:(LOFault)fault withCompletionHandler:(Function)aCompletionBlock {
+    [self triggerFault:fault withRequestId:nil completionHandler:aCompletionBlock];
 }
 
 @end
