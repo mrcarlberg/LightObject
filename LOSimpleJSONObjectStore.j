@@ -108,11 +108,17 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    if (!connectionDictionary) {
+        [CPException raise:CPInternalInconsistencyException format:@"delegate method -" + _cmd + " called for connection but no related connectionDictionary found"];
+    }
     connectionDictionary.response = response;
 }
 
 - (void)connection:(CPURLConnection)connection didReceiveData:(CPString)data {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    if (!connectionDictionary) {
+        [CPException raise:CPInternalInconsistencyException format:@"delegate method -" + _cmd + " called for connection but no related connectionDictionary found"];
+    }
     var receivedData = connectionDictionary.receivedData;
     if (receivedData) {
         connectionDictionary.receivedData = [receivedData stringByAppendingString:data];
@@ -123,6 +129,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (void)connectionDidFinishLoading:(CPURLConnection)connection {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    if (!connectionDictionary) {
+        [CPException raise:CPInternalInconsistencyException format:@"delegate method -" + _cmd + " called for connection but no related connectionDictionary found"];
+    }
     var response = connectionDictionary.response;
     var receivedData = connectionDictionary.receivedData;
     var objectContext = connectionDictionary.objectContext;
@@ -144,6 +153,9 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
 - (void)connection:(CPURLConnection)connection didFailWithError:(id)error {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
+    if (!connectionDictionary) {
+        [CPException raise:CPInternalInconsistencyException format:@"delegate method -" + _cmd + " called for connection but no related connectionDictionary found"];
+    }
     [connections removeObject:connectionDictionary];
     CPLog.error(@"CPURLConnection didFailWithError: " + error);
 }
