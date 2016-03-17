@@ -56,28 +56,28 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return self;
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:nil];
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId withCompletionHandler:aCompletionBlock faults:nil];
 }
 
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:[faultArray]];
+- (void)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId withCompletionHandler:aCompletionBlock faults:[faultArray]];
 }
 
-- (CPArray)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext withCompletionHandler:aCompletionBlock faults:faultObjects];
+- (void)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:aRequestId withCompletionHandler:aCompletionBlock faults:faultObjects];
 }
 
 /*!
     Sends request of objects based on fetchSpecification.
     aCompletionBlock is called when finished.
 */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock faults:(id)faults {
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock faults:(id)faults {
     var request = [self urlForRequestObjectsWithFetchSpecification:fetchSpecification];
     if (fetchSpecification.requestPreProcessBlock) {
         fetchSpecification.requestPreProcessBlock(request);
     }
-    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext request:request withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:faults];
+    [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId request:request withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:faults];
 }
 
 /*!
@@ -85,7 +85,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     completionBlocks are called when finished.
     Returns the connectionDictionary
 */
-- (id)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext request:(CPURLRequest)request withCompletionBlocks:(CPArray)completionBlocks faults:(id)faults {
+- (id)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId request:(CPURLRequest)request withCompletionBlocks:(CPArray)completionBlocks faults:(id)faults {
     var url = [[request URL] absoluteString];
     var connection = [CPURLConnection connectionWithRequest:request delegate:self];
     var connectionDictionary = {connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, request: request, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faults:faults, url: url, completionBlocks: completionBlocks, timestamp: [CPDate new]};

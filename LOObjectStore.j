@@ -13,31 +13,55 @@
 }
 
 /*!
+ * Designated method for requesting objects.
  * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
- * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
+ * Convenience method calling -requestObjectsWithFetchSpecification:objectContext:requestId:withCompletionHandler: without requestId.
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext {
-    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext withCompletionHandler:nil];
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext requestId:nil withCompletionHandler:aCompletionBlock];
 }
 
 /*!
+ * Convenience method calling -requestObjectsWithFetchSpecification:objectContext:requestId:withCompletionHandler: with neither requestId nor completion handler.
+ */
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification objectContext:(LOObjectContext)anObjectContext {
+    [self requestObjectsWithFetchSpecification:aFetchSpecification objectContext:anObjectContext requestId:nil withCompletionHandler:nil];
+}
+
+/*!
+ * Designated method for requesting fault array.
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
  */
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
 }
 
 /*!
+ * Convenience method calling requestFaultArray:withFetchSpecification:objectContext:requestId:withCompletionHandler: without requestId.
+ */
+- (void)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:objectContext requestId:nil withCompletionHandler:aCompletionBlock];
+}
+
+/*!
+ * Designated method for requesting fault objects.
  * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultObject:(LOFaultObject)faultObject] when fault objects are received
  */
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
     _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
+ * Convenience method calling -requestFaultObjects:withFetchSpecification:objectContext:requestId:withCompletionHandler: without requestId.
+ */
+- (void)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
+    [self requestFaultObjects:faultObjects withFetchSpecification:fetchSpecification objectContext:objectContext requestId:nil withCompletionHandler:aCompletionBlock];
 }
 
 /*!
