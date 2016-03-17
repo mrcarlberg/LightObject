@@ -145,19 +145,27 @@
 }
 
 /*!
- * Must call [objectContext objectsReceived: withFetchSpecification:] when objects are received
+ * Overrides designated method in superclass LOObjectStore. See description there for requirements.
  */
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification) fetchSpecification objectContext:(LOObjectContext)objectContext withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext objectsReceived:objects allReceivedObjects:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil];
 }
 
 /*!
- * Must call [objectContext faultReceived:(CPArray)objectList withFetchSpecification:(LOFetchSpecification)fetchSpecification faultArray:(LOFaultArray)faultArray] when fault objects are received
+ * Overrides designated method in superclass LOObjectStore. See description there for requirements.
  */
-- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext) objectContext withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
     var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
     [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:[faultArray]];
+}
+
+/*!
+ * Overrides designated method in superclass LOObjectStore. See description there for requirements.
+ */
+- (void)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
+    var objects = [self _fetchAndFilterObjects:fetchSpecification objectContext:objectContext];
+    [objectContext faultReceived:objects withFetchSpecification:fetchSpecification withCompletionBlocks:aCompletionBlock ? [aCompletionBlock] : nil faults:faultObjects];
 }
 
 /*!
