@@ -105,7 +105,7 @@
         [self setFaultFired:YES];
         faultFired = YES;
         faultPopulated = NO;
-        [objectContext requestFaultObject:self withCompletionHandler:aCompletionBlock];
+        [objectContext requestFaultObject:self withRequestId:aRequestId withCompletionHandler:aCompletionBlock];
         //CPLog.trace([self className] + " " + _cmd + " Fire fault: '" + entityName + "' q: " + [qualifier description]);
     } else if (aCompletionBlock) {
         if (faultPopulated) {

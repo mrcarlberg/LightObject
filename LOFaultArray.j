@@ -223,7 +223,7 @@
                                                                       type:CPEqualToPredicateOperatorType
                                                                    options:0];
         fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:destinationEntityName qualifier:qualifier];
-        [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withCompletionHandler:aCompletionBlock];
+        [objectContext requestFaultArray:self withFetchSpecification:fetchSpecification withRequestId:aRequestId withCompletionHandler:aCompletionBlock];
         [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:masterObject userInfo:[CPDictionary dictionaryWithObjects:[self, fetchSpecification, relationshipKey] forKeys:[LOFaultKey,LOFaultFetchSpecificationKey, LOFaultFetchRelationshipKey]]];
     } else if (aCompletionBlock) {
         if (faultPopulated) {

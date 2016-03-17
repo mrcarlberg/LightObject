@@ -235,23 +235,27 @@ LOObjectContextDebugModeAllInfo = ~0;
     return nil;
 }
 
-- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification {
-    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionHandler:nil];
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification withRequestId:(id)aRequestId withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
+    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self requestId:aRequestId withCompletionHandler:aCompletionBlock];
 }
 
 - (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
-    [objectStore requestObjectsWithFetchSpecification:aFetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
+    [self requestObjectsWithFetchSpecification:aFetchSpecification withRequestId:nil withCompletionHandler:aCompletionBlock];
+}
+
+- (CPArray)requestObjectsWithFetchSpecification:(LOFetchSpecification)aFetchSpecification {
+    [self requestObjectsWithFetchSpecification:aFetchSpecification withRequestId:nil withCompletionHandler:nil];
+}
+
+- (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withRequestId:(id)requestId withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
+    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self requestId:requestId withCompletionHandler:aCompletionBlock];
 }
 
 - (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
-    [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
+    [self requestFaultArray:faultArray withFetchSpecification:fetchSpecification withRequestId:nil withCompletionHandler:aCompletionBlock];
 }
-/*
-- (CPArray)requestFaultObject:(LOFaultObject)faultObject withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionHandler:(Function)aCompletionBlock {
-    [objectStore requestFaultObject:faultObject withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
-}*/
 
-- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionHandler:(Function)aCompletionBlock {
+- (void)requestFaultObject:(LOFaultObject)aFaultObject withRequestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
     var entityName = aFaultObject.entityName;
     var doTheFetch = function() {
         var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
@@ -263,7 +267,7 @@ LOObjectContextDebugModeAllInfo = ~0;
                                                                       type:CPInPredicateOperatorType
                                                                    options:0];
         var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
-        [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self withCompletionHandler:aCompletionBlock];
+        [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self requestId:aRequestId withCompletionHandler:aCompletionBlock];
         [faultObjectRequests removeObjectForKey:entityName];
     }
     var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
@@ -281,6 +285,10 @@ LOObjectContextDebugModeAllInfo = ~0;
     }
     [faultObjectRequestsForEntity addObject:aFaultObject];
     [[CPNotificationCenter defaultCenter] postNotificationName:LOFaultDidFireNotification object:aFaultObject userInfo:nil];
+}
+
+- (void)requestFaultObject:(LOFaultObject)aFaultObject withCompletionHandler:(Function)aCompletionBlock {
+    [self requestFaultObject:aFaultObject withRequestId:nil withCompletionHandler:aCompletionBlock];
 }
 
 - (void)performBlock:(Function)block {
