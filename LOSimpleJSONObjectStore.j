@@ -87,8 +87,20 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 */
 - (id)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId request:(CPURLRequest)request withCompletionBlocks:(CPArray)completionBlocks faults:(id)faults {
     var url = [[request URL] absoluteString];
-    var connection = [CPURLConnection connectionWithRequest:request delegate:self];
-    var connectionDictionary = {connection: connection, fetchSpecification: fetchSpecification, objectContext: objectContext, request: request, receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector, faults:faults, url: url, completionBlocks: completionBlocks, timestamp: [CPDate new]};
+    var connectionDictionary = {
+        connection: [CPURLConnection connectionWithRequest:request delegate:self],
+        fetchSpecification: fetchSpecification,
+        objectContext: objectContext,
+        request: request,
+        receiveSelector: LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelector,
+        faults:faults,
+        url: url,
+        completionBlocks: completionBlocks,
+        timestamp: [CPDate new]
+    };
+    if (requestId) {
+        connectionDictionary.requestId = requestId;
+    }
     [connections addObject:connectionDictionary];
     if (objectContext.debugMode & LOObjectContextDebugModeFetch) CPLog.trace(@"LOObjectContextDebugModeFetch: Entity: " + [fetchSpecification entityName] + @", qualifier: " + [fetchSpecification qualifier] + @", url: " + url);
     return connectionDictionary;
