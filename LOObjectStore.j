@@ -65,6 +65,23 @@
 }
 
 /*!
+ * Cancel all currently running requests with a specific requestId and object context.
+ * A requestId argument of nil means match any request with respect to requestId, and similarly for the anObjectContext argument.
+ * Thus,
+ *
+ *   [objectStore cancelRequestsWithRequestId:nil withObjectContext:ctx];
+ *
+ * cancels all requests to ctx regardless of requestId, and
+ *
+ *   [objectStore cancelRequestsWithRequestId:nil withObjectContext:nil];
+ *
+ * cancels all requests regardless of both requestId and object context.
+ */
+- (void)cancelRequestsWithRequestId:(id)aRequestId withObjectContext:(LOObjectContext)anObjectContext {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
  * This method should save all changes to the backend.
  * The ObjectContext has a list of LOModifyRecord that contains all changes.
  */

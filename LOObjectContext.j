@@ -291,6 +291,18 @@ LOObjectContextDebugModeAllInfo = ~0;
     [self requestFaultObject:aFaultObject withRequestId:nil withCompletionHandler:aCompletionBlock];
 }
 
+/*!
+ * Cancels requests related to the receiver matching aRequestId; or cancels all requests
+ * related to the receiver if aRequestId is nil.
+ *
+ * Note: to cancel requests related to other object contexts, for example other
+ * contexts sharing the same object store, either message the other contexts
+ * or use the releated cancel methods on the shared object store.
+ */
+- (void)cancelRequestsWithRequestId:(id)aRequestId {
+    [objectStore cancelRequestsWithRequestId:aRequestId withObjectContext:self];
+}
+
 - (void)performBlock:(Function)block {
     block();
 }

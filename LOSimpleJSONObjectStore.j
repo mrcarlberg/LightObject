@@ -106,6 +106,24 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     return connectionDictionary;
 }
 
+/*!
+ * Overrides method in superclass. Part of informal protocol.
+ */
+- (void)cancelRequestsWithRequestId:(id)aRequestId withObjectContext:(LOObjectContext)anObjectContext {
+    CPLog.trace(@"LOSimpleJSONObjectStore -" + _cmd);
+
+    for (var i = [connections count]; i > 0; i--) {
+        var idx = i - 1;
+        var connectionDictionary = [connections objectAtIndex:idx];
+
+        if (aRequestId && connectionDictionary.requestId !== aRequestId) continue;
+        if (anObjectContext && connectionDictionary.objectContext !== anObjectContext) continue;
+
+        [connectionDictionary.connection cancel];
+        [connections removeObjectAtIndex:idx];
+    }
+}
+
 - (void)connection:(CPURLConnection)connection didReceiveResponse:(CPHTTPURLResponse)response {
     var connectionDictionary = [self connectionDictionaryForConnection:connection];
     if (!connectionDictionary) {
