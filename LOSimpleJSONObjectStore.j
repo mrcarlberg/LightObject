@@ -110,8 +110,6 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
  * Overrides method in superclass. Part of informal protocol.
  */
 - (void)cancelRequestsWithRequestId:(id)aRequestId withObjectContext:(LOObjectContext)anObjectContext {
-    CPLog.trace(@"LOSimpleJSONObjectStore -" + _cmd);
-
     for (var i = [connections count]; i > 0; i--) {
         var idx = i - 1;
         var connectionDictionary = [connections objectAtIndex:idx];
