@@ -7,7 +7,7 @@
 
 
 @import "LOSimpleJSONObjectStore.j"
-@import "md5.js"
+@import "Resources/md5.js"
 
 /*!
     This object store will handle advanced qualifiers by 

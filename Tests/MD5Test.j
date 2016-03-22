@@ -1,4 +1,4 @@
-@import "../md5.js"
+@import "../Resources/md5.js"
 
 // Uncomment the following line to enable backtraces.
 // Very useful sometimes, but don't enable always because
