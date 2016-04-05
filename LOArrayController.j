@@ -73,8 +73,7 @@
     Fetches the objects using fetchPredicate.
     @param id sender - The sender of the message.
 */
-- (@action)fetch:(id)sender
-{
+- (@action)fetch:(id)sender {
     var entityName = [self entityName];
     if (entityName != nil) {
         var aFetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:[self fetchPredicate]];
@@ -93,8 +92,7 @@
 
     @param id sender - The sender of the message.
 */
-- (void)add:(id)sender
-{
+- (void)add:(id)sender {
     if (![self canAdd])
         return;
 
