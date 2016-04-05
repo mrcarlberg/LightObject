@@ -825,7 +825,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 useEntityName = [userInfo objectForKey:@"entityName"];
 
             entityNameToEntityCache[useEntityName || aEntityName] = entity;
-            entityNameToEntityNameCache[aEntityName] = useEntityName;
+            entityNameToEntityNameCache[aEntityName] = useEntityName || aEntityName;
         }
     }
 
