@@ -34,6 +34,10 @@
         forwardingTarget = [anObjectContext createNewObjectForType:anEntityName];
         if (forwardingTarget == nil)
             return nil;
+        var objectStore = [anObjectContext objectStore];
+        // Set the type of the object. Depending on how the type is stored it should live on
+        // after the fault is morphed to the real object
+        [objectStore setType:anEntityName onObject:self];
     }
     return self;
 }
@@ -148,7 +152,9 @@
         return self;
     }
 
-    var objectStore = [objectContext objectStore],
+    // Save the object context as it will be removed from the fault object below.
+    var anObjectContext = objectContext,
+        objectStore = [anObjectContext objectStore],
         allAttributes = [objectStore attributeKeysForObject:anObject withType:entityName],
         attributes = [];
 
@@ -157,8 +163,8 @@
     // All to one relationsships need to be translated from foreign key attribute.
     for (var i = 0, size = allAttributes.length; i < size; i++) {
         var attributeKey = allAttributes[i];
-        if ([objectStore isForeignKeyAttribute:attributeKey forType:entityName objectContext:objectContext])    // Handle to one relationship.
-            attributes.push([objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:entityName objectContext:objectContext]); // Remove "_fk" at end
+        if ([objectStore isForeignKeyAttribute:attributeKey forType:entityName objectContext:anObjectContext])    // Handle to one relationship.
+            attributes.push([objectStore toOneRelationshipAttributeForForeignKeyAttribute:attributeKey forType:entityName objectContext:anObjectContext]); // Remove "_fk" at end
         else
             attributes.push(attributeKey);
     }
@@ -170,7 +176,7 @@
     [self setFaultPopulated:YES];
 
     // Make sure the object context does not record any of these changes. Should not be needed but so we can remove this.
-    [objectContext setDoNotObserveValues:YES];
+    [anObjectContext setDoNotObserveValues:YES];
 
     // Should we morph to a dictionary we have a special case when we need to initiate the CFDictionary
     var isDictionary = [anObject isKindOfClass:CPDictionary];
@@ -220,7 +226,7 @@
         [self didChangeValueForKey:attributes[i]];
     }
 
-    [objectContext setDoNotObserveValues:NO];
+    [anObjectContext setDoNotObserveValues:NO];
 
     // Return the morphed object.
     return self;
