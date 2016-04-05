@@ -115,6 +115,13 @@
 }
 
 /*!
+ * Sets the type on the object
+ */
+- (void)setType:(CPString)aType onObject:(id)theObject {
+    _CPRaiseInvalidAbstractInvocation(self, _cmd);
+}
+
+/*!
  * Returns a unique id for the object
  */
 - (CPString)globalIdForObject:(id)theObject {

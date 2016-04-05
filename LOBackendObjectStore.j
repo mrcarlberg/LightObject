@@ -221,7 +221,11 @@
 }
 
 - (CPString)typeOfObject:(id)theObject {
-    return theObject._loObjectType || ([theObject conformsToProtocol:@protocol(LOFault)] ? [theObject entityName] : nil);
+    return theObject._loObjectType;
+}
+
+- (void)setType:(CPString)aType onObject:(id)theObject {
+    theObject._loObjectType = aType;
 }
 
    // TODO: Move this up to super class where we use the model.
@@ -232,7 +236,7 @@
         var aClass = objj_getClass(className);
         if (aClass) {
             var obj = [[aClass alloc] init];
-            obj._loObjectType = aType;
+            [self setType:aType onObject:obj];
             return obj;
         } else
             CPLog.error(@"[" + [self className] + @" " + _cmd + @"]: Class '" + className + "' can't be found for entity named '" + aType + "'");
