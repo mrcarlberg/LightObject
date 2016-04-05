@@ -119,6 +119,29 @@
     [self insertAndRegisterObject:newObject atArrangedObjectIndex:lastSelectedIndex];
 }
 
+- (id)_defaultNewObject {
+    var objectClass;
+    if (objectContext) {
+        var objectStore = [objectContext objectStore];
+        if (objectStore) {
+            var entityName = [self entityName];
+            var entityDescription = [objectStore entityForName:entityName];
+            if (entityDescription) {
+                var classname = [entityDescription externalName];
+                if (classname) {
+                    objectClass = CPClassFromString(classname);
+                }
+            }
+        }
+    }
+
+    if (objectClass == nil) {
+        objectClass = [self objectClass];
+    }
+
+    return [[objectClass alloc] init];
+}
+
 - (void)insertAndRegisterObject:(id)newObject atArrangedObjectIndex:(int)index {
     if (![self canInsert])
         return;
@@ -142,6 +165,9 @@
     var selectedOwnerObjectsSize = [selectedOwnerObjects count];
     for (var i = 0; i < selectedOwnerObjectsSize; i++) {
         var selectedOwnerObject = [selectedOwnerObjects objectAtIndex:i];
+        if ([selectedOwnerObject isKindOfClass:CPControllerSelectionProxy]) {
+            selectedOwnerObject = [[selectedOwnerObject._controller selectedObjects] objectAtIndex:0];
+        }
         if ([objectContext isObjectRegistered:selectedOwnerObject]) {
             [registeredOwnerObjects addObject:selectedOwnerObject];
             [objectContext _add:newObject toRelationshipWithKey:lastbindingKeyPath forObject:selectedOwnerObject];
