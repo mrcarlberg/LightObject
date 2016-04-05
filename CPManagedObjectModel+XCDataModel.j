@@ -303,6 +303,9 @@ var modelFromXML = function(/*String | XMLNode*/ aStringOrXMLNode)
             case MODEL_RELATIONSHIP:    object = [[CPRelationshipDescription alloc] init];
                                         [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
                                         [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
+                                        [object setIsToMany:ATTRIBUTE_VALUE(XMLNode, "toMany") === 'YES'];
+                                        [object setDestinationEntityName: ATTRIBUTE_VALUE(XMLNode, "destinationEntity")]
+                                        [object setInversePropertyName: ATTRIBUTE_VALUE(XMLNode, "inverseName")]
                                         [currentContainer addProperty:object];
                                         [object setEntity:currentContainer];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);
