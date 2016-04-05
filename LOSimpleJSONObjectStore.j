@@ -270,7 +270,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
             }
         }
         if (obj) {
-            var relationshipKeys = [self relationshipKeysForObject:obj withType:type];
+            var toManyRelationshipKeys = [self relationshipKeysForObject:obj withType:type];
             var columns = [self attributeKeysForObject:obj withType:type];
 
             [self setPrimaryKey:uuid forObject:obj];
@@ -278,16 +278,18 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 
             for (var j = 0; j < columnSize; j++) {
                 var column = [columns objectAtIndex:j];
+                var isToManyRelationship = [toManyRelationshipKeys containsObject:column];
 
-                // Does the fetched row has this column or does the object already exists in the object context. The later to nil out the value if it already exists.
-                if (row.hasOwnProperty(column) || objectFromObjectContext) {
+                // Does the fetched row has this column or does the object already exists in the object context.
+                // The later to nil out the value if it already exists.
+                // Also we should do to many relationships even if they are not coming from the backend as we need
+                // to create faults for them.
+                if (row.hasOwnProperty(column) || objectFromObjectContext || isToManyRelationship) {
                     var value = row[column];
                     if (value == null) {
                         /* Force nil if either null (which is same as nil, ugh!) or undefined. */
                         value = nil;
                     }
-//                    CPLog.trace(@"tracing: " + column + @" value: " + value);
-//                    CPLog.trace(@"tracing: " + column + @": " + value + (value && value.isa ? @", value class: " + [value className] : ""));
                     if ([self isForeignKeyAttribute:column forType:type objectContext:objectContext]) {    // Handle to one relationship.
                         column = [self toOneRelationshipAttributeForForeignKeyAttribute:column forType:type objectContext:objectContext]; // Remove "_fk" at end
                         if (value) {
@@ -300,41 +302,44 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                                 value = nil;
                             }
                         }
-                    // Handle to many relationship as fault. Backend sends a JSON dictionary.
-                    // A fault must have the attribute '_fault' set to something. We don't care what it is.
-                    } else if (value && Object.prototype.toString.call( value ) === '[object Object]' && Object.keys(value).length === 1 && value._fault != null) {
-                        var oldValue = [obj valueForKey:column];
-                        // If the old value is a fault and not populated then keep the old fault.
-                        if (![oldValue isKindOfClass:[LOFaultArray class]] || [oldValue faultPopulated]) {
-                            value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
-                        } else {
-                            value = oldValue;
-                        }
-                    } else if (value && [relationshipKeys containsObject:column] && [value isKindOfClass:CPArray]) { // Handle to many relationship as plain objects
-                        // The array contains only type and primaryKey for the relationship objects.
-                        // The complete relationship objects can be sent before or later in the list of all objects.
-                        var relations = value;
-                        value = [CPArray array];
-                        var relationsSize = [relations count];
-                        for (var k = 0; k < relationsSize; k++) {
-                            var relationRow = [relations objectAtIndex:k];
-                            var relationType = [self typeForRawRow:relationRow objectContext:objectContext fetchSpecification:fetchSpecification];
-                            var relationUuid = [self primaryKeyForRawRow:relationRow forType:relationType objectContext:objectContext];
-                            var relationObj = [receivedObjects objectForKey:relationUuid];
-                            if (!relationObj) {
-                                // Is it already in context use it and update its values when the objects arrives
-                                var relationObj = [objectContext objectForGlobalId:relationUuid];
+                    // Handle to many relationship
+                    } else if (isToManyRelationship) {
+                        // as plain objects
+                        if (value && [value isKindOfClass:CPArray]) {
+                            // The array contains only type and primaryKey for the relationship objects.
+                            // The complete relationship objects can be sent before or later in the list of all objects.
+                            var relations = value;
+                            value = [CPArray array];
+                            var relationsSize = [relations count];
+                            for (var k = 0; k < relationsSize; k++) {
+                                var relationRow = [relations objectAtIndex:k];
+                                var relationType = [self typeForRawRow:relationRow objectContext:objectContext fetchSpecification:fetchSpecification];
+                                var relationUuid = [self primaryKeyForRawRow:relationRow forType:relationType objectContext:objectContext];
+                                var relationObj = [receivedObjects objectForKey:relationUuid];
                                 if (!relationObj) {
-                                    relationObj = [self newObjectForType:relationType objectContext:objectContext];
-                                    [self setPrimaryKey:relationUuid forObject:relationObj];
-                                }
+                                    // Is it already in context use it and update its values when the objects arrives
+                                    var relationObj = [objectContext objectForGlobalId:relationUuid];
+                                    if (!relationObj) {
+                                        relationObj = [self newObjectForType:relationType objectContext:objectContext];
+                                        [self setPrimaryKey:relationUuid forObject:relationObj];
+                                    }
 
+                                    if (relationObj) {
+                                        [receivedObjects setObject:relationObj forKey:relationUuid];
+                                    }
+                                }
                                 if (relationObj) {
-                                    [receivedObjects setObject:relationObj forKey:relationUuid];
+                                    [value addObject:relationObj];
                                 }
                             }
-                            if (relationObj) {
-                                [value addObject:relationObj];
+                        // Handle to many relationship as fault.
+                        } else {
+                            var oldValue = [obj valueForKey:column];
+                            // If the old value is a fault and not populated then keep the old fault.
+                            if (![oldValue isKindOfClass:[LOFaultArray class]] || [oldValue faultPopulated]) {
+                                value = [[LOFaultArray alloc] initWithObjectContext:objectContext masterObject:obj relationshipKey:column];
+                            } else {
+                                value = oldValue;
                             }
                         }
                     } else {
@@ -370,14 +375,17 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                 if (fault.faultFired && !fault.faultPopulated) {
                     var faultConnectionDictionary = [self connectionDictionaryForFault:fault];
                     if (faultConnectionDictionary) {
-                        var faultDidPopulateNotificationUserInfo = [CPDictionary dictionaryWithObjects:[faultConnectionDictionary.fetchSpecification] forKeys:[LOFaultFetchSpecificationKey]];
-                        [fault morphObjectTo:obj callCompletionBlocks:/*faultConnectionDictionary.completionBlocks*/nil postNotificationWithObject:self andUserInfo:faultDidPopulateNotificationUserInfo];
+                        // Tell the objectContext that the fault is received so it can morph it to the real object.
+                        // We don't send any completionBlocks as they will be called when the other fault fetch will complete.
+                        [faultConnectionDictionary.objectContext faultReceived:[obj] withFetchSpecification:faultConnectionDictionary.fetchSpecification withCompletionBlocks:nil faults:[fault]];
                         // Delete the fault in the connection dictionary so when this request compleats it will be treated as a regular reqest and not a fault request
                         [faultConnectionDictionary.faults removeObject:fault];
                         if([faultConnectionDictionary.faults count] === 0)
                             delete faultConnectionDictionary.faults;
                     }
                 } else {
+                    // Just morph the fault to the object. No fetch is outstanding so no completionBlocks needs to be called
+                    // TODO: A notification needs to be sent: LOFaultDidPopulateNotification
                     [fault morphObjectTo:obj];
                 }
             }
