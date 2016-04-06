@@ -281,7 +281,7 @@ var modelFromXML = function(/*String | XMLNode*/ aStringOrXMLNode)
         {
             case MODEL_ENTITY:          object = [[CPEntityDescription alloc] init];
                                         [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-                                        [object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName")];
+                                        [object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName") || @"CPMutableDictionary"];
                                         [object setAbstract:ATTRIBUTE_VALUE(XMLNode, "isAbstract") === 'YES'];
                                         [modelObject addEntity:object];
                                         if (FIRST_CHILD(XMLNode)) containers.push(object);

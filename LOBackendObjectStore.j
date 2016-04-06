@@ -232,7 +232,7 @@
 - (id)newObjectForType:(CPString)aType objectContext:(LOObjectContext)objectContext {
     var entity = [self entityForName:aType];
     if (entity) {
-        var className = [entity externalName] || @"CPMutableDictionary";
+        var className = [entity externalName];
         var aClass = objj_getClass(className);
         if (aClass) {
             var obj = [[aClass alloc] init];
