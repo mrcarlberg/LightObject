@@ -13,7 +13,7 @@ Light Object typically decreases the amount of code you write to support the mod
 
 # Tutorial
 
-Lets do a quick tutorial how you can create a small application running in the web browser and updating an postgresql database.
+Lets do a quick tutorial how you can create a small application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database.
 
 You have to install the following things before we begin:
 - [Node](https://nodejs.org) version 4 or later
@@ -35,7 +35,7 @@ cd ..
 ```
 
 Open the AppController.j file with your favorite text editor and edit it to look like this:
-```
+```Objective-C
 @import <Foundation/Foundation.j>
 @import <AppKit/AppKit.j>
 @import <LightObject/LightObject.j>
@@ -127,7 +127,7 @@ cd node_modules/objj-backend
 ```
 
 Open your favorite text editor again and create a model xml file that look like this:
-```
+```XML
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
     <entity name="Person" representedClassName="CPMutableDictionary">
@@ -163,6 +163,8 @@ ProxyPass /backend http://localhost:1337
 
 Now you should be able to open the index.html or index-debug.html file in the PersonApplication directory. Press the plus and minus buttons to add and remove rows in the table.
 
+You can download a complete copy of the [PersonApplication](http://mini.carlberg.org/dev/PersonApplication.tgz) if you don't want to install Cappuccino.
 
+*This tutorial is a "work in progress". If you try it out please give me feedback so I can make it better. Please let me also know if everything worked without any problems*
 
 More documentation is coming shortly....
