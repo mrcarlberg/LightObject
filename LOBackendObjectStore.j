@@ -51,6 +51,14 @@
     }
 }
 
+- (void)retrieveModelWithCompletionHandler:(Function/*(CPManagedObjectModel)*/)completionBlock {
+    [CPManagedObjectModel modelWithContentsOfURL:baseURL + @"/retrievemodel" completionHandler:function(receivedModel) {
+        model = receivedModel;
+
+        if (completionBlock) completionBlock(receivedModel);
+    }];
+}
+
 // This is used to get things to run after the model is loaded
 - (void)addBlockToRunWhenModelIsReceived:(Function)aBlock {
     if (!blocksToRunWhenModelIsReceived) {
