@@ -16,7 +16,7 @@
 
 @implementation LOArrayController : CPArrayController
 {
-    @outlet LOObjectContext objectContext;
+    @outlet LOObjectContext objectContext @accessors;
     CPArray prepareContentBlocksToRunWhenModelIsReceived;
 }
 
