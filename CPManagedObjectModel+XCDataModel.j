@@ -154,7 +154,10 @@ var _plist_traverseNextNode = function(anXMLNode, stayWithin, stack)
 {
     var node = anXMLNode;
 
-    PLIST_FIRST_CHILD(node);
+///    PLIST_FIRST_CHILD(node);
+    node = node.firstChild;
+    if (node !== NULL && (node.nodeType === 8 || node.nodeType === 3))
+        while ((node = node.nextSibling) && (node.nodeType === 8 || node.nodeType === 3));
 
     // If this element has a child, traverse to it.
     if (node)
@@ -162,7 +165,8 @@ var _plist_traverseNextNode = function(anXMLNode, stayWithin, stack)
 
     // If not, first check if it is a container class (as opposed to a designated leaf).
     // If it is, then we have to pop this container off the stack, since it is empty.
-    if (NODE_NAME(anXMLNode) === PLIST_ARRAY || NODE_NAME(anXMLNode) === PLIST_DICTIONARY)
+///    if (NODE_NAME(anXMLNode) === PLIST_ARRAY || NODE_NAME(anXMLNode) === PLIST_DICTIONARY)
+    if (anXMLNode.nodeName == PLIST_ARRAY || anXMLNode.nodeName == PLIST_DICTIONARY)
         stack.pop();
 
     // If not, next check whether it has a sibling.
@@ -173,7 +177,8 @@ var _plist_traverseNextNode = function(anXMLNode, stayWithin, stack)
 
         node = anXMLNode;
 
-        PLIST_NEXT_SIBLING(node);
+///        PLIST_NEXT_SIBLING(node);
+        while ((node = node.nextSibling) && (node.nodeType === 8 || node.nodeType === 3));
 
         if (node)
             return node;
@@ -188,13 +193,15 @@ var _plist_traverseNextNode = function(anXMLNode, stayWithin, stack)
     {
         var next = node;
 
-        PLIST_NEXT_SIBLING(next);
+///        PLIST_NEXT_SIBLING(next);
+        while ((next = next.nextSibling) && (next.nodeType === 8 || next.nodeType === 3));
 
         // If we have a next sibling, just go to it.
         if (next)
             return next;
 
-        var node = PARENT_NODE(node);
+///        var node = PARENT_NODE(node);
+        var node = node.parentNode;
 
         // If we are being asked to move up, and our parent is the stay within, then just
         if (stayWithin && node === stayWithin)
@@ -220,7 +227,8 @@ var decodeHTMLComponent = function(/*String*/ aString)
 var parseXML = function(/*String*/ aString)
 {
     if (window.DOMParser)
-        return DOCUMENT_ELEMENT(new window.DOMParser().parseFromString(aString, "text/xml"));
+///        return DOCUMENT_ELEMENT(new window.DOMParser().parseFromString(aString, "text/xml"));
+        return new window.DOMParser().parseFromString(aString, "text/xml").documentElement;
 
     else if (window.ActiveXObject)
     {
@@ -248,15 +256,24 @@ var modelFromXML = function(/*String | XMLNode*/ aStringOrXMLNode)
         XMLNode = parseXML(aStringOrXMLNode);
 
     // Skip over DOCTYPE and so forth.
-    while (IS_OF_TYPE(XMLNode, XML_DOCUMENT) || IS_OF_TYPE(XMLNode, XML_XML))
-        PLIST_FIRST_CHILD(XMLNode);
+///    while (IS_OF_TYPE(XMLNode, XML_DOCUMENT) || IS_OF_TYPE(XMLNode, XML_XML))
+///        PLIST_FIRST_CHILD(XMLNode);
+    while (String(XMLNode.nodeName) === XML_DOCUMENT || String(XMLNode.nodeName) === XML_XML)
+    {
+        XMLNode = XMLNode.firstChild;
+        if (XMLNode !== NULL && (XMLNode.nodeType === 8 || XMLNode.nodeType === 3))
+            while ((XMLNode = XMLNode.nextSibling) && (XMLNode.nodeType === 8 || XMLNode.nodeType === 3));
+    }
 
     // Skip over the DOCTYPE... see a pattern?
-    if (IS_DOCUMENTTYPE(XMLNode))
-        PLIST_NEXT_SIBLING(XMLNode);
+///    if (IS_DOCUMENTTYPE(XMLNode))
+    if (XMLNode.nodeType === 10)
+///        PLIST_NEXT_SIBLING(XMLNode);
+        while ((XMLNode = XMLNode.nextSibling) && (XMLNode.nodeType === 8 || XMLNode.nodeType === 3));
 
     // If this is not a PLIST, bail.
-    if (!IS_MODEL(XMLNode))
+///    if (!IS_MODEL(XMLNode))
+    if (XMLNode.nodeName != MODEL_MODEL)
         return NULL;
 
     var key = "",
@@ -277,49 +294,69 @@ var modelFromXML = function(/*String | XMLNode*/ aStringOrXMLNode)
         if (count)
             currentContainer = containers[count - 1];
 
-        switch (String(NODE_NAME(XMLNode)))
+///        switch (NODE_NAME(XMLNode))
+        switch (String(XMLNode.nodeName))
         {
             case MODEL_ENTITY:          object = [[CPEntityDescription alloc] init];
-                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-                                        [object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName") || @"CPMutableDictionary"];
-                                        [object setAbstract:ATTRIBUTE_VALUE(XMLNode, "isAbstract") === 'YES'];
+///                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setName:XMLNode.getAttribute("name")];
+///                                        [object setExternalName:ATTRIBUTE_VALUE(XMLNode, "representedClassName") || @"CPMutableDictionary"];
+                                        [object setExternalName:XMLNode.getAttribute("representedClassName") || @"CPMutableDictionary"];
+///                                        [object setAbstract:ATTRIBUTE_VALUE(XMLNode, "isAbstract") === 'YES'];
+                                        [object setAbstract:XMLNode.getAttribute("isAbstract") === 'YES'];
                                         [modelObject addEntity:object];
-                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+///                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+                                        if (XMLNode.firstChild) containers.push(object);
                                         break;
             case MODEL_ATTRIBUTE:       object = [[CPAttributeDescription alloc] init];
-                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
-                                        [object setTransient:ATTRIBUTE_VALUE(XMLNode, "transient") === 'YES'];
-                                        var typeValueString = ATTRIBUTE_VALUE(XMLNode, "attributeType").replace(/\s+/g, ''); // Remove spaces
+///                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setName:XMLNode.getAttribute("name")];
+///                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
+                                        [object setOptional:XMLNode.getAttribute("optional") === 'YES'];
+///                                        [object setTransient:ATTRIBUTE_VALUE(XMLNode, "transient") === 'YES'];
+                                        [object setTransient:XMLNode.getAttribute("transient") === 'YES'];
+///                                        var typeValueString = ATTRIBUTE_VALUE(XMLNode, "attributeType").replace(/\s+/g, ''); // Remove spaces
+                                        var typeValueString = XMLNode.getAttribute("attributeType").replace(/\s+/g, ''); // Remove spaces
                                         if (typeValueString === "Binary") typeValueString = "BinaryData";
                                         var typeValue = global["CPD" + typeValueString + "AttributeType"];
                                         //console.log("ValueType for " + ATTRIBUTE_VALUE(XMLNode, "attributeType") + " : " + typeValue);
                                         [object setTypeValue:typeValue || CPDUndefinedAttributeType];
-                                        [object setDefaultValue:ATTRIBUTE_VALUE(XMLNode, "defaultValueString")];
+///                                        [object setDefaultValue:ATTRIBUTE_VALUE(XMLNode, "defaultValueString")];
+                                        [object setDefaultValue:XMLNode.getAttribute("defaultValueString")];
                                         [currentContainer addProperty:object];
                                         [object setEntity:currentContainer];
-                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+///                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+                                        if (XMLNode.firstChild) containers.push(object);
                                         break;
             case MODEL_RELATIONSHIP:    object = [[CPRelationshipDescription alloc] init];
-                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
-                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
-                                        [object setIsToMany:ATTRIBUTE_VALUE(XMLNode, "toMany") === 'YES'];
-                                        [object setDestinationEntityName: ATTRIBUTE_VALUE(XMLNode, "destinationEntity")]
-                                        [object setInversePropertyName: ATTRIBUTE_VALUE(XMLNode, "inverseName")]
+///                                        [object setName:ATTRIBUTE_VALUE(XMLNode, "name")];
+                                        [object setName:XMLNode.getAttribute("name")];
+///                                        [object setOptional:ATTRIBUTE_VALUE(XMLNode, "optional") === 'YES'];
+                                        [object setOptional:XMLNode.getAttribute("optional") === 'YES'];
+///                                        [object setIsToMany:ATTRIBUTE_VALUE(XMLNode, "toMany") === 'YES'];
+                                        [object setIsToMany:XMLNode.getAttribute("toMany") === 'YES'];
+///                                        [object setDestinationEntityName: ATTRIBUTE_VALUE(XMLNode, "destinationEntity")];
+                                        [object setDestinationEntityName: XMLNode.getAttribute("destinationEntity")];
+///                                        [object setInversePropertyName: ATTRIBUTE_VALUE(XMLNode, "inverseName")];
+                                        [object setInversePropertyName: XMLNode.getAttribute("inverseName")];
                                         [currentContainer addProperty:object];
                                         [object setEntity:currentContainer];
-                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+///                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+                                        if (XMLNode.firstChild) containers.push(object);
                                         break;
             case MODEL_USERINFO:        object = new CFMutableDictionary();
                                         [currentContainer setUserInfo:object];
-                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+///                                        if (FIRST_CHILD(XMLNode)) containers.push(object);
+                                        if (XMLNode.firstChild) containers.push(object);
                                         break;
-            case MODEL_ENTRY:           currentContainer.setValueForKey(ATTRIBUTE_VALUE(XMLNode, "key"), ATTRIBUTE_VALUE(XMLNode, "value"));
+///            case MODEL_ENTRY:           currentContainer.setValueForKey(ATTRIBUTE_VALUE(XMLNode, "key"), ATTRIBUTE_VALUE(XMLNode, "value"));
+            case MODEL_ENTRY:           currentContainer.setValueForKey(XMLNode.getAttribute("key"), XMLNode.getAttribute("value"));
                                         break;
             case MODEL_ELEMENTS:        break;
             case MODEL_ELEMENT:         break;
 
-            default:                    throw new Error("*** '" + NODE_NAME(XMLNode) + "' tag not recognized in model file.");
+///            default:                    throw new Error("*** '" + NODE_NAME(XMLNode) + "' tag not recognized in model file.");
+            default:                    throw new Error("*** '" + XMLNode.nodeName + "' tag not recognized in model file.");
         }
     }
 
