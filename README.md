@@ -13,28 +13,18 @@ Light Object typically decreases the amount of code you write to support the mod
 
 # Tutorial
 
-Lets do a quick tutorial how you can create a small application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database.
+Lets do a quick tutorial how you can create a small web application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database.
 
 You have to install the following things before we begin:
 - [Node](https://nodejs.org) version 4 or later
 - [Postgresql](http://www.postgresql.org)
-- [Cappuccino](http://www.cappuccino-project.org) version 0.9.9 or later
 - Some kind of webserver
 
-First we need to create a new Cappuccino project inside your document directory for your webserver:
-```
-cd /path/to/your/webserver/document/directory
-capp gen PersonApplication
-```
+As a base for this tutorial we use a [Cappuccino](http://www.cappuccino-project.org) project. Download [PersonApplication](http://mini.carlberg.org/dev/PersonApplication.tgz).
 
-Install the LightObject framework:
-```
-cd PersonApplication/Frameworks
-git clone https://github.com/mrcarlberg/LightObject.git
-cd ..
-```
+Unpack and place it inside your document directory for your webserver.
 
-Open the AppController.j file with your favorite text editor and edit it to look like this:
+The main logic is in the AppController.j file inside the project. It looks like this:
 ```Objective-C
 @import <Foundation/Foundation.j>
 @import <AppKit/AppKit.j>
@@ -52,12 +42,12 @@ Open the AppController.j file with your favorite text editor and edit it to look
         tableView = [[CPTableView alloc] initWithFrame:CGRectMakeZero()],
         columnFirstname = [[CPTableColumn alloc] initWithIdentifier:'firstnameId'],
         columnLastname = [[CPTableColumn alloc] initWithIdentifier:'lastnameId'],
-        scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(50, 50, 210, 300)],
+        scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(50, 100, 210, 300)],
         objectContext = [[LOObjectContext alloc] init],
         personArrayController = [[LOArrayController alloc] init],
         objectStore = [[LOBackendObjectStore alloc] init],
-        insertButton = [[CPButton alloc] initWithFrame:CGRectMake(280, 80, 30.0, 25)],
-        removeButton = [[CPButton alloc] initWithFrame:CGRectMake(280, 110, 30.0, 25)];
+        insertButton = [[CPButton alloc] initWithFrame:CGRectMake(50, 50, 30.0, 25)],
+        removeButton = [[CPButton alloc] initWithFrame:CGRectMake(90, 50, 30.0, 25)];
 
     // Setup the tableview
     [tableView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
@@ -65,8 +55,8 @@ Open the AppController.j file with your favorite text editor and edit it to look
 
     // Setup the table columns
     [[columnFirstname headerView] setStringValue:@"Firstname"];
-    [[columnLastname headerView] setStringValue:@"Lastname"];
     [columnFirstname setEditable:YES];
+    [[columnLastname headerView] setStringValue:@"Lastname"];
     [columnLastname setEditable:YES];
 
     // Add the columns to the table view
@@ -111,9 +101,6 @@ Open the AppController.j file with your favorite text editor and edit it to look
     [scrollView setDocumentView:tableView];
     [contentView addSubview:scrollView];
     [theWindow orderFront:self];
-
-    // Uncomment the following line to turn on the standard menu bar.
-    //[CPMenu setMenuBarVisible:YES];
 }
 
 @end
@@ -126,7 +113,14 @@ npm install objj-backend
 cd node_modules/objj-backend
 ```
 
-Open your favorite text editor again and create a model xml file that look like this:
+We need to create a postgresql database:
+```
+createdb -U <YourPostgresqlUsername> MyPersonDatabase
+```
+Enter a password for the database
+
+
+Inside the PersonApplication project there is a model file with the name Model.xml. It looks like this:
 ```XML
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
@@ -138,15 +132,9 @@ Open your favorite text editor again and create a model xml file that look like 
 </model>
 ```
 
-We need to create a postgresql database:
-```
-createdb -U <YourPostgresqlUsername> MyPersonDatabase
-```
-Enter a password for the database
-
 Now start the backend:
 ```
-bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/model/file/created/above
+bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/model/file/above/Model.xml
 ```
 
 The option ```-v``` (verbose) will log all sql statements etc. ```-V``` (Validate) will validate the database against the model file. ```-A``` (Alter) will generate sql statements if the validation fail. It will alter the database so it will correspond to the model file.
@@ -161,9 +149,45 @@ If you use an Apache webserver you could use the proxy module and add the follow
 ProxyPass /backend http://localhost:1337
 ```
 
-Now you should be able to open the index.html or index-debug.html file in the PersonApplication directory. Press the plus and minus buttons to add and remove rows in the table.
+Now you should be able to open the index.html or index-debug.html (if you want to step by step debug in the browser) file in the PersonApplication directory. Press the plus and minus buttons to add and remove rows in the table.
 
-You can download a complete copy of the [PersonApplication](http://mini.carlberg.org/dev/PersonApplication.tgz) if you don't want to install Cappuccino.
+If you check the output from the backend you will see the generated sql for every access to the database.
+
+### Add an extra column with phone number
+
+It is very easy to add an extra column. First add a new attribute tag in the model xml file on line 5.
+```XML
+        <attribute name="phone" optional="YES" attributeType="String"/>
+```
+
+In the AppController.j file we need to create a new column and add it to the table view.
+Add the following code on line 17 in the AppController.j
+```Objective-C
+        columnPhone = [[CPTableColumn alloc] initWithIdentifier:'phoneId'],
+```
+
+Change the width on the scroll view to fit the extra column on line 18 in AppController.j. Line 18 should look like this now:
+```Objective-C
+        scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(50, 100, 310, 300)],
+```
+
+Setup the new column by adding the following code at line 34 in AppController.j
+```Objective-C
+    [[columnPhone headerView] setStringValue:@"Phone"];
+    [columnPhone setEditable:YES];
+```
+
+Include the new column in the table view by adding the following code at line 40 in AppController.j
+```Objective-C
+    [tableView addTableColumn:columnPhone];
+```
+
+Last we should add the binding with the array controller for the new column at line 45 in AppController.j
+```Objective-C
+    [columnPhone bind:@"value" toObject:personArrayController withKeyPath:@"arrangedObjects.phone" options:nil];
+```
+
+Make sure to save both files and reload the application in the browser. The backend will read the model file again and validate it against the database. It will find that the model file has a new column but not the database and generate the sql to create the new column in the database table.
 
 *This tutorial is a "work in progress". If you try it out please give me feedback so I can make it better. Please let me also know if everything worked without any problems*
 
