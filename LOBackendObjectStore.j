@@ -22,10 +22,10 @@
     self = [super init];
     if (self) {
         if (window && window.location) {
-            var hostname = window.location.hostname;
+            var host = window.location.host;
             var protocol = window.location.protocol;
-            if (hostname != nil && protocol != nil) {
-                baseURL = protocol + @"//" + hostname + "/backend";
+            if (host != nil && protocol != nil) {
+                baseURL = protocol + @"//" + host + "/backend";
             }
         }
     }
