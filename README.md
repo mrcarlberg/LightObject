@@ -18,11 +18,10 @@ Lets do a quick tutorial how you can create a small web application running in t
 You have to install the following things before we begin:
 - [Node](https://nodejs.org) version 4 or later
 - [Postgresql](http://www.postgresql.org)
-- Some kind of webserver
 
 As a base for this tutorial we use a [Cappuccino](http://www.cappuccino-project.org) project. Download [PersonApplication](http://mini.carlberg.org/dev/PersonApplication.tgz).
 
-Unpack and place it inside your document directory for your webserver.
+Unpack it.
 
 The main logic is in the AppController.j file inside the project. It looks like this:
 ```Objective-C
@@ -120,7 +119,9 @@ createdb -U <YourPostgresqlUsername> MyPersonDatabase
 Enter a password for the database
 
 
-Inside the PersonApplication project there is a model file with the name Model.xml. It looks like this:
+Inside the PersonApplication project there is a model file with the name Model.xml. It describes the model and corresponds to the table that will be created in the database. It uses the same format as a model file created by the xCode IDE from Apple. The format is very simple and we are going to edit it by hand in this tutorial.
+
+It looks like this:
 ```XML
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
@@ -134,7 +135,7 @@ Inside the PersonApplication project there is a model file with the name Model.x
 
 Now start the backend:
 ```
-bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/model/file/above/Model.xml
+bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/your/project/directory
 ```
 
 The option ```-v``` (verbose) will log all sql statements etc. ```-V``` (Validate) will validate the database against the model file. ```-A``` (Alter) will generate sql statements if the validation fail. It will alter the database so it will correspond to the model file.
@@ -142,14 +143,7 @@ The option ```-v``` (verbose) will log all sql statements etc. ```-V``` (Validat
 The backend should prompt for a username for the database. After the password is entered the validation should fail but it will generate the nessesary sql to create any missing tables etc.
 The backend should start on port 1337
 
-The last thing we need to do is to setup the webserver to direct requests with the URL /backend to http://localhost:1337
-
-If you use an Apache webserver you could use the proxy module and add the following line to your config:
-```
-ProxyPass /backend http://localhost:1337
-```
-
-Now you should be able to open the index.html or index-debug.html (if you want to step by step debug in the browser) file in the PersonApplication directory. Press the plus and minus buttons to add and remove rows in the table.
+The backend does also serve as a web server. The document root directory is the ```/path/to/your/project/directory``` as specified when starting the backend. This allows us to test the application in a browser with the following link: http://localhost:1337/index-debug.html. Press the plus and minus buttons to add and remove rows in the table.
 
 If you check the output from the backend you will see the generated sql for every access to the database.
 
