@@ -11,9 +11,9 @@ Light Object typically decreases the amount of code you write to support the mod
 - Sophisticated query compilation. Instead of writing SQL, you can create complex queries by associating an CPPredicate object with a fetch request.
 - Effective integration with the OS X and iOS tool chains.
 
-# Tutorial
+# Tutorial without any need of Apple Xcode IDE
 
-Lets do a quick tutorial how you can create a small web application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database.
+Lets do a quick 5 minutes tutorial how you can create a small web application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database. This tutorial can be done on any computer with just Node.js and Postgresql.
 
 You have to install the following things before we begin:
 - [Node](https://nodejs.org) version 4 or later
@@ -22,6 +22,40 @@ You have to install the following things before we begin:
 As a base for this tutorial we use a [Cappuccino](http://www.cappuccino-project.org) project. Download [PersonApplication](http://mini.carlberg.org/dev/PersonApplication.tgz).
 
 Unpack it.
+
+
+We need to create a postgresql database:
+```
+createdb -U <YourPostgresqlUsername> MyPersonDatabase
+```
+Enter a password for the database
+
+
+Now we need to install the backend:
+```
+cd /somewhere/on/your/harddisc
+npm install objj-backend
+cd node_modules/objj-backend
+```
+
+
+The last thing is to start the backend:
+```
+bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/your/downloaded/project/directory
+```
+
+The option ```-v``` (verbose) will log all sql statements etc. ```-V``` (Validate) will validate the database against the model file. Read more on the model file below. ```-A``` (Alter) will generate sql statements if the validation fail. It will alter the database so it will correspond to the model file.
+
+The backend should prompt for the above database password. After the password is entered the validation should fail but it will generate the nessesary sql to create any missing tables etc.
+The backend should start on port 1337
+
+The backend does also serve as a web server. The document root directory is the ```/path/to/your/downloaded/project/directory``` as specified when starting the backend. This allows us to test the application in a browser with the following link: http://localhost:1337/index-debug.html. Press the plus and minus buttons to add and remove rows in the table. Double click on the row to enter the names.
+
+If you check the output from the backend you will see the generated sql for every access to the database.
+
+Note: It takes a few seconds to load the application as it has to compile all the source files in the LightObject framework in the browser. When deploying an application all files can be precompiled to make it load faster.
+
+#### How does it work?
 
 The main logic is in the AppController.j file inside the project. It looks like this:
 ```Objective-C
@@ -105,23 +139,9 @@ The main logic is in the AppController.j file inside the project. It looks like 
 @end
 ```
 
-Now we need to install the backend:
-```
-cd /somewhere/on/your/harddisc
-npm install objj-backend
-cd node_modules/objj-backend
-```
+Inside the PersonApplication project there is a model file with the name Model.xml. It describes the model and corresponds to the table that will be created in the database. It uses the same format as a model file created by the Xcode IDE from Apple. The format is very simple and we are going to edit it by hand in this tutorial.
 
-We need to create a postgresql database:
-```
-createdb -U <YourPostgresqlUsername> MyPersonDatabase
-```
-Enter a password for the database
-
-
-Inside the PersonApplication project there is a model file with the name Model.xml. It describes the model and corresponds to the table that will be created in the database. It uses the same format as a model file created by the xCode IDE from Apple. The format is very simple and we are going to edit it by hand in this tutorial.
-
-It looks like this:
+The file looks like this:
 ```XML
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
@@ -133,19 +153,7 @@ It looks like this:
 </model>
 ```
 
-Now start the backend:
-```
-bin/objj main.j -d MyPersonDatabase -u <YourPostgresqlUsername> -v -V -A /path/to/your/project/directory
-```
-
-The option ```-v``` (verbose) will log all sql statements etc. ```-V``` (Validate) will validate the database against the model file. ```-A``` (Alter) will generate sql statements if the validation fail. It will alter the database so it will correspond to the model file.
-
-The backend should prompt for a username for the database. After the password is entered the validation should fail but it will generate the nessesary sql to create any missing tables etc.
-The backend should start on port 1337
-
-The backend does also serve as a web server. The document root directory is the ```/path/to/your/project/directory``` as specified when starting the backend. This allows us to test the application in a browser with the following link: http://localhost:1337/index-debug.html. Press the plus and minus buttons to add and remove rows in the table.
-
-If you check the output from the backend you will see the generated sql for every access to the database.
+Nore: This tutorial can be done with the Xcode IDE from Apple without writing any code using the Iterface Builder and Core Data Model Editor inside Xcode.
 
 ### Add an extra column with phone number
 
