@@ -304,8 +304,8 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
                         }
                     // Handle to many relationship
                     } else if (isToManyRelationship) {
-                        // as plain objects
-                        if (value && [value isKindOfClass:CPArray]) {
+                        // as plain objects when coming as an array
+                        if (value && value.isa && [value isKindOfClass:CPArray]) {
                             // The array contains only type and primaryKey for the relationship objects.
                             // The complete relationship objects can be sent before or later in the list of all objects.
                             var relations = value;
