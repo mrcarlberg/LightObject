@@ -24,8 +24,12 @@ var LOObjectContext_classForType = 1 << 0,
     LOObjectContext_objectContext_objectsReceived_withFetchSpecification = 1 << 1,
     LOObjectContext_objectContext_didValidateProperty_withError = 1 << 2,
     LOObjectContext_objectContext_shouldSaveChanges_withObject_inserted = 1 << 3,
-    LOObjectContext_objectContext_didSaveChangesWithResultAndStatus = 1 << 4;
-    LOObjectContext_objectContext_errorReceived_withFetchSpecification = 1 << 5;
+    LOObjectContext_objectContext_didSaveChangesWithResultAndStatus = 1 << 4,
+    LOObjectContext_objectContext_errorReceived_withFetchSpecification = 1 << 5,
+    LOObjectContext_willRequestFaultArray_withFetchSpecification_withRequestId = 1 << 6,
+    LOObjectContext_didRequestFaultArray_withFetchSpecification_withRequestId = 1 << 7,
+    LOObjectContext_willRequestFaultObjects_withFetchSpecification_withRequestId = 1 << 8,
+    LOObjectContext_didRequestFaultObjects_withFetchSpecification_withRequestId = 1 << 9;
 
 
 @implementation LOModifyRecord : CPObject {
@@ -190,6 +194,14 @@ LOObjectContextDebugModeAllInfo = ~0;
         implementedDelegateMethods |= LOObjectContext_objectContext_didSaveChangesWithResultAndStatus;
     if ([delegate respondsToSelector:@selector(objectContext:errorReceived:withFetchSpecification:)])
         implementedDelegateMethods |= LOObjectContext_objectContext_errorReceived_withFetchSpecification;
+    if ([delegate respondsToSelector:@selector(willRequestFaultArray:withFetchSpecification:withRequestId:)])
+        implementedDelegateMethods |= LOObjectContext_willRequestFaultArray_withFetchSpecification_withRequestId;
+    if ([delegate respondsToSelector:@selector(didRequestFaultArray:withFetchSpecification:withRequestId:)])
+        implementedDelegateMethods |= LOObjectContext_didRequestFaultArray_withFetchSpecification_withRequestId;
+    if ([delegate respondsToSelector:@selector(willRequestFaultObjects:withFetchSpecification:withRequestId:)])
+        implementedDelegateMethods |= LOObjectContext_willRequestFaultObjects_withFetchSpecification_withRequestId;
+    if ([delegate respondsToSelector:@selector(didRequestFaultObjects:withFetchSpecification:withRequestId:)])
+        implementedDelegateMethods |= LOObjectContext_didRequestFaultObjects_withFetchSpecification_withRequestId;
 }
 
 - (BOOL)readOnly {
@@ -248,7 +260,14 @@ LOObjectContextDebugModeAllInfo = ~0;
 }
 
 - (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withRequestId:(id)requestId withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
+    if (implementedDelegateMethods & LOObjectContext_willRequestFaultArray_withFetchSpecification_withRequestId
+        && ![delegate willRequestFaultArray:faultArray withFetchSpecification:fetchSpecification withRequestId:requestId]) {
+        return;
+    }
     [objectStore requestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:self requestId:requestId withCompletionHandler:aCompletionBlock];
+    if (implementedDelegateMethods & LOObjectContext_didRequestFaultArray_withFetchSpecification_withRequestId) {
+        [delegate didRequestFaultArray:faultArray withFetchSpecification:fetchSpecification withRequestId:requestId];
+    }
 }
 
 - (CPArray)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification withCompletionHandler:(Function/*(resultArray, statusCode)*/)aCompletionBlock {
@@ -260,15 +279,21 @@ LOObjectContextDebugModeAllInfo = ~0;
     var doTheFetch = function() {
         var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
         var primaryKeyAttribute = [objectStore primaryKeyAttributeForType:entityName objectContext:self];
-        //var qualifier = [BTPredicate keyPath:primaryKeyAttribute inConstantValues:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]];
         var qualifier = [CPComparisonPredicate predicateWithLeftExpression:[CPExpression expressionForKeyPath:primaryKeyAttribute]
                                                            rightExpression:[CPExpression expressionForConstantValue:[faultObjectRequestsForEntity valueForKey:primaryKeyAttribute]]
                                                                   modifier:CPDirectPredicateModifier
                                                                       type:CPInPredicateOperatorType
                                                                    options:0];
         var fetchSpecification = [LOFetchSpecification fetchSpecificationForEntityNamed:entityName qualifier:qualifier];
+        if (implementedDelegateMethods & LOObjectContext_willRequestFaultObjects_withFetchSpecification_withRequestId
+            && ![delegate willRequestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification withRequestId:aRequestId]) {
+            return;
+        }
         [objectStore requestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification objectContext:self requestId:aRequestId withCompletionHandler:aCompletionBlock];
         [faultObjectRequests removeObjectForKey:entityName];
+        if (implementedDelegateMethods & LOObjectContext_didRequestFaultObjects_withFetchSpecification_withRequestId) {
+            [delegate didRequestFaultObjects:faultObjectRequestsForEntity withFetchSpecification:fetchSpecification withRequestId:aRequestId];
+        }
     }
     var faultObjectRequestsForEntity = [faultObjectRequests objectForKey:entityName];
     // If there are more then 100 fetch now to keep it small. TODO: Make this number controllable from outside

@@ -22,10 +22,35 @@ LOObjectContextRequestObjectsWithConnectionDictionaryReceivedForConnectionSelect
 LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector = @selector(updateStatusReceived:withConnectionDictionary:);
 //LOFaultArrayRequestedFaultReceivedForConnectionSelector = @selector(faultReceived:withConnectionDictionary:);
 
-@implementation LOSimpleJSONObjectStore : LOObjectStore {
+@protocol LOObjectStoreWillAndDidFault
+
+@optional
+/*!
+    For example we can alter the predicate in the fetch specification before it is sent to the backend.
+    Returns YES to proceed and NO to cancel the request for the faulted object. If NO is returned the fault will be triggered but not populated. This means that it will not trigger again.
+*/
+- (BOOL)willRequestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId;
+- (void)didRequestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId;
+
+/*!
+    For example we can alter the predicate in the fetch specification before it is sent to the backend.
+    Returns YES to proceed and NO to cancel the request for the faulted objects. If NO is returned the fault will be triggered but not populated. This means that it will not trigger again.
+*/
+- (BOOL)willRequestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId;
+- (void)didRequestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId;
+
+@end
+
+var LOObjectStoreWillAndDidFault_willRequestFaultArray_withFetchSpecification_objectContext_requestId = 1 << 0;
+var LOObjectStoreWillAndDidFault_didRequestFaultArray_withFetchSpecification_objectContext_requestId = 1 << 1;
+var LOObjectStoreWillAndDidFault_willRequestFaultObjects_withFetchSpecification_objectContext_requestId = 1 << 2;
+var LOObjectStoreWillAndDidFault_didRequestFaultObjects_withFetchSpecification_objectContext_requestId = 1 << 3;
+
+@implementation LOSimpleJSONObjectStore : LOObjectStore <LOObjectStoreWillAndDidFault> {
     CPDictionary            attributeKeysForObjectClassName;
     CPArray                 connections;        // Array of dictionary with following keys: connection, fetchSpecification, objectContext, receiveSelector
     CPManagedObjectModel    model;
+    CPInteger               implementedWillAndDidFaultMethods;
 }
 
 - (id)initWithModel:(CPManagedObjectModel)aModel {
@@ -34,6 +59,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
         model = aModel;
+        [self setupWillAndDidFaultMethods];
     }
     return self;
 }
@@ -43,6 +69,7 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
+        [self setupWillAndDidFaultMethods];
     }
     return self;
 }
@@ -52,8 +79,23 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
     if (self) {
         connections = [CPArray array];
         attributeKeysForObjectClassName = [CPDictionary dictionary];
+        [self setupWillAndDidFaultMethods];
     }
     return self;
+}
+
+- (void)setupWillAndDidFaultMethods {
+    implementedWillAndDidFaultMethods = 0;
+
+    if ([self respondsToSelector:@selector(willRequestFaultArray:withFetchSpecification:objectContext:requestId:)])
+        implementedWillAndDidFaultMethods |= LOObjectStoreWillAndDidFault_willRequestFaultArray_withFetchSpecification_objectContext_requestId;
+    if ([self respondsToSelector:@selector(didRequestFaultArray:withFetchSpecification:objectContext:requestId:)])
+        implementedWillAndDidFaultMethods |= LOObjectStoreWillAndDidFault_didRequestFaultArray_withFetchSpecification_objectContext_requestId;
+
+    if ([self respondsToSelector:@selector(willRequestFaultObjects:withFetchSpecification:objectContext:requestId:)])
+        implementedWillAndDidFaultMethods |= LOObjectStoreWillAndDidFault_willRequestFaultObjects_withFetchSpecification_objectContext_requestId;
+    if ([self respondsToSelector:@selector(didRequestFaultObjects:withFetchSpecification:objectContext:requestId:)])
+        implementedWillAndDidFaultMethods |= LOObjectStoreWillAndDidFault_didRequestFaultObjects_withFetchSpecification_objectContext_requestId;
 }
 
 - (void)requestObjectsWithFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock {
@@ -61,11 +103,25 @@ LOObjectContextUpdateStatusWithConnectionDictionaryReceivedForConnectionSelector
 }
 
 - (void)requestFaultArray:(LOFaultArray)faultArray withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)requestId withCompletionHandler:(Function)aCompletionBlock {
+    if (implementedWillAndDidFaultMethods & LOObjectStoreWillAndDidFault_willRequestFaultArray_withFetchSpecification_objectContext_requestId
+        && ![self willRequestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId]) {
+        return;
+    }
     [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId withCompletionHandler:aCompletionBlock faults:[faultArray]];
+    if (implementedWillAndDidFaultMethods & LOObjectStoreWillAndDidFault_didRequestFaultArray_withFetchSpecification_objectContext_requestId) {
+        [self didRequestFaultArray:faultArray withFetchSpecification:fetchSpecification objectContext:objectContext requestId:requestId];
+    }
 }
 
 - (void)requestFaultObjects:(CPArray)faultObjects withFetchSpecification:(LOFetchSpecification)fetchSpecification objectContext:(LOObjectContext)objectContext requestId:(id)aRequestId withCompletionHandler:(Function)aCompletionBlock {
+    if (implementedWillAndDidFaultMethods & LOObjectStoreWillAndDidFault_willRequestFaultObjects_withFetchSpecification_objectContext_requestId
+        && ![self willRequestFaultObjects:faultObjects withFetchSpecification:fetchSpecification objectContext:objectContext requestId:aRequestId]) {
+        return;
+    }
     [self requestObjectsWithFetchSpecification:fetchSpecification objectContext:objectContext requestId:aRequestId withCompletionHandler:aCompletionBlock faults:faultObjects];
+    if (implementedWillAndDidFaultMethods & LOObjectStoreWillAndDidFault_didRequestFaultObjects_withFetchSpecification_objectContext_requestId) {
+        [self didRequestFaultObjects:faultObjects withFetchSpecification:fetchSpecification objectContext:objectContext requestId:aRequestId];
+    }
 }
 
 /*!
