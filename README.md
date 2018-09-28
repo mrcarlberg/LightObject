@@ -11,6 +11,8 @@ Light Object typically decreases the amount of code you write to support the mod
 - Sophisticated query compilation. Instead of writing SQL, you can create complex queries by associating an CPPredicate object with a fetch request.
 - Effective integration with the OS X and iOS tool chains.
 
+Please check the documentation in the [wiki](https://github.com/mrcarlberg/LightObject/wiki)
+
 # Tutorial without any need of Apple Xcode IDE
 
 Lets do a quick 5 minutes tutorial how you can create a small web application running in the web browser and updating an postgresql database. It contains a table view with two columns (firstname and lastname). There will be two buttons to add and remove rows in the table. Everything will be stored in a Person table in the sql database. This tutorial can be done on any computer with just Node.js and Postgresql.
