@@ -155,7 +155,7 @@ The file looks like this:
 </model>
 ```
 
-Nore: This tutorial can be done with the Xcode IDE from Apple without writing any code using the Iterface Builder and Core Data Model Editor inside Xcode.
+Note: This tutorial can be done with the Xcode IDE from Apple without writing any code using the Iterface Builder and Core Data Model Editor inside Xcode.
 
 ### Add an extra column with phone number
 
