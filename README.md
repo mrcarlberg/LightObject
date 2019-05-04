@@ -195,4 +195,4 @@ Make sure to save both files and reload the application in the browser. The back
 
 *This tutorial is a "work in progress". If you try it out please give me feedback so I can make it better. Please let me also know if everything worked without any problems*
 
-More documentation is coming shortly....
+For more documentation on the framework check the [wiki](https://github.com/mrcarlberg/LightObject/wiki)
